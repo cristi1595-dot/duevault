@@ -1,0 +1,25 @@
+import 'package:isar/isar.dart';
+
+part 'app_config.g.dart';
+
+@collection
+class AppConfig {
+  Id id = 0; // Use a fixed ID to ensure only one config object exists
+  bool hasSeenOnboarding = false;
+  bool hasSeenDemo = false;
+  String currencyCode = 'USD';
+  int alertDays = 3;
+  bool threeDayAlertEnabled = true;
+  bool isDarkMode = true;
+  bool autoSync = true;
+  bool syncOnWifiOnly = false;
+  bool globalNotificationsEnabled = false;
+  bool isSecurityEnabled = false;
+  bool lockOnBackground = true;
+  bool hasAcceptedPrivacyPolicy = false;
+  int dataVersion = 1; // Track data migrations
+  
+  DateTime? lastLocalChange;
+
+  DateTime? lastCloudSync;
+}
