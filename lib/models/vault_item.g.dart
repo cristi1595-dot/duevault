@@ -32,83 +32,88 @@ const VaultItemSchema = CollectionSchema(
       name: r'category',
       type: IsarType.string,
     ),
-    r'cloudFileIds': PropertySchema(
+    r'cloudFileChecksums': PropertySchema(
       id: 3,
+      name: r'cloudFileChecksums',
+      type: IsarType.stringList,
+    ),
+    r'cloudFileIds': PropertySchema(
+      id: 4,
       name: r'cloudFileIds',
       type: IsarType.stringList,
     ),
     r'directDebit': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'directDebit',
       type: IsarType.bool,
     ),
     r'dueDate': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'dueDate',
       type: IsarType.dateTime,
     ),
     r'isArchived': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPaid': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isPaid',
       type: IsarType.bool,
     ),
     r'isSample': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isSample',
       type: IsarType.bool,
     ),
     r'itemType': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'itemType',
       type: IsarType.string,
     ),
     r'lastModified': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'lastModified',
       type: IsarType.dateTime,
     ),
     r'notes': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'notes',
       type: IsarType.string,
     ),
     r'originalDueDay': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'originalDueDay',
       type: IsarType.long,
     ),
     r'ownerId': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'ownerId',
       type: IsarType.string,
     ),
     r'recurrence': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'recurrence',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'title',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'wasSynced': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'wasSynced',
       type: IsarType.bool,
     )
@@ -246,6 +251,13 @@ int _vaultItemEstimateSize(
     }
   }
   bytesCount += 3 + object.category.length * 3;
+  bytesCount += 3 + object.cloudFileChecksums.length * 3;
+  {
+    for (var i = 0; i < object.cloudFileChecksums.length; i++) {
+      final value = object.cloudFileChecksums[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.cloudFileIds.length * 3;
   {
     for (var i = 0; i < object.cloudFileIds.length; i++) {
@@ -281,22 +293,23 @@ void _vaultItemSerialize(
   writer.writeDouble(offsets[0], object.amount);
   writer.writeStringList(offsets[1], object.attachedFiles);
   writer.writeString(offsets[2], object.category);
-  writer.writeStringList(offsets[3], object.cloudFileIds);
-  writer.writeBool(offsets[4], object.directDebit);
-  writer.writeDateTime(offsets[5], object.dueDate);
-  writer.writeBool(offsets[6], object.isArchived);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeBool(offsets[8], object.isPaid);
-  writer.writeBool(offsets[9], object.isSample);
-  writer.writeString(offsets[10], object.itemType);
-  writer.writeDateTime(offsets[11], object.lastModified);
-  writer.writeString(offsets[12], object.notes);
-  writer.writeLong(offsets[13], object.originalDueDay);
-  writer.writeString(offsets[14], object.ownerId);
-  writer.writeString(offsets[15], object.recurrence);
-  writer.writeString(offsets[16], object.title);
-  writer.writeString(offsets[17], object.uuid);
-  writer.writeBool(offsets[18], object.wasSynced);
+  writer.writeStringList(offsets[3], object.cloudFileChecksums);
+  writer.writeStringList(offsets[4], object.cloudFileIds);
+  writer.writeBool(offsets[5], object.directDebit);
+  writer.writeDateTime(offsets[6], object.dueDate);
+  writer.writeBool(offsets[7], object.isArchived);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isPaid);
+  writer.writeBool(offsets[10], object.isSample);
+  writer.writeString(offsets[11], object.itemType);
+  writer.writeDateTime(offsets[12], object.lastModified);
+  writer.writeString(offsets[13], object.notes);
+  writer.writeLong(offsets[14], object.originalDueDay);
+  writer.writeString(offsets[15], object.ownerId);
+  writer.writeString(offsets[16], object.recurrence);
+  writer.writeString(offsets[17], object.title);
+  writer.writeString(offsets[18], object.uuid);
+  writer.writeBool(offsets[19], object.wasSynced);
 }
 
 VaultItem _vaultItemDeserialize(
@@ -309,23 +322,24 @@ VaultItem _vaultItemDeserialize(
   object.amount = reader.readDoubleOrNull(offsets[0]);
   object.attachedFiles = reader.readStringList(offsets[1]) ?? [];
   object.category = reader.readString(offsets[2]);
-  object.cloudFileIds = reader.readStringList(offsets[3]) ?? [];
-  object.directDebit = reader.readBool(offsets[4]);
-  object.dueDate = reader.readDateTimeOrNull(offsets[5]);
+  object.cloudFileChecksums = reader.readStringList(offsets[3]) ?? [];
+  object.cloudFileIds = reader.readStringList(offsets[4]) ?? [];
+  object.directDebit = reader.readBool(offsets[5]);
+  object.dueDate = reader.readDateTimeOrNull(offsets[6]);
   object.id = id;
-  object.isArchived = reader.readBool(offsets[6]);
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.isPaid = reader.readBool(offsets[8]);
-  object.isSample = reader.readBool(offsets[9]);
-  object.itemType = reader.readStringOrNull(offsets[10]);
-  object.lastModified = reader.readDateTime(offsets[11]);
-  object.notes = reader.readStringOrNull(offsets[12]);
-  object.originalDueDay = reader.readLongOrNull(offsets[13]);
-  object.ownerId = reader.readString(offsets[14]);
-  object.recurrence = reader.readString(offsets[15]);
-  object.title = reader.readString(offsets[16]);
-  object.uuid = reader.readString(offsets[17]);
-  object.wasSynced = reader.readBool(offsets[18]);
+  object.isArchived = reader.readBool(offsets[7]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isPaid = reader.readBool(offsets[9]);
+  object.isSample = reader.readBool(offsets[10]);
+  object.itemType = reader.readStringOrNull(offsets[11]);
+  object.lastModified = reader.readDateTime(offsets[12]);
+  object.notes = reader.readStringOrNull(offsets[13]);
+  object.originalDueDay = reader.readLongOrNull(offsets[14]);
+  object.ownerId = reader.readString(offsets[15]);
+  object.recurrence = reader.readString(offsets[16]);
+  object.title = reader.readString(offsets[17]);
+  object.uuid = reader.readString(offsets[18]);
+  object.wasSynced = reader.readBool(offsets[19]);
   return object;
 }
 
@@ -345,11 +359,11 @@ P _vaultItemDeserializeProp<P>(
     case 3:
       return (reader.readStringList(offset) ?? []) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 6:
       return (reader.readBool(offset)) as P;
+    case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
@@ -357,15 +371,15 @@ P _vaultItemDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readDateTime(offset)) as P;
-    case 12:
       return (reader.readStringOrNull(offset)) as P;
+    case 12:
+      return (reader.readDateTime(offset)) as P;
     case 13:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 15:
       return (reader.readString(offset)) as P;
     case 16:
@@ -373,6 +387,8 @@ P _vaultItemDeserializeProp<P>(
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1507,6 +1523,233 @@ extension VaultItemQueryFilter
         property: r'category',
         value: '',
       ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cloudFileChecksums',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cloudFileChecksums',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cloudFileChecksums',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cloudFileChecksums',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cloudFileChecksums',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<VaultItem, VaultItem, QAfterFilterCondition>
+      cloudFileChecksumsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'cloudFileChecksums',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -3318,6 +3561,12 @@ extension VaultItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VaultItem, VaultItem, QDistinct> distinctByCloudFileChecksums() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cloudFileChecksums');
+    });
+  }
+
   QueryBuilder<VaultItem, VaultItem, QDistinct> distinctByCloudFileIds() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'cloudFileIds');
@@ -3445,6 +3694,13 @@ extension VaultItemQueryProperty
   QueryBuilder<VaultItem, String, QQueryOperations> categoryProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'category');
+    });
+  }
+
+  QueryBuilder<VaultItem, List<String>, QQueryOperations>
+      cloudFileChecksumsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cloudFileChecksums');
     });
   }
 

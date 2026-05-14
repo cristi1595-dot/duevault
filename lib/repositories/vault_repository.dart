@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crypto/crypto.dart';
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
 import '../services/encryption_service.dart';
@@ -41,14 +42,6 @@ class VaultRepository {
           await isar.vaultItems.put(item);
         });
 
-        // Cleanup local files
-        for (final path in item.attachedFiles) {
-          final file = File(path);
-          if (await file.exists()) {
-            await file.delete();
-          }
-        }
-        
         await NotificationService.cancelNotification(id);
         logger.i('Item soft-deleted: $id');
       }
@@ -82,6 +75,8 @@ class VaultRepository {
       }
 
       List<String> finalPaths = [];
+      List<String> checksums = [];
+
       for (final path in item.attachedFiles) {
         // Only process files that are NOT already in our internal attachments folder
         if (!path.contains('app_flutter/attachments')) {
@@ -97,6 +92,10 @@ class VaultRepository {
               final fileToSave = File(newPath);
               await fileToSave.writeAsBytes(bytes);
               await EncryptionService.encryptFile(newPath);
+              
+              // Calculate MD5 of the encrypted file for cloud comparison
+              final encryptedBytes = await fileToSave.readAsBytes();
+              checksums.add(md5.convert(encryptedBytes).toString());
             } on FileSystemException catch (e) {
               if (e.osError?.errorCode == 28 || e.message.contains('space')) {
                 throw Exception('Cannot save attachment: Storage is full.');
@@ -107,10 +106,17 @@ class VaultRepository {
             finalPaths.add(newPath);
           }
         } else {
+          // Already in internal storage, just recalculate checksum if missing or verify it
           finalPaths.add(path);
+          final file = File(path);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            checksums.add(md5.convert(bytes).toString());
+          }
         }
       }
       item.attachedFiles = finalPaths;
+      item.cloudFileChecksums = checksums;
 
       // 4. Encrypt notes
       if (item.notes != null && item.notes!.isNotEmpty && !item.notes!.startsWith('encrypted:')) {

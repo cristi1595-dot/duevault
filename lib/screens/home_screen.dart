@@ -463,14 +463,12 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // 4. Upcoming Header
+              const SizedBox(height: 12),
               Text(
                 'Upcoming',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
 
               // 5. List
               if (allUpcoming.isEmpty)
@@ -491,7 +489,7 @@ class HomeScreen extends ConsumerWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: allUpcoming.length > 10 ? 10 : allUpcoming.length,
                   separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                   itemBuilder: (context, index) {
                     final item = allUpcoming[index];
                     return VaultItemTile(
@@ -525,6 +523,7 @@ class HomeScreen extends ConsumerWidget {
                         VaultSnackBar.show(
                           message: '$name sent to $destination',
                           actionLabel: 'UNDO',
+                          backgroundColor: AppTheme.safeGreen,
                           onAction: () =>
                               notifier.updatePaidStatus(item.id, false),
                         );

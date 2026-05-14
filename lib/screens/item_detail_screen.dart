@@ -250,6 +250,7 @@ class ItemDetailScreen extends ConsumerWidget {
                     VaultSnackBar.show(
                       message: '${currentItem.title.isEmpty ? currentItem.category : currentItem.title} marked as $actionText',
                       actionLabel: 'UNDO',
+                      backgroundColor: AppTheme.safeGreen,
                       onAction: () => notifier.updatePaidStatus(currentItem.id, false),
                     );
                   }
@@ -262,7 +263,16 @@ class ItemDetailScreen extends ConsumerWidget {
                 label: 'Move to Archive',
                 icon: Icons.archive_outlined,
                 onPressed: () async {
-                  await ref.read(vaultProvider.notifier).toggleArchiveStatus(currentItem.id, true);
+                  final notifier = ref.read(vaultProvider.notifier);
+                  await notifier.toggleArchiveStatus(currentItem.id, true);
+                  
+                  VaultSnackBar.show(
+                    message: 'Moved to History',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.safeGreen,
+                    onAction: () => notifier.toggleArchiveStatus(currentItem.id, false),
+                  );
+                  
                   if (context.mounted) Navigator.pop(context);
                 },
               )
@@ -271,7 +281,16 @@ class ItemDetailScreen extends ConsumerWidget {
                 label: 'Restore to Active',
                 icon: Icons.unarchive_outlined,
                 onPressed: () async {
-                  await ref.read(vaultProvider.notifier).toggleArchiveStatus(currentItem.id, false);
+                  final notifier = ref.read(vaultProvider.notifier);
+                  await notifier.toggleArchiveStatus(currentItem.id, false);
+                  
+                  VaultSnackBar.show(
+                    message: 'Restored to Vault',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.primaryAction,
+                    onAction: () => ref.read(vaultProvider.notifier).toggleArchiveStatus(currentItem.id, true),
+                  );
+                  
                   if (context.mounted) Navigator.pop(context);
                 },
               ),

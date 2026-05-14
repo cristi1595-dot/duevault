@@ -1,7 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:isar/isar.dart';
@@ -29,38 +26,33 @@ import 'services/migration_service.dart';
 import 'widgets/bento_error_screen.dart';
 import 'utils/logger.dart';
 
-
-
-
-
-
-
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     
-    // Parallelize heavy initializations
-    final results = await Future.wait([
-      Firebase.initializeApp(),
-      NotificationService.initialize().catchError((e, stack) {
-        logger.e('Notification init skipped', error: e, stackTrace: stack);
-        return null;
-      }),
-      getApplicationDocumentsDirectory(),
-    ]);
+    // Parallelize ONLY critical initializations
+    await Firebase.initializeApp();
+    final appDir = await getApplicationDocumentsDirectory();
 
-    final dir = results[2] as Directory;
-    
-    BackgroundService.initialize();
-    BackgroundService.registerPeriodicTask();
+    // Initialize notifications in the background to not block the UI
+    NotificationService.initialize().catchError((e, stack) {
+      logger.e('Notification init skipped', error: e, stackTrace: stack);
+    });
+
+    // Lazy load background services after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      BackgroundService.initialize();
+      BackgroundService.registerPeriodicTask();
+      logger.i('Delayed Services: Background Sync & WorkManager initialized.');
+    });
 
     // Initialize Isar DB (Isar 3.x does not support native DB encryption, 
     // we use field-level encryption in EncryptionService instead)
     final isar = await Isar.open(
       [UserSchema, VaultItemSchema, AppConfigSchema],
-      directory: dir.path,
+      directory: appDir.path,
     );
 
     // Run Data Migrations (Auto-update categories, etc.)
@@ -125,15 +117,28 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
     // 1. Senior Fix: Removed "Lock when minimized" logic as per user request.
     // The app now only locks on cold start if security is enabled.
     
-    // 2. Smart Sync on Resume (Check for cloud updates)
+    // 2. Smart Sync & Timezone check on Resume
     if (state == AppLifecycleState.resumed) {
       final user = ref.read(authStateProvider).valueOrNull;
+      
+      // Re-init timezone in case of travel
+      NotificationService.initialize();
+
       if (user != null) {
-        logger.i('App resumed: Triggering Smart Sync check...');
+        logger.i('App resumed: Triggering Smart Sync & Timezone check...');
         // We use Future.delayed to ensure the app is fully ready
         Future.delayed(const Duration(milliseconds: 500), () {
           ref.read(autoSyncServiceProvider).syncOnStartup();
         });
+      }
+    }
+
+    // 3. Immediate Sync on Pause (Background backup)
+    if (state == AppLifecycleState.paused) {
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null) {
+        logger.i('App paused: Triggering immediate background backup...');
+        ref.read(autoSyncServiceProvider).scheduleBackup(immediate: true);
       }
     }
   }

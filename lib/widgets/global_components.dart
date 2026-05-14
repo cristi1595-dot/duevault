@@ -29,26 +29,32 @@ class VaultSnackBar {
     scaffoldMessengerKey.currentState?.clearSnackBars();
     scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: Colors.white, // Pure white for better visibility
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
+        content: Row(
+          children: [
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
         ),
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 2),
         backgroundColor: backgroundColor ?? const Color(0xFF2D2D2D), 
-        behavior: SnackBarBehavior.fixed, // Attached to bottom bar
+        behavior: SnackBarBehavior.fixed, // Attached to bottom as requested
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        dismissDirection: DismissDirection.horizontal,
         action: actionLabel != null
             ? SnackBarAction(
                 label: actionLabel,
                 onPressed: onAction ?? () {},
-                textColor: AppTheme.primaryAction,
+                textColor: Colors.white, // White text on colored background
+                backgroundColor: Colors.black.withValues(alpha: 0.2), // Darker overlay for button
               )
             : null,
       ),
@@ -114,7 +120,7 @@ class BentoCard extends StatelessWidget {
   const BentoCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16.0),
+    this.padding = const EdgeInsets.all(12.0),
     this.borderRadius = 16.0,
     this.color,
     this.borderColor,
@@ -214,6 +220,216 @@ class VaultItemTile extends ConsumerWidget {
     required this.currency,
   });
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final daysLeft = _calculateDaysLeft(item.dueDate);
+    final isOverdue = item.isOverdue;
+    final bool isInHistory = item.isArchived || (item.isPaid && daysLeft < 0);
+    final itemColor = item.itemType == 'Bill' ? AppTheme.primaryAction : AppTheme.safeGreen;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Slidable(
+          key: ValueKey(item.id),
+          startActionPane: ActionPane(
+            motion: const BehindMotion(),
+            dismissible: DismissiblePane(onDismissed: () {
+              final notifier = ref.read(vaultProvider.notifier);
+              if (isInHistory) {
+                notifier.toggleArchiveStatus(item.id, false);
+                VaultSnackBar.show(
+                  message: 'Restored to Vault',
+                  actionLabel: 'UNDO',
+                  backgroundColor: AppTheme.primaryAction,
+                  onAction: () => notifier.toggleArchiveStatus(item.id, true),
+                );
+              } else {
+                notifier.toggleArchiveStatus(item.id, true);
+                VaultSnackBar.show(
+                  message: 'Moved to History',
+                  actionLabel: 'UNDO',
+                  backgroundColor: AppTheme.safeGreen,
+                  onAction: () => notifier.toggleArchiveStatus(item.id, false),
+                );
+              }
+            }),
+            children: [
+              if (isInHistory)
+                SlidableAction(
+                  onPressed: (context) {
+                    ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, false);
+                    VaultSnackBar.show(
+                      message: 'Restored to Vault',
+                      actionLabel: 'UNDO',
+                      backgroundColor: AppTheme.primaryAction,
+                      onAction: () => ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, true),
+                    );
+                  },
+                  backgroundColor: AppTheme.primaryAction,
+                  foregroundColor: Colors.white,
+                  icon: Icons.unarchive_rounded,
+                  label: 'Vault',
+                )
+              else
+                SlidableAction(
+                  onPressed: (context) {
+                    ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, true);
+                    VaultSnackBar.show(
+                      message: 'Moved to History',
+                      actionLabel: 'UNDO',
+                      backgroundColor: AppTheme.safeGreen,
+                      onAction: () => ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, false),
+                    );
+                  },
+                  backgroundColor: AppTheme.safeGreen,
+                  foregroundColor: Colors.white,
+                  icon: Icons.archive_rounded,
+                  label: 'Archive',
+                ),
+            ],
+          ),
+          endActionPane: ActionPane(
+            motion: const StretchMotion(),
+            dismissible: DismissiblePane(
+              onDismissed: () {
+                // This triggers on full swipe
+                ref.read(vaultProvider.notifier).deleteItem(item.id);
+              },
+              confirmDismiss: () async {
+                // This allows us to show the dialog before the full swipe completes
+                final confirmed = await _showDeleteConfirmation(context, ref);
+                return confirmed == true;
+              },
+            ),
+            children: [
+              SlidableAction(
+                onPressed: (context) async {
+                  final confirmed = await _showDeleteConfirmation(context, ref);
+                  if (confirmed != true && context.mounted) {
+                    Slidable.of(context)?.close();
+                  }
+                },
+                backgroundColor: AppTheme.urgentRed,
+                foregroundColor: Colors.white,
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete',
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: onTap ?? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+              );
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardTheme.color,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isOverdue ? AppTheme.urgentRed.withValues(alpha: 0.3) : Theme.of(context).dividerColor,
+                  width: isOverdue ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: itemColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      CategoryUtils.getIcon(item.category),
+                      color: itemColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title.isEmpty ? item.category : item.title,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            decoration: item.isPaid ? TextDecoration.lineThrough : null,
+                            color: item.isPaid ? Theme.of(context).textTheme.bodyMedium?.color : null,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.dueDate != null 
+                            ? 'Due ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
+                            : 'No due date',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        currency.formatAmount(item.amount ?? 0.0),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isOverdue ? AppTheme.urgentRed : null,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (item.isPaid)
+                        StatusBadge(
+                          label: item.itemType == 'Bill' ? 'PAID' : 'RENEWED',
+                          isPaid: true,
+                        )
+                      else ...[
+                        Row(
+                          children: [
+                            StatusBadge(
+                              label: isOverdue 
+                                  ? (item.itemType == 'Bill' ? 'OVERDUE' : 'EXPIRED') 
+                                  : (daysLeft == 0 ? 'TODAY' : '$daysLeft DAYS'),
+                              daysLeft: daysLeft,
+                            ),
+                            if (onCheckPressed != null) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: onCheckPressed,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppTheme.primaryAction.withValues(alpha: 0.2)),
+                                  ),
+                                  child: const Icon(Icons.check_rounded, color: AppTheme.primaryAction, size: 18),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;
     final now = DateTime.now();
@@ -222,240 +438,25 @@ class VaultItemTile extends ConsumerWidget {
     return due.difference(today).inDays;
   }
 
+  String _getMonthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
+  }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final daysLeft = _calculateDaysLeft(item.dueDate);
-    final isOverdue = item.isOverdue;
-    final bool isInHistory = item.isArchived || (item.isPaid && daysLeft < 0);
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Slidable(
-        key: ValueKey(item.id),
-
-      startActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        children: [
-          if (isInHistory)
-            SlidableAction(
-              onPressed: (context) {
-                // If it was archived manually, unarchive it. 
-                // If it was there because it was paid, unpaying it also returns it to vault.
-                if (item.isArchived) {
-                  ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, false);
-                } else if (item.isPaid) {
-                  ref.read(vaultProvider.notifier).updatePaidStatus(item.id, false);
-                }
-                
-                VaultSnackBar.show(
-                  message: '${item.title.isEmpty ? item.category : item.title} returned to active vault',
-                  backgroundColor: AppTheme.primaryAction,
-                );
-              },
-              backgroundColor: AppTheme.primaryAction,
-              foregroundColor: Colors.white,
-              icon: Icons.unarchive_outlined,
-              label: 'Vault',
-            )
-          else
-            SlidableAction(
-              onPressed: (context) {
-                ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, true);
-                VaultSnackBar.show(
-                  message: '${item.title.isEmpty ? item.category : item.title} moved to history',
-                  backgroundColor: AppTheme.safeGreen,
-                );
-              },
-              backgroundColor: AppTheme.safeGreen,
-              foregroundColor: Colors.white,
-              icon: Icons.archive_outlined,
-              label: 'Archive',
-            ),
-        ],
-      ),
-
-
-      endActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        children: [
-          SlidableAction(
-            onPressed: (context) {
-              _showDeleteConfirmation(context, ref);
-            },
-            backgroundColor: AppTheme.urgentRed,
-            foregroundColor: Colors.white,
-            icon: Icons.delete_outline,
-            label: 'Delete',
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onTap ?? () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-          );
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: BentoCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          color: isOverdue 
-            ? AppTheme.urgentRed.withValues(alpha: 0.08) 
-            : (item.isPaid ? Theme.of(context).cardTheme.color?.withValues(alpha: 0.6) : null),
-          borderColor: isOverdue ? AppTheme.urgentRed.withValues(alpha: 0.3) : null,
-          child: Row(
-            children: [
-              // Icon
-              Stack(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardTheme.color,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
-                    ),
-                    child: Icon(
-                      CategoryUtils.getIcon(item.category),
-                      color: isOverdue ? AppTheme.urgentRed : AppTheme.primaryAction,
-                      size: 20,
-                    ),
-                  ),
-                  Positioned(
-                    right: -1,
-                    bottom: -1,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: item.itemType == 'Bill' ? AppTheme.primaryAction : AppTheme.safeGreen,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(6),
-                          bottomRight: Radius.circular(12),
-                        ),
-                      ),
-                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                      child: Text(
-                        item.itemType == 'Bill' ? 'B' : 'D',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        decoration: item.isPaid ? TextDecoration.lineThrough : null,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 1),
-                    Row(
-                      children: [
-                        Text(
-                          item.category,
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (item.amount != null)
-                          Text(
-                            currency.formatAmount(item.amount!),
-                            style: TextStyle(
-                              color: isOverdue ? AppTheme.urgentRed : AppTheme.primaryAction,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Status or Action
-              if (item.isPaid) ...[
-                StatusBadge(
-                  label: item.itemType == 'Bill' ? 'PAID' : 'RENEWED',
-                  isPaid: true,
-                ),
-              ] else ...[
-                StatusBadge(
-                  label: isOverdue ? (item.itemType == 'Bill' ? 'OVERDUE' : 'EXPIRED') : (daysLeft == 0 ? 'TODAY' : '$daysLeft DAYS'),
-                  daysLeft: daysLeft,
-                ),
-                if (onCheckPressed != null) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {},
-                    child: InkWell(
-                      onTap: onCheckPressed,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryAction.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.primaryAction.withValues(alpha: 0.3)),
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: AppTheme.primaryAction,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-
-
-
-
-
-
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
-    showDialog(
+  Future<bool?> _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Item?'),
         content: Text('Are you sure you want to permanently delete "${item.title}"? This cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(context, true);
               ref.read(vaultProvider.notifier).deleteItem(item.id);
             },
             style: TextButton.styleFrom(foregroundColor: AppTheme.urgentRed),
@@ -687,7 +688,7 @@ class PrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: isLoading
@@ -743,7 +744,7 @@ class SecondaryButton extends StatelessWidget {
           foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
           side: BorderSide(color: Theme.of(context).dividerColor, width: 1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: Row(

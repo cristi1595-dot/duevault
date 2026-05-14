@@ -22,6 +22,7 @@ class VaultItem {
   int? originalDueDay; // Original day of month for recurring bills
 
   List<String> cloudFileIds = []; // IDs of files in Google Drive for sync
+  List<String> cloudFileChecksums = []; // MD5 hashes of files for content-based sync
   bool wasSynced = false; // Track if item has reached the cloud
 
 

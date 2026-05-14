@@ -58,24 +58,44 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     final bool isEnabledInDb = config.isSecurityEnabled;
     final bool lockOnBg = config.lockOnBackground;
 
-    final isSupported = await auth.isDeviceSupported();
-    final canCheck = await auth.canCheckBiometrics;
-    final available = await auth.getAvailableBiometrics();
-    
-    // Check if the device has ANY form of security (Biometrics or PIN/Pass)
-    final bool hasHardwareSecurity = isSupported || canCheck || available.isNotEmpty;
-
-    // Start as locked ONLY if enabled AND the hardware supports it
-    bool shouldBeLocked = isEnabledInDb && hasHardwareSecurity;
-
+    // Set initial state based on DB only first, to unlock UI immediately
     state = state.copyWith(
       isEnabled: isEnabledInDb,
-      isLocked: shouldBeLocked,
+      isLocked: isEnabledInDb, // Start locked if enabled, we'll refine this below
       lockOnBackground: lockOnBg,
-      canAuthenticate: hasHardwareSecurity,
+    );
+
+    // If security is NOT enabled, we don't need to block for hardware checks
+    // We can run them after a small delay to keep startup smooth
+    if (!isEnabledInDb) {
+      Future.delayed(const Duration(seconds: 3), () async {
+        final hasHardware = await _checkHardwareSupport();
+        state = state.copyWith(canAuthenticate: hasHardware);
+        logger.i('Security: Lazy Hardware Check - Supported: $hasHardware');
+      });
+      return;
+    }
+
+    // If security IS enabled, we MUST check hardware now to know if we can unlock
+    final hasHardware = await _checkHardwareSupport();
+    state = state.copyWith(
+      canAuthenticate: hasHardware,
+      isLocked: isEnabledInDb && hasHardware,
     );
     
-    logger.i('Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardwareSecurity, Locked: $shouldBeLocked');
+    logger.i('Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardware, Locked: ${state.isLocked}');
+  }
+
+  Future<bool> _checkHardwareSupport() async {
+    try {
+      final isSupported = await auth.isDeviceSupported();
+      final canCheck = await auth.canCheckBiometrics;
+      final available = await auth.getAvailableBiometrics();
+      return isSupported || canCheck || available.isNotEmpty;
+    } catch (e) {
+      logger.e('Security: Hardware check failed', error: e);
+      return false;
+    }
   }
 
 

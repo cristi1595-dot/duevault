@@ -32,21 +32,41 @@ class NotificationService {
     tz.initializeTimeZones();
 
     // 2. IMPORTANT: Set the local location based on the device's current timezone
-    // This handles users traveling between countries
     try {
-      final zone = await FlutterTimezone.getLocalTimezone();
-      // If it's an object, get the name property. If it's already a string, use it.
-      final String tzName = (zone is String) ? zone : (zone as dynamic).name;
+      final dynamic zone = await FlutterTimezone.getLocalTimezone();
+      String tzName = zone.toString();
       
-      tz.setLocalLocation(tz.getLocation(tzName));
-      logger.i('NotificationService: Timezone set to $tzName');
+      // Senior Fix: If it's a TimezoneInfo object string, extract just the ID
+      // Example: "TimezoneInfo(Europe/London, ...)" -> "Europe/London"
+      if (tzName.contains('TimezoneInfo(')) {
+        final startIndex = tzName.indexOf('(') + 1;
+        final endIndex = tzName.indexOf(',');
+        if (startIndex > 0 && endIndex > startIndex) {
+          tzName = tzName.substring(startIndex, endIndex).trim();
+        }
+      }
+
+      // Final fallback if it still looks like an object description
+      if (tzName.contains('Instance of')) {
+        tzName = 'Etc/UTC';
+      }
+
+      try {
+        tz.setLocalLocation(tz.getLocation(tzName));
+        logger.i('NotificationService: Timezone initialized as $tzName');
+      } catch (e) {
+        logger.w('NotificationService: $tzName not found in DB, using Etc/UTC');
+        tz.setLocalLocation(tz.getLocation('Etc/UTC'));
+      }
     } catch (e, stack) {
       logger.e(
-        'NotificationService: Could not set local timezone, defaulting to UTC',
+        'NotificationService: Timezone detection failed, using Etc/UTC fallback',
         error: e,
         stackTrace: stack,
       );
-      tz.setLocalLocation(tz.getLocation('UTC'));
+      try {
+        tz.setLocalLocation(tz.getLocation('Etc/UTC'));
+      } catch (_) {}
     }
   }
 

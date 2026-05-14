@@ -55,7 +55,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with SingleTickerProv
     return ListView.separated(
       padding: const EdgeInsets.all(16.0),
       itemCount: items.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 4),
       itemBuilder: (context, index) {
         final item = items[index];
         return VaultItemTile(
@@ -67,11 +67,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with SingleTickerProv
                   notifier.updatePaidStatus(item.id, true);
 
                   final actionText = item.itemType == 'Bill' ? 'Paid' : 'Renewed';
-                  VaultSnackBar.show(
-                    message: '${item.title.isEmpty ? item.category : item.title} $actionText',
-                    actionLabel: 'UNDO',
-                    onAction: () => notifier.updatePaidStatus(item.id, false),
-                  );
+                    VaultSnackBar.show(
+                      message: '${item.title.isEmpty ? item.category : item.title} $actionText',
+                      actionLabel: 'UNDO',
+                      backgroundColor: AppTheme.safeGreen,
+                      onAction: () => notifier.updatePaidStatus(item.id, false),
+                    );
                 }
               : null,
         );

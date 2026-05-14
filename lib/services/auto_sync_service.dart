@@ -15,6 +15,7 @@ import '../providers/sync_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/app_config.dart';
 import 'package:uuid/uuid.dart';
+import 'package:crypto/crypto.dart';
 import '../utils/logger.dart';
 
 
@@ -30,18 +31,23 @@ class AutoSyncService {
   /// Check if user is signed in with Google (not guest)
   bool get _isSignedIn => FirebaseAuth.instance.currentUser != null;
 
-  /// Debounced auto-backup — waits 5s after last change to avoid spamming Drive
-  void scheduleBackup() {
+  /// Debounced auto-backup — waits 2s after last change.
+  /// If [immediate] is true, it starts right away (e.g. app going to background).
+  void scheduleBackup({bool immediate = false}) {
     if (!_isSignedIn) return;
-
-    // Check if auto-sync is enabled by user
+ 
     final autoSyncEnabled = _ref.read(autoSyncProvider);
     if (!autoSyncEnabled) return;
-
+ 
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(seconds: 5), () {
+    
+    if (immediate) {
       _performBackup();
-    });
+    } else {
+      _debounceTimer = Timer(const Duration(seconds: 2), () {
+        _performBackup();
+      });
+    }
   }
 
   /// Perform the actual backup in the background
@@ -382,9 +388,11 @@ class AutoSyncService {
       try {
         bool modified = false;
 
-        // 1. CLEANUP: Delete local files that are no longer in Cloud
+        // 1. CLEANUP: Delete local files that are no longer tracked in Cloud IDs
         if (item.attachedFiles.length > item.cloudFileIds.length) {
           final newPaths = List<String>.from(item.attachedFiles);
+          final newChecksums = List<String>.from(item.cloudFileChecksums);
+
           for (int i = item.attachedFiles.length - 1; i >= item.cloudFileIds.length; i--) {
             final localPath = item.attachedFiles[i];
             final file = File(localPath);
@@ -392,23 +400,63 @@ class AutoSyncService {
               await file.delete();
             }
             newPaths.removeAt(i);
+            if (i < newChecksums.length) newChecksums.removeAt(i);
             modified = true;
           }
           item.attachedFiles = newPaths;
+          item.cloudFileChecksums = newChecksums;
         }
 
-        // 2. UPLOAD missing files to Cloud
+        // 2. UPLOAD/UPDATE files in Cloud based on Checksums
         for (int i = 0; i < item.attachedFiles.length; i++) {
+          final localFile = File(item.attachedFiles[i]);
+          if (!await localFile.exists()) continue;
+
+          // Calculate current local checksum
+          final currentBytes = await localFile.readAsBytes();
+          final currentChecksum = md5.convert(currentBytes).toString();
+          
+          bool needsUpload = false;
+          String? existingCloudId;
+
           if (i >= item.cloudFileIds.length) {
-            final file = File(item.attachedFiles[i]);
-            if (await file.exists()) {
-              final cloudId = await driveService.uploadAttachment(file, 'attach_${item.uuid}_$i');
-              if (cloudId != null) {
-                final newIds = List<String>.from(item.cloudFileIds);
+            // Case A: New file (index out of cloud range)
+            needsUpload = true;
+          } else {
+            // Case B: Existing file index -> Check if content changed
+            existingCloudId = item.cloudFileIds[i];
+            final lastKnownChecksum = i < item.cloudFileChecksums.length ? item.cloudFileChecksums[i] : '';
+            
+            if (currentChecksum != lastKnownChecksum) {
+              logger.i('AutoSyncService: Attachment content changed for ${item.title} at index $i. Re-uploading...');
+              needsUpload = true;
+              // If we re-upload, we might want to delete the old cloud file first to avoid orphans,
+              // but update() is also an option if DriveService supports it.
+            }
+          }
+
+          if (needsUpload) {
+            // Senior Fix: Delete the old file from Drive if we are replacing it
+            if (existingCloudId != null) {
+              await driveService.deleteFile(existingCloudId);
+            }
+
+            final cloudId = await driveService.uploadAttachment(localFile, 'attach_${item.uuid}_$i');
+            if (cloudId != null) {
+              final newIds = List<String>.from(item.cloudFileIds);
+              final newChecksums = List<String>.from(item.cloudFileChecksums);
+
+              if (i >= newIds.length) {
                 newIds.add(cloudId);
-                item.cloudFileIds = newIds;
-                modified = true;
+                newChecksums.add(currentChecksum);
+              } else {
+                newIds[i] = cloudId;
+                newChecksums[i] = currentChecksum;
               }
+              
+              item.cloudFileIds = newIds;
+              item.cloudFileChecksums = newChecksums;
+              modified = true;
             }
           }
         }
@@ -429,6 +477,19 @@ class AutoSyncService {
               final newPaths = List<String>.from(item.attachedFiles);
               newPaths.add(localPath);
               item.attachedFiles = newPaths;
+              
+              // After download, update the local checksum to match what we just got
+              final downloadedBytes = await File(localPath).readAsBytes();
+              final downloadedChecksum = md5.convert(downloadedBytes).toString();
+              
+              final newChecksums = List<String>.from(item.cloudFileChecksums);
+              if (i >= newChecksums.length) {
+                newChecksums.add(downloadedChecksum);
+              } else {
+                newChecksums[i] = downloadedChecksum;
+              }
+              item.cloudFileChecksums = newChecksums;
+              
               modified = true;
             }
           }
