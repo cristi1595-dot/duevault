@@ -62,33 +62,53 @@ const AppConfigSchema = CollectionSchema(
       name: r'isDarkMode',
       type: IsarType.bool,
     ),
-    r'isSecurityEnabled': PropertySchema(
+    r'isGuest': PropertySchema(
       id: 9,
+      name: r'isGuest',
+      type: IsarType.bool,
+    ),
+    r'isSecurityEnabled': PropertySchema(
+      id: 10,
       name: r'isSecurityEnabled',
       type: IsarType.bool,
     ),
     r'lastCloudSync': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'lastCloudSync',
       type: IsarType.dateTime,
     ),
     r'lastLocalChange': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'lastLocalChange',
       type: IsarType.dateTime,
     ),
+    r'lastSyncCheck': PropertySchema(
+      id: 13,
+      name: r'lastSyncCheck',
+      type: IsarType.dateTime,
+    ),
+    r'localDatabaseChecksum': PropertySchema(
+      id: 14,
+      name: r'localDatabaseChecksum',
+      type: IsarType.string,
+    ),
     r'lockOnBackground': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'lockOnBackground',
       type: IsarType.bool,
     ),
+    r'needsBackup': PropertySchema(
+      id: 16,
+      name: r'needsBackup',
+      type: IsarType.bool,
+    ),
     r'syncOnWifiOnly': PropertySchema(
-      id: 13,
+      id: 17,
       name: r'syncOnWifiOnly',
       type: IsarType.bool,
     ),
     r'threeDayAlertEnabled': PropertySchema(
-      id: 14,
+      id: 18,
       name: r'threeDayAlertEnabled',
       type: IsarType.bool,
     )
@@ -114,6 +134,12 @@ int _appConfigEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.currencyCode.length * 3;
+  {
+    final value = object.localDatabaseChecksum;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -132,12 +158,16 @@ void _appConfigSerialize(
   writer.writeBool(offsets[6], object.hasSeenDemo);
   writer.writeBool(offsets[7], object.hasSeenOnboarding);
   writer.writeBool(offsets[8], object.isDarkMode);
-  writer.writeBool(offsets[9], object.isSecurityEnabled);
-  writer.writeDateTime(offsets[10], object.lastCloudSync);
-  writer.writeDateTime(offsets[11], object.lastLocalChange);
-  writer.writeBool(offsets[12], object.lockOnBackground);
-  writer.writeBool(offsets[13], object.syncOnWifiOnly);
-  writer.writeBool(offsets[14], object.threeDayAlertEnabled);
+  writer.writeBool(offsets[9], object.isGuest);
+  writer.writeBool(offsets[10], object.isSecurityEnabled);
+  writer.writeDateTime(offsets[11], object.lastCloudSync);
+  writer.writeDateTime(offsets[12], object.lastLocalChange);
+  writer.writeDateTime(offsets[13], object.lastSyncCheck);
+  writer.writeString(offsets[14], object.localDatabaseChecksum);
+  writer.writeBool(offsets[15], object.lockOnBackground);
+  writer.writeBool(offsets[16], object.needsBackup);
+  writer.writeBool(offsets[17], object.syncOnWifiOnly);
+  writer.writeBool(offsets[18], object.threeDayAlertEnabled);
 }
 
 AppConfig _appConfigDeserialize(
@@ -157,12 +187,16 @@ AppConfig _appConfigDeserialize(
   object.hasSeenOnboarding = reader.readBool(offsets[7]);
   object.id = id;
   object.isDarkMode = reader.readBool(offsets[8]);
-  object.isSecurityEnabled = reader.readBool(offsets[9]);
-  object.lastCloudSync = reader.readDateTimeOrNull(offsets[10]);
-  object.lastLocalChange = reader.readDateTimeOrNull(offsets[11]);
-  object.lockOnBackground = reader.readBool(offsets[12]);
-  object.syncOnWifiOnly = reader.readBool(offsets[13]);
-  object.threeDayAlertEnabled = reader.readBool(offsets[14]);
+  object.isGuest = reader.readBool(offsets[9]);
+  object.isSecurityEnabled = reader.readBool(offsets[10]);
+  object.lastCloudSync = reader.readDateTimeOrNull(offsets[11]);
+  object.lastLocalChange = reader.readDateTimeOrNull(offsets[12]);
+  object.lastSyncCheck = reader.readDateTimeOrNull(offsets[13]);
+  object.localDatabaseChecksum = reader.readStringOrNull(offsets[14]);
+  object.lockOnBackground = reader.readBool(offsets[15]);
+  object.needsBackup = reader.readBool(offsets[16]);
+  object.syncOnWifiOnly = reader.readBool(offsets[17]);
+  object.threeDayAlertEnabled = reader.readBool(offsets[18]);
   return object;
 }
 
@@ -194,14 +228,22 @@ P _appConfigDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readBool(offset)) as P;
+    case 16:
+      return (reader.readBool(offset)) as P;
+    case 17:
+      return (reader.readBool(offset)) as P;
+    case 18:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -655,6 +697,16 @@ extension AppConfigQueryFilter
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition> isGuestEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isGuest',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
       isSecurityEnabledEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -814,10 +866,249 @@ extension AppConfigQueryFilter
   }
 
   QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSyncCheck',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSyncCheck',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSyncCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSyncCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSyncCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      lastSyncCheckBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSyncCheck',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'localDatabaseChecksum',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'localDatabaseChecksum',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'localDatabaseChecksum',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'localDatabaseChecksum',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'localDatabaseChecksum',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localDatabaseChecksum',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+      localDatabaseChecksumIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'localDatabaseChecksum',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
       lockOnBackgroundEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'lockOnBackground',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition> needsBackupEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'needsBackup',
         value: value,
       ));
     });
@@ -964,6 +1255,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByIsGuest() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isGuest', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByIsGuestDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isGuest', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByIsSecurityEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSecurityEnabled', Sort.asc);
@@ -1001,6 +1304,32 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByLastSyncCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSyncCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByLastSyncCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSyncCheck', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+      sortByLocalDatabaseChecksum() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localDatabaseChecksum', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+      sortByLocalDatabaseChecksumDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localDatabaseChecksum', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByLockOnBackground() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lockOnBackground', Sort.asc);
@@ -1011,6 +1340,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
       sortByLockOnBackgroundDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lockOnBackground', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByNeedsBackup() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsBackup', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByNeedsBackupDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsBackup', Sort.desc);
     });
   }
 
@@ -1168,6 +1509,18 @@ extension AppConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByIsGuest() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isGuest', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByIsGuestDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isGuest', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByIsSecurityEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSecurityEnabled', Sort.asc);
@@ -1205,6 +1558,32 @@ extension AppConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByLastSyncCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSyncCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByLastSyncCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSyncCheck', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+      thenByLocalDatabaseChecksum() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localDatabaseChecksum', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+      thenByLocalDatabaseChecksumDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localDatabaseChecksum', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByLockOnBackground() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lockOnBackground', Sort.asc);
@@ -1215,6 +1594,18 @@ extension AppConfigQuerySortThenBy
       thenByLockOnBackgroundDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lockOnBackground', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByNeedsBackup() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsBackup', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByNeedsBackupDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'needsBackup', Sort.desc);
     });
   }
 
@@ -1304,6 +1695,12 @@ extension AppConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByIsGuest() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isGuest');
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByIsSecurityEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSecurityEnabled');
@@ -1322,9 +1719,29 @@ extension AppConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByLastSyncCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSyncCheck');
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByLocalDatabaseChecksum(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'localDatabaseChecksum',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByLockOnBackground() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lockOnBackground');
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByNeedsBackup() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'needsBackup');
     });
   }
 
@@ -1406,6 +1823,12 @@ extension AppConfigQueryProperty
     });
   }
 
+  QueryBuilder<AppConfig, bool, QQueryOperations> isGuestProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isGuest');
+    });
+  }
+
   QueryBuilder<AppConfig, bool, QQueryOperations> isSecurityEnabledProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSecurityEnabled');
@@ -1425,9 +1848,28 @@ extension AppConfigQueryProperty
     });
   }
 
+  QueryBuilder<AppConfig, DateTime?, QQueryOperations> lastSyncCheckProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSyncCheck');
+    });
+  }
+
+  QueryBuilder<AppConfig, String?, QQueryOperations>
+      localDatabaseChecksumProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'localDatabaseChecksum');
+    });
+  }
+
   QueryBuilder<AppConfig, bool, QQueryOperations> lockOnBackgroundProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lockOnBackground');
+    });
+  }
+
+  QueryBuilder<AppConfig, bool, QQueryOperations> needsBackupProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'needsBackup');
     });
   }
 

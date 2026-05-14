@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:crypto/crypto.dart';
 import '../models/user.dart';
@@ -12,8 +11,10 @@ import '../models/user.dart';
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
 import 'encryption_service.dart';
+import '../utils/logger.dart';
 
 // Authenticated http.Client for Drive API (fix M3: properly closes inner client)
+
 class GoogleAuthClient extends http.BaseClient {
   final Map<String, String> _headers;
   final http.Client _client = http.Client();
@@ -61,7 +62,7 @@ class DriveService {
       final dbFile = File('${dir.path}/default.isar');
 
       if (!await dbFile.exists()) {
-        debugPrint('Local DB file not found for backup.');
+        logger.w('Local DB file not found for backup.');
         return false;
       }
 
@@ -83,12 +84,12 @@ class DriveService {
           fileName: 'duevault_keys.json',
           file: keyFile,
         );
-        debugPrint('Encryption keys backed up.');
+        logger.i('Encryption keys backed up.');
       }
 
       return true;
-    } catch (e) {
-      debugPrint('Backup error: $e');
+    } catch (e, stack) {
+      logger.e('Backup error', error: e, stackTrace: stack);
       return false;
     }
   }
@@ -130,9 +131,9 @@ class DriveService {
         fileName: 'sync_metadata.json',
         file: metaFile,
       );
-      debugPrint('Sync metadata uploaded.');
-    } catch (e) {
-      debugPrint('Error uploading metadata: $e');
+      logger.i('Sync metadata uploaded.');
+    } catch (e, stack) {
+      logger.e('Error uploading metadata', error: e, stackTrace: stack);
     }
   }
 
@@ -142,8 +143,8 @@ class DriveService {
       final data = await _downloadFromDrive('sync_metadata.json');
       if (data == null) return null;
       return jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
-    } catch (e) {
-      debugPrint('Error getting cloud metadata: $e');
+    } catch (e, stack) {
+      logger.e('Error getting cloud metadata', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -160,13 +161,13 @@ class DriveService {
         if (!success) {
           throw Exception('FAILED_TO_IMPORT_KEYS');
         }
-        debugPrint('Encryption keys restored.');
+        logger.i('Encryption keys restored.');
       }
 
       // --- 2. RESTORE ISAR DB ---
       final dataStore = await _downloadFromDrive('duevault_backup.isar');
       if (dataStore == null) {
-        debugPrint('No backup found in Drive.');
+        logger.w('No backup found in Drive.');
         return null;
       }
 
@@ -197,10 +198,10 @@ class DriveService {
 
 
 
-      debugPrint('Backup restored successfully.');
+      logger.i('Backup restored successfully.');
       return newIsar;
-    } catch (e) {
-      debugPrint('Restore error: $e');
+    } catch (e, stack) {
+      logger.e('Restore error', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -226,8 +227,8 @@ class DriveService {
 
 
 
-    } catch (e) {
-      debugPrint('Error opening cloud DB for merge: $e');
+    } catch (e, stack) {
+      logger.e('Error opening cloud DB for merge', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -267,8 +268,27 @@ class DriveService {
         return fileList.files!.first.modifiedTime;
       }
       return null;
-    } catch (e) {
-      debugPrint('Error getting cloud metadata: $e');
+    } catch (e, stack) {
+      logger.e('Error getting cloud modified time', error: e, stackTrace: stack);
+      return null;
+    }
+  }
+
+  /// Get the MD5 checksum of the backup file in Google Drive (Senior Fix: Data savings)
+  Future<String?> getBackupChecksum() async {
+    try {
+      final fileList = await driveApi.files.list(
+        spaces: 'appDataFolder',
+        q: "name = 'duevault_backup.isar'",
+        $fields: 'files(id, md5Checksum)',
+      );
+
+      if (fileList.files != null && fileList.files!.isNotEmpty) {
+        return fileList.files!.first.md5Checksum;
+      }
+      return null;
+    } catch (e, stack) {
+      logger.e('Error getting cloud checksum', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -284,8 +304,8 @@ class DriveService {
       
       final result = await driveApi.files.create(driveFile, uploadMedia: media);
       return result.id;
-    } catch (e) {
-      debugPrint('Error uploading attachment: $e');
+    } catch (e, stack) {
+      logger.e('Error uploading attachment: $fileName', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -307,8 +327,8 @@ class DriveService {
       await iosink.addStream(media.stream);
       await iosink.close();
       return true;
-    } catch (e) {
-      debugPrint('Error downloading attachment $fileId: $e');
+    } catch (e, stack) {
+      logger.e('Error downloading attachment $fileId', error: e, stackTrace: stack);
       return false;
     }
   }
@@ -318,8 +338,8 @@ class DriveService {
     try {
       await driveApi.files.delete(fileId);
       return true;
-    } catch (e) {
-      debugPrint('Error deleting file $fileId: $e');
+    } catch (e, stack) {
+      logger.e('Error deleting file $fileId', error: e, stackTrace: stack);
       return false;
     }
   }
@@ -338,12 +358,12 @@ class DriveService {
             await driveApi.files.delete(file.id!);
           }
         }
-        debugPrint('Cloud backup deleted successfully.');
+        logger.i('Cloud backup deleted successfully.');
         return true;
       }
       return false;
-    } catch (e) {
-      debugPrint('Error deleting cloud backup: $e');
+    } catch (e, stack) {
+      logger.e('Error deleting cloud backup', error: e, stackTrace: stack);
       return false;
     }
   }

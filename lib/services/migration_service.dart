@@ -1,7 +1,9 @@
 import 'package:isar/isar.dart';
-import 'package:flutter/foundation.dart';
+
 import '../models/app_config.dart';
 import '../models/vault_item.dart';
+
+import '../utils/logger.dart';
 
 class MigrationService {
   /// The current version of the data structure. 
@@ -13,7 +15,7 @@ class MigrationService {
     final config = await isar.appConfigs.get(0) ?? AppConfig();
     
     if (config.dataVersion < currentDataVersion) {
-      debugPrint('MigrationService: Starting migration from v${config.dataVersion} to v$currentDataVersion');
+      logger.i('MigrationService: Starting migration from v${config.dataVersion} to v$currentDataVersion');
       
       // RUN MIGRATIONS SEQUENTIALLY
       if (config.dataVersion < 2) {
@@ -31,13 +33,13 @@ class MigrationService {
         await isar.appConfigs.put(config);
       });
       
-      debugPrint('MigrationService: Migration complete.');
+      logger.i('MigrationService: Migration complete.');
     }
   }
 
   /// Migration v2: Standardize categories
   static Future<void> _migrateToV2(Isar isar) async {
-    debugPrint('MigrationService: Migrating categories...');
+    logger.i('MigrationService: Migrating categories...');
     
     // Define the old -> new mapping here
     final categoryMapping = {
@@ -54,25 +56,28 @@ class MigrationService {
     };
 
     final items = await isar.vaultItems.where().findAll();
-    int migratedCount = 0;
+    List<VaultItem> toUpdate = [];
 
-    await isar.writeTxn(() async {
-      for (var item in items) {
-        if (categoryMapping.containsKey(item.category)) {
-          item.category = categoryMapping[item.category]!;
-          item.lastModified = DateTime.now();
-          await isar.vaultItems.put(item);
-          migratedCount++;
-        }
+    for (var item in items) {
+      if (categoryMapping.containsKey(item.category)) {
+        item.category = categoryMapping[item.category]!;
+        item.lastModified = DateTime.now();
+        toUpdate.add(item);
       }
-    });
+    }
     
-    debugPrint('MigrationService: Migrated $migratedCount items.');
+    if (toUpdate.isNotEmpty) {
+      await isar.writeTxn(() async {
+        await isar.vaultItems.putAll(toUpdate);
+      });
+    }
+    
+    logger.i('MigrationService: Migrated ${toUpdate.length} items.');
   }
  
   /// Migration v3: Fix 'Credit Card' and 'Vehicle' renamings
   static Future<void> _migrateToV3(Isar isar) async {
-    debugPrint('MigrationService: Migrating categories v3...');
+    logger.i('MigrationService: Migrating categories v3...');
     
     final categoryMapping = {
       'Credit Card': 'Loans',
@@ -83,20 +88,22 @@ class MigrationService {
     };
  
     final items = await isar.vaultItems.where().findAll();
-    int migratedCount = 0;
+    List<VaultItem> toUpdate = [];
  
     await isar.writeTxn(() async {
       for (var item in items) {
         if (categoryMapping.containsKey(item.category)) {
           item.category = categoryMapping[item.category]!;
           item.lastModified = DateTime.now();
-          await isar.vaultItems.put(item);
-          migratedCount++;
+          toUpdate.add(item);
         }
+      }
+      if (toUpdate.isNotEmpty) {
+        await isar.vaultItems.putAll(toUpdate);
       }
     });
     
-    debugPrint('MigrationService: Migrated $migratedCount items in v3.');
+    logger.i('MigrationService: Migrated ${toUpdate.length} items in v3.');
   }
 }
 

@@ -17,9 +17,12 @@ class AppConfig {
   bool isSecurityEnabled = false;
   bool lockOnBackground = true;
   bool hasAcceptedPrivacyPolicy = false;
+  bool isGuest = false; // Persist guest session
   int dataVersion = 1; // Track data migrations
   
   DateTime? lastLocalChange;
-
   DateTime? lastCloudSync;
+  DateTime? lastSyncCheck; // 15m cooldown for cloud checks
+  String? localDatabaseChecksum; // For efficient sync
+  bool needsBackup = false; // Flag for interrupted backups
 }

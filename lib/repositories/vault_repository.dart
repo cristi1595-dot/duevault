@@ -1,0 +1,273 @@
+import 'dart:io';
+import 'package:isar/isar.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+import '../models/vault_item.dart';
+import '../models/app_config.dart';
+import '../services/encryption_service.dart';
+import '../services/notification_service.dart';
+import '../utils/logger.dart';
+import '../utils/date_helper.dart';
+
+class VaultRepository {
+  final Isar isar;
+
+  VaultRepository(this.isar);
+
+  /// Load all items for a specific owner
+  Future<List<VaultItem>> getItems(String ownerId) async {
+    try {
+      return await isar.vaultItems
+          .filter()
+          .ownerIdEqualTo(ownerId)
+          .isDeletedEqualTo(false)
+          .findAll();
+    } catch (e, stack) {
+      logger.e('Error loading items for owner: $ownerId', error: e, stackTrace: stack);
+      return [];
+    }
+  }
+
+  /// Mark an item as deleted (soft delete)
+  Future<void> softDeleteItem(int id) async {
+    try {
+      final item = await isar.vaultItems.get(id);
+      if (item != null) {
+        await isar.writeTxn(() async {
+          item.isDeleted = true;
+          item.lastModified = DateTime.now();
+          item.cloudFileIds = []; // Clear cloud IDs for cleanup
+          await isar.vaultItems.put(item);
+        });
+
+        // Cleanup local files
+        for (final path in item.attachedFiles) {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+        
+        await NotificationService.cancelNotification(id);
+        logger.i('Item soft-deleted: $id');
+      }
+    } catch (e, stack) {
+      logger.e('Error during soft delete: $id', error: e, stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  /// Add or update a vault item with file processing and encryption
+  Future<VaultItem> saveItem(VaultItem item, {int? alertDays, bool? threeDayAlertEnabled, bool notificationsEnabled = false}) async {
+    try {
+      // 1. Normalize dates
+      if (item.dueDate != null) {
+        item.dueDate = DateTime(item.dueDate!.year, item.dueDate!.month, item.dueDate!.day);
+        if (item.recurrence != 'None') {
+          item.originalDueDay ??= item.dueDate!.day;
+        }
+      }
+
+      // 2. Ensure identity
+      if (item.uuid.isEmpty) {
+        item.uuid = const Uuid().v4();
+      }
+
+      // 3. Process attachments
+      final appDir = await getApplicationDocumentsDirectory();
+      final attachmentsDir = Directory('${appDir.path}/attachments');
+      if (!await attachmentsDir.exists()) {
+        await attachmentsDir.create(recursive: true);
+      }
+
+      List<String> finalPaths = [];
+      for (final path in item.attachedFiles) {
+        // Only process files that are NOT already in our internal attachments folder
+        if (!path.contains('app_flutter/attachments')) {
+          final originalFile = File(path);
+          if (await originalFile.exists()) {
+            final fileName = 'doc_${DateTime.now().microsecondsSinceEpoch}_${p.basename(path)}';
+            final newPath = '${attachmentsDir.path}/$fileName';
+            
+            // Optimization: Read and Write once. Encryption is handled in-place for now,
+            // but we ensure the file exists in the destination first.
+            try {
+              final bytes = await originalFile.readAsBytes();
+              final fileToSave = File(newPath);
+              await fileToSave.writeAsBytes(bytes);
+              await EncryptionService.encryptFile(newPath);
+            } on FileSystemException catch (e) {
+              if (e.osError?.errorCode == 28 || e.message.contains('space')) {
+                throw Exception('Cannot save attachment: Storage is full.');
+              }
+              rethrow;
+            }
+            
+            finalPaths.add(newPath);
+          }
+        } else {
+          finalPaths.add(path);
+        }
+      }
+      item.attachedFiles = finalPaths;
+
+      // 4. Encrypt notes
+      if (item.notes != null && item.notes!.isNotEmpty && !item.notes!.startsWith('encrypted:')) {
+        // Check if already encrypted to avoid double encryption (Senior check)
+        final encrypted = await EncryptionService.encryptText(item.notes);
+        if (encrypted != null) {
+          item.notes = 'encrypted:$encrypted';
+        }
+      }
+
+      item.lastModified = DateTime.now();
+
+      // 5. Persist
+      try {
+        await isar.writeTxn(() async {
+          await isar.vaultItems.put(item);
+        });
+      } on IsarError catch (e) {
+        if (e.toString().contains('full') || e.toString().contains('Disk')) {
+          throw Exception('Storage is full. Please free up some space and try again.');
+        }
+        rethrow;
+      }
+
+      // 6. Notifications
+      if (notificationsEnabled && (item.itemType == 'Bill' || item.itemType == 'Document') && item.dueDate != null && !item.isPaid) {
+        await NotificationService.scheduleVaultReminder(
+          id: item.id,
+          title: item.title,
+          dueDate: item.dueDate!,
+          primaryDaysBefore: alertDays ?? 3,
+          threeDayAlertEnabled: threeDayAlertEnabled ?? true,
+          isDocument: item.itemType == 'Document',
+        );
+      }
+
+      logger.i('Item saved successfully: ${item.title} (${item.uuid})');
+      return item;
+    } catch (e, stack) {
+      logger.e('Error saving item: ${item.title}', error: e, stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  /// Toggle paid status and handle recurring bill generation
+  Future<VaultItem?> updatePaidStatus(int id, bool isPaid) async {
+    try {
+      final item = await isar.vaultItems.get(id);
+      if (item == null) return null;
+
+      // Handle UNDO for recurring bills
+      if (!isPaid && item.recurrence != 'None' && item.dueDate != null && item.itemType == 'Bill') {
+        final nextDate = DateHelper.calculateNextDueDate(item.dueDate!, item.recurrence);
+        final nextUuid = 'next_${item.uuid}_${nextDate.millisecondsSinceEpoch}';
+        
+        final existingNext = await isar.vaultItems.filter()
+            .uuidEqualTo(nextUuid)
+            .isPaidEqualTo(false)
+            .findFirst();
+        
+        if (existingNext != null) {
+          await softDeleteItem(existingNext.id);
+        }
+      }
+
+      item.isPaid = isPaid;
+      item.lastModified = DateTime.now();
+
+      await isar.writeTxn(() async {
+        await isar.vaultItems.put(item);
+      });
+
+      if (isPaid) {
+        await NotificationService.cancelNotification(id);
+        
+        // Generate next instance for recurring bills
+        if (item.recurrence != 'None' && item.dueDate != null && item.itemType == 'Bill') {
+          await _generateNextRecurringInstance(item);
+        }
+      }
+
+      logger.i('Paid status updated for: ${item.title} -> $isPaid');
+      return item;
+    } catch (e, stack) {
+      logger.e('Error updating paid status: $id', error: e, stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  Future<void> _generateNextRecurringInstance(VaultItem parent) async {
+    final nextDate = DateHelper.calculateNextDueDate(
+      parent.dueDate!,
+      parent.recurrence,
+      targetDay: parent.originalDueDay,
+    );
+    
+    final nextUuid = 'next_${parent.uuid}_${nextDate.millisecondsSinceEpoch}';
+    final existingNext = await isar.vaultItems.filter()
+        .uuidEqualTo(nextUuid)
+        .findFirst();
+
+    if (existingNext == null) {
+      final nextItem = VaultItem()
+        ..ownerId = parent.ownerId
+        ..title = parent.title
+        ..category = parent.category
+        ..amount = parent.amount
+        ..itemType = parent.itemType
+        ..recurrence = parent.recurrence
+        ..directDebit = parent.directDebit
+        ..dueDate = nextDate
+        ..isPaid = false
+        ..uuid = nextUuid 
+        ..originalDueDay = parent.originalDueDay
+        ..lastModified = DateTime.now();
+
+      await isar.writeTxn(() async {
+        await isar.vaultItems.put(nextItem);
+      });
+      logger.i('Generated next recurring instance for: ${parent.title}');
+    }
+  }
+
+  Future<void> updateConfig(AppConfig config) async {
+    await isar.writeTxn(() async {
+      await isar.appConfigs.put(config);
+    });
+  }
+
+  Future<AppConfig> getConfig() async {
+    return await isar.appConfigs.get(0) ?? AppConfig();
+  }
+
+  /// Migrate items from 'local_user' to a real UID
+  Future<void> migrateGuestData(String newUid) async {
+    try {
+      final guestItems = await isar.vaultItems
+          .filter()
+          .ownerIdEqualTo('local_user')
+          .findAll();
+      
+      if (guestItems.isNotEmpty) {
+        // Prepare all items in memory (Senior Optimization)
+        for (var item in guestItems) {
+          item.ownerId = newUid;
+          item.lastModified = DateTime.now();
+        }
+
+        await isar.writeTxn(() async {
+          // Use putAll for batch performance
+          await isar.vaultItems.putAll(guestItems);
+        });
+        logger.i('Migrated ${guestItems.length} items from guest to $newUid');
+      }
+    } catch (e, stack) {
+      logger.e('Error migrating guest data', error: e, stackTrace: stack);
+    }
+  }
+}
+

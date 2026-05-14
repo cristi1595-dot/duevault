@@ -1,6 +1,8 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import '../utils/logger.dart';
+
 
 class OcrResult {
   final String rawText;
@@ -39,10 +41,11 @@ class OcrService {
         probableDate: date,
         probableTitle: title,
       );
-    } catch (e) {
-      debugPrint('OCR Error: $e');
+    } catch (e, stack) {
+      logger.e('OCR Error', error: e, stackTrace: stack);
       return OcrResult(rawText: '');
     }
+
   }
 
   /// Closes the recognizer when no longer needed

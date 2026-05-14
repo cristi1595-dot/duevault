@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isar/isar.dart';
+
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/database_provider.dart';
 import '../providers/auth_provider.dart';
@@ -12,8 +14,8 @@ import 'drive_service.dart';
 import '../providers/sync_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/app_config.dart';
-import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
+import '../utils/logger.dart';
 
 
 /// Handles automatic backup to Google Drive after data changes,
@@ -64,7 +66,7 @@ class AutoSyncService {
     }
 
     if (!canSync) {
-      debugPrint('Auto-backup skipped: Connectivity restrictions or no internet');
+      logger.w('Auto-backup skipped: Connectivity restrictions or no internet');
       return;
     }
 
@@ -79,12 +81,12 @@ class AutoSyncService {
         final authHeaders = {'Authorization': 'Bearer $token'};
         final driveService = DriveService(GoogleAuthClient(authHeaders));
         try {
-          // 1. Sync Attachments first (ensure IDs are in DB before DB backup)
+          // 1. Sync Attachments first
           await _syncAttachments(driveService);
 
           final success = await driveService.backupDatabase();
           if (success) {
-            // Calculate checksum for metadata
+            // Calculate and Store checksum (Senior Fix: Data savings)
             final dir = await getApplicationDocumentsDirectory();
             final dbFile = File('${dir.path}/default.isar');
             final checksum = await driveService.getFileChecksum(dbFile);
@@ -96,47 +98,38 @@ class AutoSyncService {
               'device_name': Platform.isAndroid ? 'Android' : 'iOS',
             });
 
-
             _ref.read(syncProvider.notifier).setSuccess();
             
             // Mark all local items as synced
             final isar = _ref.read(isarProvider);
-            final itemsToMark = await isar.vaultItems.where().findAll();
             await isar.writeTxn(() async {
+              final itemsToMark = await isar.collection<VaultItem>().filter().wasSyncedEqualTo(false).findAll();
               for (var item in itemsToMark) {
-                if (!item.wasSynced) {
-                  item.wasSynced = true;
-                  await isar.vaultItems.put(item);
-                }
+                item.wasSynced = true;
               }
-            });
+              await isar.collection<VaultItem>().putAll(itemsToMark);
 
-
-            
-            // Update Sync Timestamp in Config
-
-            await isar.writeTxn(() async {
               final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
               config.lastCloudSync = DateTime.now();
-              await isar.collection<AppConfig>().put(config);
+              config.localDatabaseChecksum = checksum; // Store for comparison
+              await isar.appConfigs.put(config);
             });
 
-            // Reset to idle after 3 seconds
             Timer(const Duration(seconds: 3), () {
               _ref.read(syncProvider.notifier).resetStatus();
             });
           } else {
             _ref.read(syncProvider.notifier).setError('Backup failed');
           }
-          debugPrint('Auto-backup ${success ? 'successful' : 'failed'}');
+          logger.i('Auto-backup ${success ? 'successful' : 'failed'}');
         } finally {
           driveService.dispose();
         }
       } else {
         _ref.read(syncProvider.notifier).setError('No Drive Access');
       }
-    } catch (e) {
-      debugPrint('Auto-backup error: $e');
+    } catch (e, stack) {
+      logger.e('Auto-backup error', error: e, stackTrace: stack);
       _ref.read(syncProvider.notifier).setError(e.toString());
     } finally {
       _isSyncing = false;
@@ -153,7 +146,7 @@ class AutoSyncService {
       // Force refresh to ensure we have the new scopes (fix C2)
       final token = await authService.getFreshAccessToken();
       if (token == null) {
-        debugPrint('AutoSyncService: Failed to get token during syncAfterLogin');
+        logger.w('AutoSyncService: Failed to get token during syncAfterLogin');
         return 'none';
       }
 
@@ -164,6 +157,8 @@ class AutoSyncService {
         // Use Smart Merge instead of blind restore
         final success = await _mergeWithCloud(driveService);
         if (success) {
+          // Senior QA Fix: Migrate guest data to real UID so it becomes visible in the UI immediately
+          await _ref.read(vaultProvider.notifier).migrateGuestData(FirebaseAuth.instance.currentUser!.uid);
           await _syncAttachments(driveService);
           return 'restored';
         }
@@ -172,15 +167,15 @@ class AutoSyncService {
         final localItems = _ref.read(vaultProvider);
         final hasRealLocalData = localItems.any((item) => !item.isSample);
         if (hasRealLocalData) {
-          debugPrint('AutoSyncService: No cloud backup found, uploading local data...');
+          logger.i('AutoSyncService: No cloud backup found, uploading local data...');
           final success = await driveService.backupDatabase();
           if (success) return 'uploaded';
         }
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
-      debugPrint('Sync after login error: $e');
+    } catch (e, stack) {
+      logger.e('Sync after login error', error: e, stackTrace: stack);
     }
     return 'none';
   }
@@ -193,6 +188,14 @@ class AutoSyncService {
       final isar = _ref.read(isarProvider);
       final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
       
+      // Senior Fix: 15-minute cooldown for cloud checks to save data
+      final now = DateTime.now();
+      if (config.lastSyncCheck != null && 
+          now.difference(config.lastSyncCheck!).inMinutes < 15) {
+        logger.i('AutoSyncService: Skipping startup check (cooldown active).');
+        return;
+      }
+
       final authService = _ref.read(authServiceProvider);
       final token = await authService.getFreshAccessToken();
       if (token == null) return;
@@ -201,51 +204,61 @@ class AutoSyncService {
       final driveService = DriveService(GoogleAuthClient(authHeaders));
 
       try {
+        // Fetch cloud checksum first (extremely small data usage)
+        final cloudChecksum = await driveService.getBackupChecksum();
+        
+        // Calculate local checksum for comparison
+        final dir = await getApplicationDocumentsDirectory();
+        final dbFile = File('${dir.path}/default.isar');
+        final localChecksum = await driveService.getFileChecksum(dbFile);
+
+        // Update sync check markers
+        await isar.writeTxn(() async {
+          final currentConfig = await isar.appConfigs.get(0) ?? AppConfig();
+          currentConfig.lastSyncCheck = now;
+          currentConfig.localDatabaseChecksum = localChecksum;
+          await isar.appConfigs.put(currentConfig);
+        });
+
+        if (cloudChecksum == null) {
+          // No cloud data -> Backup if local exists
+          if (config.lastLocalChange != null) {
+             logger.i('AutoSyncService: No cloud backup found. Uploading initial local data...');
+             await _performBackup();
+          }
+          return;
+        }
+
+        if (cloudChecksum == localChecksum) {
+          logger.i('AutoSyncService: Cloud data is identical (checksum match). Skipping sync.');
+          return;
+        }
+
+        // Checksums differ -> Check metadata for modification time to decide who is newer
         final cloudMetadata = await driveService.getCloudMetadata();
         final localTime = config.lastLocalChange;
 
         if (cloudMetadata != null) {
           final cloudTimeString = cloudMetadata['last_modified'] as String?;
-          final cloudChecksum = cloudMetadata['checksum'] as String?;
           final cloudTime = cloudTimeString != null ? DateTime.tryParse(cloudTimeString) : null;
 
-          // Calculate local checksum for comparison
-          final dir = await getApplicationDocumentsDirectory();
-          final localChecksum = await driveService.getFileChecksum(File('${dir.path}/default.isar'));
-
           if (cloudTime != null) {
-            // ONLY SYNC IF CHECKSUM IS DIFFERENT
-            if (cloudChecksum != localChecksum) {
-              // CLOUD IS NEWER OR POSSIBLY DIFFERENT -> MERGE
-              if (localTime == null || cloudTime.isAfter(localTime.add(const Duration(seconds: 5)))) {
-                debugPrint('AutoSyncService: Cloud data is different and newer. Triggering smart merge...');
+             if (localTime == null || cloudTime.isAfter(localTime.add(const Duration(seconds: 5)))) {
+                logger.i('AutoSyncService: Cloud data is different and newer. Triggering smart merge...');
                 await _mergeWithCloud(driveService);
                 await _syncAttachments(driveService);
               } 
-              // LOCAL IS NEWER -> BACKUP
               else if (localTime.isAfter(cloudTime.add(const Duration(seconds: 5)))) {
-                debugPrint('AutoSyncService: Local data is newer. Triggering background backup...');
+                logger.i('AutoSyncService: Local data is newer. Triggering background backup...');
                 await _performBackup();
               }
-            } else {
-              debugPrint('AutoSyncService: Cloud data is identical (checksum match). Skipping sync.');
-            }
-          } 
-          else if (localTime != null) {
-            // NO CLOUD DATA -> BACKUP
-            debugPrint('AutoSyncService: No cloud backup found. Uploading initial local data...');
-            await _performBackup();
           }
-        } else if (localTime != null) {
-          // NO CLOUD DATA -> BACKUP
-          debugPrint('AutoSyncService: No cloud backup found. Uploading initial local data...');
-          await _performBackup();
         }
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
-      debugPrint('AutoSyncService: Error during syncOnStartup: $e');
+    } catch (e, stack) {
+      logger.e('AutoSyncService: Error during syncOnStartup', error: e, stackTrace: stack);
     }
   }
 
@@ -261,8 +274,8 @@ class AutoSyncService {
     if (cloudIsar == null) return false;
 
     try {
-      final cloudItems = await cloudIsar.vaultItems.filter().ownerIdEqualTo(user.uid).findAll();
-      final localItems = await localIsar.vaultItems.filter().ownerIdEqualTo(user.uid).findAll();
+      final cloudItems = await cloudIsar.collection<VaultItem>().filter().ownerIdEqualTo(user.uid).findAll();
+      final localItems = await localIsar.collection<VaultItem>().filter().ownerIdEqualTo(user.uid).findAll();
 
       bool localModified = false;
       bool cloudModified = false;
@@ -278,7 +291,7 @@ class AutoSyncService {
               cloudItem.uuid = const Uuid().v4();
             }
             cloudItem.wasSynced = true; // Mark as synced
-            await localIsar.vaultItems.put(cloudItem..id = Isar.autoIncrement);
+            await localIsar.collection<VaultItem>().put(cloudItem..id = Isar.autoIncrement);
             localModified = true;
           } else {
             // Item exists in both -> Resolve by lastModified
@@ -299,7 +312,7 @@ class AutoSyncService {
             if (cloudItem.isDeleted && !localItem.isDeleted) {
               localItem.isDeleted = true;
               localItem.lastModified = cloudItem.lastModified;
-              await localIsar.vaultItems.put(localItem);
+              await localIsar.collection<VaultItem>().put(localItem);
               localModified = true;
             }
           }
@@ -314,11 +327,11 @@ class AutoSyncService {
         if (!existsInCloud) {
           if (localItem.wasSynced) {
             // Item was in cloud before, but is gone now -> Deleted from another device
-            debugPrint('AutoSyncService: Local item "${localItem.title}" was deleted from cloud. Removing locally...');
+            logger.i('AutoSyncService: Local item "${localItem.title}" was deleted from cloud. Removing locally...');
             await localIsar.writeTxn(() async {
               // We do a hard delete or soft delete here? 
               // User request: "trebuie eliminat și local"
-              await localIsar.vaultItems.delete(localItem.id);
+              await localIsar.collection<VaultItem>().delete(localItem.id);
             });
             localModified = true;
           } else {
@@ -330,27 +343,27 @@ class AutoSyncService {
 
 
       if (localModified) {
-        debugPrint('AutoSyncService: Merge complete. Local UI refreshed.');
+        logger.i('AutoSyncService: Merge complete. Local UI refreshed.');
         await _ref.read(vaultProvider.notifier).refreshVault();
       }
 
       if (cloudModified) {
-        debugPrint('AutoSyncService: Merge complete. Local changes detected, scheduling backup...');
+        logger.i('AutoSyncService: Merge complete. Local changes detected, scheduling backup...');
         scheduleBackup();
       }
 
       // 3. Update Sync Marker to prevent loops
       await localIsar.writeTxn(() async {
-        final config = await localIsar.appConfigs.get(0) ?? AppConfig();
+        final config = await localIsar.collection<AppConfig>().get(0) ?? AppConfig();
         config.lastCloudSync = DateTime.now();
-        // Set local change to NOW so it matches or exceeds cloud time
         config.lastLocalChange = DateTime.now();
-        await localIsar.appConfigs.put(config);
+        await localIsar.collection<AppConfig>().put(config);
       });
 
+
       return true;
-    } catch (e) {
-      debugPrint('AutoSyncService: Merge error: $e');
+    } catch (e, stack) {
+      logger.e('AutoSyncService: Merge error', error: e, stackTrace: stack);
       return false;
     } finally {
       await cloudIsar.close();
@@ -363,74 +376,72 @@ class AutoSyncService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final items = await isar.vaultItems.filter().ownerIdEqualTo(user.uid).findAll();
+    final items = await isar.collection<VaultItem>().filter().ownerIdEqualTo(user.uid).findAll();
 
     for (var item in items) {
-      bool modified = false;
+      try {
+        bool modified = false;
 
-      // 1. CLEANUP: Delete local files that are no longer in Cloud
-      // If we have local files but cloudFileIds is shorter or empty, we need to reconcile
-      if (item.attachedFiles.length > item.cloudFileIds.length) {
-        final newPaths = List<String>.from(item.attachedFiles);
-        // We remove items from the end or based on missing cloud IDs
-        // To be safe and simple: if cloud has N items, we should only have the first N local items
-        for (int i = item.attachedFiles.length - 1; i >= item.cloudFileIds.length; i--) {
-          final localPath = item.attachedFiles[i];
-          final file = File(localPath);
-          if (await file.exists()) {
-            await file.delete();
-            debugPrint('AutoSyncService: Deleted local attachment ${i + 1} for "${item.title}" (missing from cloud)');
+        // 1. CLEANUP: Delete local files that are no longer in Cloud
+        if (item.attachedFiles.length > item.cloudFileIds.length) {
+          final newPaths = List<String>.from(item.attachedFiles);
+          for (int i = item.attachedFiles.length - 1; i >= item.cloudFileIds.length; i--) {
+            final localPath = item.attachedFiles[i];
+            final file = File(localPath);
+            if (await file.exists()) {
+              await file.delete();
+            }
+            newPaths.removeAt(i);
+            modified = true;
           }
-          newPaths.removeAt(i);
-          modified = true;
+          item.attachedFiles = newPaths;
         }
-        item.attachedFiles = newPaths;
-      }
 
-      // 2. UPLOAD missing files to Cloud
-      for (int i = 0; i < item.attachedFiles.length; i++) {
-        // If this local file doesn't have a corresponding Cloud ID yet
-        if (i >= item.cloudFileIds.length) {
-          final file = File(item.attachedFiles[i]);
-          if (await file.exists()) {
-            debugPrint('AutoSyncService: Uploading attachment ${i + 1} for "${item.title}"...');
-            final cloudId = await driveService.uploadAttachment(file, 'attach_${item.uuid}_$i');
-            if (cloudId != null) {
-              final newIds = List<String>.from(item.cloudFileIds);
-              newIds.add(cloudId);
-              item.cloudFileIds = newIds;
+        // 2. UPLOAD missing files to Cloud
+        for (int i = 0; i < item.attachedFiles.length; i++) {
+          if (i >= item.cloudFileIds.length) {
+            final file = File(item.attachedFiles[i]);
+            if (await file.exists()) {
+              final cloudId = await driveService.uploadAttachment(file, 'attach_${item.uuid}_$i');
+              if (cloudId != null) {
+                final newIds = List<String>.from(item.cloudFileIds);
+                newIds.add(cloudId);
+                item.cloudFileIds = newIds;
+                modified = true;
+              }
+            }
+          }
+        }
+
+        // 3. DOWNLOAD missing files from Cloud
+        if (item.cloudFileIds.length > item.attachedFiles.length) {
+          final appDir = await getApplicationDocumentsDirectory();
+          final attachmentsDir = Directory('${appDir.path}/attachments');
+          if (!await attachmentsDir.exists()) await attachmentsDir.create(recursive: true);
+
+          for (int i = item.attachedFiles.length; i < item.cloudFileIds.length; i++) {
+            final cloudId = item.cloudFileIds[i];
+            final fileName = 'doc_sync_${DateTime.now().microsecondsSinceEpoch}_$i.enc';
+            final localPath = '${attachmentsDir.path}/$fileName';
+
+            final success = await driveService.downloadAttachment(cloudId, localPath);
+            if (success) {
+              final newPaths = List<String>.from(item.attachedFiles);
+              newPaths.add(localPath);
+              item.attachedFiles = newPaths;
               modified = true;
             }
           }
         }
-      }
 
-      // 3. DOWNLOAD missing files from Cloud
-      if (item.cloudFileIds.length > item.attachedFiles.length) {
-        final appDir = await getApplicationDocumentsDirectory();
-        final attachmentsDir = Directory('${appDir.path}/attachments');
-        if (!await attachmentsDir.exists()) await attachmentsDir.create(recursive: true);
-
-        for (int i = item.attachedFiles.length; i < item.cloudFileIds.length; i++) {
-          final cloudId = item.cloudFileIds[i];
-          final fileName = 'doc_sync_${DateTime.now().microsecondsSinceEpoch}_$i.enc';
-          final localPath = '${attachmentsDir.path}/$fileName';
-
-          debugPrint('AutoSyncService: Downloading attachment ${i + 1} for "${item.title}"...');
-          final success = await driveService.downloadAttachment(cloudId, localPath);
-          if (success) {
-            final newPaths = List<String>.from(item.attachedFiles);
-            newPaths.add(localPath);
-            item.attachedFiles = newPaths;
-            modified = true;
-          }
+        if (modified) {
+          await isar.writeTxn(() async {
+            await isar.collection<VaultItem>().put(item);
+          });
         }
-      }
-
-      if (modified) {
-        await isar.writeTxn(() async {
-          await isar.vaultItems.put(item);
-        });
+      } catch (e) {
+        logger.e('Error syncing attachments for item ${item.title}', error: e);
+        // Continue with next item instead of crashing
       }
     }
   }

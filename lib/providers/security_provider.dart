@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:isar/isar.dart';
-import 'package:duevault_app/models/app_config.dart';
-import 'package:duevault_app/providers/database_provider.dart';
 import 'package:app_settings/app_settings.dart';
+
+import '../utils/logger.dart';
+import '../repositories/vault_repository.dart';
+import 'vault_provider.dart';
+
+
 
 // Triggering re-analysis
 // Triggering re-analysis
@@ -44,16 +46,17 @@ class SecurityState {
 
 class SecurityNotifier extends StateNotifier<SecurityState> {
   final LocalAuthentication auth = LocalAuthentication();
-  final Isar isar;
+  final VaultRepository repository;
+  final Ref ref;
 
-  SecurityNotifier(this.isar) : super(SecurityState()) {
+  SecurityNotifier(this.repository, this.ref) : super(SecurityState()) {
     _init();
   }
 
   Future<void> _init() async {
-    final config = isar.appConfigs.getSync(0);
-    final bool isEnabledInDb = config?.isSecurityEnabled ?? false;
-    final bool lockOnBg = config?.lockOnBackground ?? true;
+    final config = await repository.getConfig();
+    final bool isEnabledInDb = config.isSecurityEnabled;
+    final bool lockOnBg = config.lockOnBackground;
 
     final isSupported = await auth.isDeviceSupported();
     final canCheck = await auth.canCheckBiometrics;
@@ -72,7 +75,7 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       canAuthenticate: hasHardwareSecurity,
     );
     
-    debugPrint('Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardwareSecurity, Locked: $shouldBeLocked');
+    logger.i('Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardwareSecurity, Locked: $shouldBeLocked');
   }
 
 
@@ -85,11 +88,9 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
 
     state = state.copyWith(isEnabled: enabled);
     
-    await isar.writeTxn(() async {
-      final config = await isar.appConfigs.get(0) ?? AppConfig();
-      config.isSecurityEnabled = enabled;
-      await isar.appConfigs.put(config);
-    });
+    await repository.updateConfig(
+      (await repository.getConfig())..isSecurityEnabled = enabled
+    );
   }
 
 
@@ -100,12 +101,9 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
 
 
   Future<void> toggleLockOnBackground(bool enabled) async {
-    final config = await isar.appConfigs.get(0) ?? AppConfig();
+    final config = await repository.getConfig();
     config.lockOnBackground = enabled;
-    
-    await isar.writeTxn(() async {
-      await isar.appConfigs.put(config);
-    });
+    await repository.updateConfig(config);
 
     state = state.copyWith(lockOnBackground: enabled);
   }
@@ -121,20 +119,30 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
 
     state = state.copyWith(isAuthenticating: true);
     try {
-      final authenticated = await (auth as dynamic).authenticate(
+      // Senior Fix: Using standard AuthenticationOptions (compatible with ^2.3.0+)
+      final authenticated = await auth.authenticate(
         localizedReason: 'Unlock DueVault to access your data',
-        biometricOnly: false, // FALLBACK: Use PIN/Pattern/Password if biometrics fail or are missing
-        stickyAuth: true,
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          useErrorDialogs: true,
+          biometricOnly: false,
+        ),
       );
       
       if (authenticated) {
         state = state.copyWith(isLocked: false);
       }
       return authenticated;
-    } on PlatformException catch (e) {
-      debugPrint('Security authentication error: ${e.code} - ${e.message}');
-      // If no biometrics are enrolled but PIN exists, local_auth usually handles it via biometricOnly: false.
-      // If everything fails, we keep it locked for safety unless we detect the device is insecure.
+    } on PlatformException catch (e, stack) {
+      // Senior Fix: Explicitly handle lockouts and other platform-specific codes for Android 16/17 readiness
+      if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
+        logger.w('Security: Biometrics locked out. System will require PIN/Pattern fallback.');
+      } else {
+        logger.e('Security authentication error: ${e.code}', error: e, stackTrace: stack);
+      }
+      return false;
+    } catch (e, stack) {
+      logger.e('Unexpected security error', error: e, stackTrace: stack);
       return false;
     } finally {
       state = state.copyWith(isAuthenticating: false);
@@ -150,6 +158,6 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
 }
 
 final securityProvider = StateNotifierProvider<SecurityNotifier, SecurityState>((ref) {
-  final isar = ref.watch(isarProvider);
-  return SecurityNotifier(isar);
+  final repository = ref.watch(vaultRepositoryProvider);
+  return SecurityNotifier(repository, ref);
 });

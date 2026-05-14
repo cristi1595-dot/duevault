@@ -2,8 +2,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../utils/logger.dart';
+
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -37,10 +39,12 @@ class NotificationService {
       final String tzName = (zone is String) ? zone : (zone as dynamic).name;
       
       tz.setLocalLocation(tz.getLocation(tzName));
-      debugPrint('NotificationService: Timezone set to $tzName');
-    } catch (e) {
-      debugPrint(
+      logger.i('NotificationService: Timezone set to $tzName');
+    } catch (e, stack) {
+      logger.e(
         'NotificationService: Could not set local timezone, defaulting to UTC',
+        error: e,
+        stackTrace: stack,
       );
       tz.setLocalLocation(tz.getLocation('UTC'));
     }

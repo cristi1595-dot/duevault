@@ -27,6 +27,8 @@ import 'providers/security_provider.dart';
 import 'services/auto_sync_service.dart';
 import 'services/migration_service.dart';
 import 'widgets/bento_error_screen.dart';
+import 'utils/logger.dart';
+
 
 
 
@@ -42,8 +44,8 @@ void main() async {
     // Parallelize heavy initializations
     final results = await Future.wait([
       Firebase.initializeApp(),
-      NotificationService.initialize().catchError((e) {
-        debugPrint('Notification init skipped: $e');
+      NotificationService.initialize().catchError((e, stack) {
+        logger.e('Notification init skipped', error: e, stackTrace: stack);
         return null;
       }),
       getApplicationDocumentsDirectory(),
@@ -69,15 +71,17 @@ void main() async {
 
 
 
-    // Read initial onboarding state
+    // Read initial session state (Persistence fix)
     final config = await isar.appConfigs.get(0);
     final hasSeen = config?.hasSeenOnboarding ?? false;
+    final isGuest = config?.isGuest ?? false;
 
     runApp(
       ProviderScope(
         overrides: [
           isarProvider.overrideWith((ref) => isar),
           hasSeenOnboardingProvider.overrideWith((ref) => hasSeen),
+          isGuestProvider.overrideWith((ref) => isGuest),
         ],
         child: const DueVaultApp(),
       ),
@@ -118,20 +122,14 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // 1. Lock when minimized
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      final security = ref.read(securityProvider);
-      if (security.isEnabled && security.lockOnBackground) {
-        debugPrint('App minimized: locking DueVault');
-        ref.read(securityProvider.notifier).lock();
-      }
-    }
+    // 1. Senior Fix: Removed "Lock when minimized" logic as per user request.
+    // The app now only locks on cold start if security is enabled.
     
     // 2. Smart Sync on Resume (Check for cloud updates)
     if (state == AppLifecycleState.resumed) {
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null) {
-        debugPrint('App resumed: Triggering Smart Sync check...');
+        logger.i('App resumed: Triggering Smart Sync check...');
         // We use Future.delayed to ensure the app is fully ready
         Future.delayed(const Duration(milliseconds: 500), () {
           ref.read(autoSyncServiceProvider).syncOnStartup();
@@ -159,7 +157,7 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
           return authState.when(
             data: (user) {
               final hasSeenOnboarding = ref.watch(hasSeenOnboardingProvider);
-              debugPrint('DueVault: Auth state changed. User: ${user?.uid}, Guest: $isGuest, Onboarding seen: $hasSeenOnboarding');
+              logger.i('DueVault: Auth state changed. User: ${user?.uid}, Guest: $isGuest, Onboarding seen: $hasSeenOnboarding');
               
               Widget root;
               if (!hasSeenOnboarding) {

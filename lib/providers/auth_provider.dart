@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
+import '../utils/logger.dart';
+
 
 final authStateProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
@@ -31,25 +33,25 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      debugPrint('Starting Google Sign-In process...');
+      logger.i('Starting Google Sign-In process...');
       
       // Just sign out to be sure
       await _googleSignIn.signOut().catchError((e) {
-        debugPrint('Sign out error (ignored): $e');
+        logger.w('Sign out error (ignored): $e');
         return null;
       });
       
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        debugPrint('Google Sign-In was canceled by the user (googleUser is null).');
+        logger.w('Google Sign-In was canceled by the user.');
         return null;
       }
 
-      debugPrint('Google Sign-In successful for: ${googleUser.email}');
+      logger.i('Google Sign-In successful for: ${googleUser.email}');
       final googleAuth = await googleUser.authentication;
       
-      debugPrint('Obtained authentication tokens.');
+      logger.i('Obtained authentication tokens.');
 
       // Save access token directly — userCredential.credential is null on Android (fix C2)
       _cachedAccessToken = googleAuth.accessToken;
@@ -64,8 +66,8 @@ class AuthService {
       );
 
       return userCredential;
-    } catch (e) {
-      debugPrint('Error signing in with Google: $e');
+    } catch (e, stack) {
+      logger.e('Error signing in with Google', error: e, stackTrace: stack);
       return null;
     }
   }
@@ -85,8 +87,8 @@ class AuthService {
       final googleAuth = await googleUser.authentication;
       _cachedAccessToken = googleAuth.accessToken;
       return _cachedAccessToken;
-    } catch (e) {
-      debugPrint('Error refreshing access token: $e');
+    } catch (e, stack) {
+      logger.e('Error refreshing access token', error: e, stackTrace: stack);
       return null;
     }
   }

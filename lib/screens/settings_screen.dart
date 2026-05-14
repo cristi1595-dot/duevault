@@ -19,6 +19,9 @@ import '../providers/sync_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/database_provider.dart';
 import '../main.dart';
+import '../utils/logger.dart';
+import 'login_screen.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -475,7 +478,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
           }
         } catch (e) {
-          debugPrint('Sign in error: $e');
+          logger.e('Sign in error', error: e);
           messenger.showSnackBar(
             SnackBar(
               content: Text('Sign in error: ${e.toString().split('\n').first}'),
@@ -1092,20 +1095,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                     if (confirm == true) {
                       debugPrint(
-                        'SettingsScreen: Sign Out confirmed. Preserving local encrypted data.',
+                        'SettingsScreen: Sign Out confirmed. Clearing session flags.',
                       );
 
-                      await ref.read(authServiceProvider).signOut();
-                      ref.read(isGuestProvider.notifier).state = true;
+                      // 1. Reset Isar config (Persistence fix)
+                      final isar = ref.read(isarProvider);
+                      await isar.writeTxn(() async {
+                        final config = await isar.appConfigs.get(0) ?? AppConfig();
+                        config.isGuest = false;
+                        await isar.appConfigs.put(config);
+                      });
 
-                      // Trigger a refresh (will stay empty)
-                      await ref.read(vaultProvider.notifier).refreshVault();
+                      // 2. Perform logout
+                      await ref.read(authServiceProvider).signOut();
+                      ref.read(isGuestProvider.notifier).state = false;
 
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const MainNavigation(),
+                            builder: (_) => const LoginScreen(),
                           ),
                           (route) => false,
                         );
@@ -1335,32 +1344,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              if (security.isEnabled) ...[
-                ListTile(
-                  dense: true,
-                  visualDensity: VisualDensity.compact,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 0,
-                  ),
-                  title: const Text(
-                    'Lock when minimized',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                  trailing: Switch(
-                    value: security.lockOnBackground,
-                    onChanged: (value) {
-                      ref
-                          .read(securityProvider.notifier)
-                          .toggleLockOnBackground(value);
-                    },
-                    activeThumbColor: AppTheme.primaryAction,
-                    activeTrackColor: AppTheme.primaryAction.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                ),
-              ],
+              // Senior Fix: Removed "Lock when minimized" setting per user request.
+              // App now only locks on cold start if security is enabled.
             ],
           ),
         ),

@@ -13,6 +13,8 @@ import '../services/ocr_service.dart';
 import '../widgets/encrypted_image.dart';
 import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
+import '../utils/logger.dart';
+
 
 import '../constants/app_categories.dart';
 
@@ -131,7 +133,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      logger.e('Error picking image', error: e);
     }
   }
 
@@ -191,7 +193,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error picking files: $e');
+      logger.e('Error picking files', error: e);
     }
   }
 

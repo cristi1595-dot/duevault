@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import '../models/user.dart';
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
+import '../utils/date_helper.dart';
+import '../utils/logger.dart';
 
 
 
@@ -45,35 +47,23 @@ void callbackDispatcher() {
           .isPaidEqualTo(true)
           .findAll();
 
+      List<VaultItem> newInstances = [];
+
       for (final bill in recurringBills) {
         if (bill.dueDate != null) {
-          final due = DateTime(bill.dueDate!.year, bill.dueDate!.month, bill.dueDate!.day);
+          final nextDueDate = DateHelper.calculateNextDueDate(
+            bill.dueDate!, 
+            bill.recurrence,
+            targetDay: bill.originalDueDay,
+          );
           
-          if (due.isBefore(today) || due.isAtSameMomentAs(today)) {
-            DateTime nextDueDate;
-
-            if (bill.recurrence == 'Weekly') {
-              nextDueDate = due.add(const Duration(days: 7));
-            } else if (bill.recurrence == 'Yearly') {
-              // Clamp day for leap year edge case (Feb 29 → Feb 28)
-              final nextYear = due.year + 1;
-              final lastDayOfMonth = DateTime(nextYear, due.month + 1, 0).day;
-              final clampedDay = due.day > lastDayOfMonth ? lastDayOfMonth : due.day;
-              nextDueDate = DateTime(nextYear, due.month, clampedDay);
-            } else {
-              // Monthly (default)
-              // Safe next month calculation (e.g., Jan 31 → Feb 28)
-              final nextMonth = due.month == 12 ? 1 : due.month + 1;
-              final nextYear = due.month == 12 ? due.year + 1 : due.year;
-              final lastDayOfNextMonth = DateTime(nextYear, nextMonth + 1, 0).day;
-              final clampedDay = due.day > lastDayOfNextMonth ? lastDayOfNextMonth : due.day;
-              nextDueDate = DateTime(nextYear, nextMonth, clampedDay);
-            }
-
+          if (nextDueDate.isAfter(DateTime.now()) || nextDueDate.isAtSameMomentAs(today)) {
+            // Check if this instance already exists (using a derived UUID is better)
+            final nextUuid = 'next_${bill.uuid}_${nextDueDate.millisecondsSinceEpoch}';
+            
             final existing = await db.vaultItems
                 .filter()
-                .titleEqualTo(bill.title)
-                .dueDateEqualTo(nextDueDate)
+                .uuidEqualTo(nextUuid)
                 .findFirst();
 
             if (existing == null) {
@@ -85,22 +75,30 @@ void callbackDispatcher() {
                 ..amount = bill.amount
                 ..dueDate = nextDueDate
                 ..isPaid = false
+                ..uuid = nextUuid
                 ..recurrence = bill.recurrence
                 ..directDebit = bill.directDebit
+                ..originalDueDay = bill.originalDueDay
                 ..notes = bill.notes
                 ..attachedFiles = List.from(bill.attachedFiles);
 
-              await db.writeTxn(() async {
-                await db.vaultItems.put(newBill);
-              });
+              newInstances.add(newBill);
             }
           }
         }
       }
 
+      if (newInstances.isNotEmpty) {
+        await db.writeTxn(() async {
+          await db.vaultItems.putAll(newInstances);
+        });
+        logger.i('BackgroundService: Generated ${newInstances.length} new recurring bill instances.');
+      }
+
       if (shouldClose) await db.close();
       return Future.value(true);
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('BackgroundService: Error executing task', error: e, stackTrace: stack);
       return Future.value(false);
     }
   });

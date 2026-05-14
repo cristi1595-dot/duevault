@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
-import '../models/app_config.dart';
-import '../providers/database_provider.dart';
+import '../repositories/vault_repository.dart';
+import '../utils/logger.dart';
 import '../services/auto_sync_service.dart';
+import 'vault_provider.dart';
 
 class Currency {
   final String code;
@@ -39,31 +39,31 @@ const List<Currency> availableCurrencies = [
 ];
 
 class CurrencyNotifier extends StateNotifier<Currency> {
-  final Isar isar;
+  final VaultRepository repository;
   final Ref ref;
 
-  CurrencyNotifier(this.isar, this.ref) : super(_loadInitial(isar));
+  CurrencyNotifier(this.repository, this.ref) : super(availableCurrencies[2]) {
+    _loadInitial();
+  }
 
-  static Currency _loadInitial(Isar isar) {
-    // getSync e ok aici deoarece Isar este deja inițializat în main()
-    final config = isar.appConfigs.getSync(0);
-    final savedCode = config?.currencyCode ?? 'USD';
-    return availableCurrencies.firstWhere(
+  Future<void> _loadInitial() async {
+    final config = await repository.getConfig();
+    final savedCode = config.currencyCode;
+    state = availableCurrencies.firstWhere(
       (c) => c.code == savedCode,
-      orElse: () => availableCurrencies[0],
+      orElse: () => availableCurrencies[2], // USD
     );
   }
+
 
   Future<void> setCurrency(Currency currency) async {
     state = currency;
     
-    // Salvează în Isar
-    final config = await isar.appConfigs.get(0) ?? AppConfig();
+    final config = await repository.getConfig();
     config.currencyCode = currency.code;
-    
-    await isar.writeTxn(() async {
-      await isar.appConfigs.put(config);
-    });
+    await repository.updateConfig(config);
+
+    logger.i('Currency changed to: ${currency.code}');
 
     // Trigger auto-backup
     ref.read(autoSyncServiceProvider).scheduleBackup();
@@ -71,6 +71,7 @@ class CurrencyNotifier extends StateNotifier<Currency> {
 }
 
 final currencyProvider = StateNotifierProvider<CurrencyNotifier, Currency>((ref) {
-  final isar = ref.watch(isarProvider);
-  return CurrencyNotifier(isar, ref);
+  final repository = ref.watch(vaultRepositoryProvider);
+  return CurrencyNotifier(repository, ref);
 });
+

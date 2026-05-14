@@ -12,14 +12,18 @@ import '../providers/vault_provider.dart';
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
-  Future<void> _completeOnboarding(WidgetRef ref) async {
+  Future<void> _completeOnboarding(WidgetRef ref, {bool isGuest = false}) async {
     final isar = ref.read(isarProvider);
     await isar.writeTxn(() async {
       final config = await isar.appConfigs.get(0) ?? AppConfig();
       config.hasSeenOnboarding = true;
+      config.isGuest = isGuest;
       await isar.appConfigs.put(config);
     });
     ref.read(hasSeenOnboardingProvider.notifier).state = true;
+    if (isGuest) {
+      ref.read(isGuestProvider.notifier).state = true;
+    }
   }
 
   @override
@@ -60,8 +64,7 @@ class LoginScreen extends ConsumerWidget {
                 label: 'Continue as Guest',
                 icon: Icons.person_outline,
                 onPressed: () async {
-                  await _completeOnboarding(ref);
-                  ref.read(isGuestProvider.notifier).state = true;
+                  await _completeOnboarding(ref, isGuest: true);
                 },
               ),
               const SizedBox(height: 48),

@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 
+import '../utils/logger.dart';
+
 class EncryptionService {
   static const _storage = FlutterSecureStorage();
   static const _keyName = 'isar_encryption_key_v1';
@@ -175,14 +177,15 @@ class EncryptionService {
         if (decoded.containsKey('iv')) await _storage.write(key: _ivName, value: decoded['iv']);
         if (decoded.containsKey('master')) await _storage.write(key: _isarMasterKeyName, value: decoded['master']);
         
-        debugPrint('Encryption keys imported to Secure Storage.');
+        logger.i('Encryption keys imported to Secure Storage.');
         return true;
       }
       return false;
-    } catch (e) {
-      debugPrint('Error importing keys: $e');
+    } catch (e, stack) {
+      logger.e('Error importing keys', error: e, stackTrace: stack);
       return false;
     }
+
   }
 
 }
