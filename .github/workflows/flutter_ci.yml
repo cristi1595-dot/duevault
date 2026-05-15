@@ -2,9 +2,9 @@ name: DueVault CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, prebeta ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, prebeta ]
 
 jobs:
   test:
