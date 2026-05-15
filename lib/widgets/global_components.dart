@@ -271,7 +271,7 @@ class VaultItemTile extends ConsumerWidget {
           confirmDismiss: (direction) async {
             if (direction == DismissDirection.endToStart) {
               // Show confirmation only for DELETE
-              return await showDialog<bool>(
+              return showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Delete Item?'),
@@ -365,9 +365,9 @@ class VaultItemTile extends ConsumerWidget {
             color: AppTheme.urgentRed,
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
+              children: [
                 Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(width: 16),
                 Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
@@ -666,7 +666,7 @@ class IntegratedBottomNavBar extends StatelessWidget {
     Color inactiveColor,
   ) {
     final isSelected = currentIndex == index;
-    final activeColor = AppTheme.primaryAction;
+    const activeColor = AppTheme.primaryAction;
     final color = isSelected ? activeColor : inactiveColor;
 
     return GestureDetector(

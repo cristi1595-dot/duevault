@@ -51,7 +51,7 @@ void callbackDispatcher() {
           .isPaidEqualTo(true)
           .findAll();
 
-      List<VaultItem> newInstances = [];
+      final List<VaultItem> newInstances = [];
 
       for (final bill in recurringBills) {
         if (bill.dueDate != null) {

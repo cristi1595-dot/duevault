@@ -144,7 +144,7 @@ class EncryptionService {
       return Uint8List.fromList(decrypted);
     } catch (e) {
       // Fallback for unencrypted files
-      return await file.readAsBytes();
+      return file.readAsBytes();
     }
   }
 

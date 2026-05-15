@@ -23,29 +23,25 @@ class DateHelper {
       }
 
       // Use targetDay if provided, otherwise stick to current day
-      int nextDay = targetDay ?? current.day;
+      final int rawNextDay = targetDay ?? current.day;
       
       // Check if the day exists in the next month
-      int lastDayOfNextMonth = _getLastDayOfMonth(nextYear, nextMonth);
-      if (nextDay > lastDayOfNextMonth) {
-        nextDay = lastDayOfNextMonth;
-      }
+      final int lastDayOfNextMonth = _getLastDayOfMonth(nextYear, nextMonth);
+      final int nextDay = rawNextDay > lastDayOfNextMonth ? lastDayOfNextMonth : rawNextDay;
 
       return DateTime(nextYear, nextMonth, nextDay);
     }
 
     if (recurrence == 'Yearly') {
-      int nextYear = current.year + 1;
-      int nextMonth = current.month;
+      final int nextYear = current.year + 1;
+      final int nextMonth = current.month;
       
       // Use targetDay if provided
-      int nextDay = targetDay ?? current.day;
+      final int rawNextDay = targetDay ?? current.day;
 
       // Handle Feb 29 edge case
-      int lastDayOfNextMonth = _getLastDayOfMonth(nextYear, nextMonth);
-      if (nextDay > lastDayOfNextMonth) {
-        nextDay = lastDayOfNextMonth;
-      }
+      final int lastDayOfNextMonth = _getLastDayOfMonth(nextYear, nextMonth);
+      final int nextDay = rawNextDay > lastDayOfNextMonth ? lastDayOfNextMonth : rawNextDay;
 
       return DateTime(nextYear, nextMonth, nextDay);
     }

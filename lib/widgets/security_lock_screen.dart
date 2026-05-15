@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/security_provider.dart';
-import 'package:duevault_app/providers/auth_provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 // Force re-analysis
 

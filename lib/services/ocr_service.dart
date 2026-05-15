@@ -60,7 +60,7 @@ class OcrService {
     
     if (matches.isEmpty) return null;
 
-    List<double> amounts = [];
+    final List<double> amounts = [];
     for (final match in matches) {
       final matchStr = match.group(0)!;
       // Convert comma to dot for parsing if used as decimal separator
@@ -83,7 +83,7 @@ class OcrService {
     final RegExp dateRegex = RegExp(r'\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b');
     final matches = dateRegex.allMatches(text);
 
-    List<DateTime> dates = [];
+    final List<DateTime> dates = [];
     final now = DateTime.now();
 
     for (final match in matches) {
@@ -92,11 +92,10 @@ class OcrService {
         final monthStr = match.group(2)!;
         final yearStr = match.group(3)!;
 
-        int day = int.parse(dayStr);
-        int month = int.parse(monthStr);
-        int year = int.parse(yearStr);
-
-        if (year < 100) year += 2000;
+        final int day = int.parse(dayStr);
+        final int month = int.parse(monthStr);
+        final int yearRaw = int.parse(yearStr);
+        final int year = yearRaw < 100 ? yearRaw + 2000 : yearRaw;
 
         if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
           dates.add(DateTime(year, month, day));
