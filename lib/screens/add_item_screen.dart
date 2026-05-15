@@ -290,11 +290,6 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   bool get _isEdit =>
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
-  bool get _isFormValid {
-    final amountStr = _amountController.text.trim().replaceAll(',', '.');
-    final amount = double.tryParse(amountStr);
-    return amountStr.isNotEmpty && amount != null && _dueDate != null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -470,23 +465,28 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.account_balance_outlined,
-                                  color: _directDebit ? AppTheme.primaryAction : Theme.of(context).textTheme.bodySmall?.color,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Direct Debit',
-                                  style: TextStyle(
-                                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_outlined,
+                                    color: _directDebit ? AppTheme.primaryAction : Theme.of(context).textTheme.bodySmall?.color,
+                                    size: 18,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Direct Debit',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             Switch(
                               value: _directDebit,
@@ -600,7 +600,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               PrimaryButton(
                 label: !_isEdit ? 'Save Bill' : 'Update Bill',
                 icon: Icons.check_circle_outline,
-                onPressed: _isFormValid ? _submit : null,
+                onPressed: _submit,
               ),
               const SizedBox(height: 40),
             ],

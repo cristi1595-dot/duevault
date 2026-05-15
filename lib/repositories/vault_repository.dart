@@ -19,7 +19,7 @@ class VaultRepository {
   /// Load all items for a specific owner
   Future<List<VaultItem>> getItems(String ownerId) async {
     try {
-      return await isar.vaultItems
+      return await isar.collection<VaultItem>()
           .filter()
           .ownerIdEqualTo(ownerId)
           .isDeletedEqualTo(false)
@@ -33,14 +33,14 @@ class VaultRepository {
   /// Mark an item as deleted (soft delete)
   Future<void> softDeleteItem(int id) async {
     try {
-      final item = await isar.vaultItems.get(id);
+      final item = await isar.collection<VaultItem>().get(id);
       if (item != null) {
         await isar.writeTxn(() async {
           item.isDeleted = true;
           item.lastModified = DateTime.now();
           item.wasSynced = false; // Mark for sync engine
           item.cloudFileIds = []; // Clear cloud IDs for cleanup
-          await isar.vaultItems.put(item);
+          await isar.collection<VaultItem>().put(item);
         });
 
         await NotificationService.cancelNotification(id);
@@ -75,8 +75,8 @@ class VaultRepository {
         await attachmentsDir.create(recursive: true);
       }
 
-      List<String> finalPaths = [];
-      List<String> checksums = [];
+      final List<String> finalPaths = [];
+      final List<String> checksums = [];
 
       for (final path in item.attachedFiles) {
         // Only process files that are NOT already in our internal attachments folder
@@ -134,7 +134,7 @@ class VaultRepository {
       // 5. Persist
       try {
         await isar.writeTxn(() async {
-          await isar.vaultItems.put(item);
+          await isar.collection<VaultItem>().put(item);
         });
       } on IsarError catch (e) {
         if (e.toString().contains('full') || e.toString().contains('Disk')) {
@@ -166,7 +166,7 @@ class VaultRepository {
   /// Toggle paid status and handle recurring bill generation
   Future<VaultItem?> updatePaidStatus(int id, bool isPaid) async {
     try {
-      final item = await isar.vaultItems.get(id);
+      final item = await isar.collection<VaultItem>().get(id);
       if (item == null) return null;
 
       // Handle UNDO for recurring bills
@@ -174,7 +174,7 @@ class VaultRepository {
         final nextDate = DateHelper.calculateNextDueDate(item.dueDate!, item.recurrence);
         final nextUuid = 'next_${item.uuid}_${nextDate.millisecondsSinceEpoch}';
         
-        final existingNext = await isar.vaultItems.filter()
+        final existingNext = await isar.collection<VaultItem>().filter()
             .uuidEqualTo(nextUuid)
             .isPaidEqualTo(false)
             .findFirst();
@@ -189,7 +189,7 @@ class VaultRepository {
       item.wasSynced = false; // Mark for sync engine
 
       await isar.writeTxn(() async {
-        await isar.vaultItems.put(item);
+        await isar.collection<VaultItem>().put(item);
       });
 
       if (isPaid) {
@@ -217,7 +217,7 @@ class VaultRepository {
     );
     
     final nextUuid = 'next_${parent.uuid}_${nextDate.millisecondsSinceEpoch}';
-    final existingNext = await isar.vaultItems.filter()
+    final existingNext = await isar.collection<VaultItem>().filter()
         .uuidEqualTo(nextUuid)
         .findFirst();
 
@@ -238,7 +238,7 @@ class VaultRepository {
         ..wasSynced = false; // Mark for sync engine
 
       await isar.writeTxn(() async {
-        await isar.vaultItems.put(nextItem);
+        await isar.collection<VaultItem>().put(nextItem);
       });
       logger.i('Generated next recurring instance for: ${parent.title}');
     }
@@ -246,18 +246,18 @@ class VaultRepository {
 
   Future<void> updateConfig(AppConfig config) async {
     await isar.writeTxn(() async {
-      await isar.appConfigs.put(config);
+      await isar.collection<AppConfig>().put(config);
     });
   }
 
   Future<AppConfig> getConfig() async {
-    return await isar.appConfigs.get(0) ?? AppConfig();
+    return await isar.collection<AppConfig>().get(0) ?? AppConfig();
   }
 
   /// Migrate items from 'local_user' to a real UID
   Future<void> migrateGuestData(String newUid) async {
     try {
-      final guestItems = await isar.vaultItems
+      final guestItems = await isar.collection<VaultItem>()
           .filter()
           .ownerIdEqualTo('local_user')
           .findAll();
@@ -266,7 +266,7 @@ class VaultRepository {
         await isar.writeTxn(() async {
           for (var item in guestItems) {
             // Check for potential duplicate in the destination UID (Senior QA Fix)
-            final existing = await isar.vaultItems.filter()
+            final existing = await isar.collection<VaultItem>().filter()
                 .ownerIdEqualTo(newUid)
                 .uuidEqualTo(item.uuid)
                 .findFirst();
@@ -274,13 +274,13 @@ class VaultRepository {
             if (existing != null) {
               // Duplicate found! Keep the one that's already in the account (likely synced from cloud)
               // and delete the local guest copy to prevent duplication in UI.
-              await isar.vaultItems.delete(item.id);
+              await isar.collection<VaultItem>().delete(item.id);
               logger.i('Migration: Duplicate skipped for ${item.title} (UUID match).');
             } else {
               // No duplicate, safe to migrate
               item.ownerId = newUid;
               item.lastModified = DateTime.now();
-              await isar.vaultItems.put(item);
+              await isar.collection<VaultItem>().put(item);
             }
           }
         });
@@ -289,6 +289,63 @@ class VaultRepository {
     } catch (e, stack) {
       logger.e('Error migrating guest data', error: e, stackTrace: stack);
     }
+  }
+
+  /// Rules: 
+  /// 1. Bill + DirectDebit + Expired -> Auto-archive
+  /// 2. Bill/Doc + Paid + Expired -> Auto-archive
+  Future<void> autoArchiveExpiredItems(String ownerId) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final toArchive = await isar.collection<VaultItem>().filter()
+        .ownerIdEqualTo(ownerId)
+        .isArchivedEqualTo(false)
+        .and()
+        .group((q) => q
+          .group((q2) => q2.directDebitEqualTo(true).dueDateLessThan(today))
+          .or()
+          .group((q2) => q2.isPaidEqualTo(true).dueDateLessThan(today))
+        )
+        .findAll();
+
+    if (toArchive.isNotEmpty) {
+      logger.i('VaultRepository: Auto-archiving ${toArchive.length} expired items.');
+      await isar.writeTxn(() async {
+        for (var item in toArchive) {
+          item.isArchived = true;
+          item.lastModified = DateTime.now();
+          await isar.collection<VaultItem>().put(item);
+        }
+      });
+    }
+  }
+
+  Future<void> deleteSamplesForUser(String ownerId) async {
+    final samples = await isar.collection<VaultItem>().filter().isSampleEqualTo(true).findAll();
+    if (samples.isNotEmpty) {
+      await isar.writeTxn(() async {
+        await isar.collection<VaultItem>().deleteAll(samples.map((s) => s.id).toList());
+      });
+      logger.i('VaultRepository: Deleted ${samples.length} sample items.');
+    }
+  }
+
+  Future<void> generateSampleData(String ownerId) async {
+    final now = DateTime.now();
+    const uuid = Uuid();
+    final samples = [
+      VaultItem()..uuid = uuid.v4()..title = 'Electricity Bill (Demo)'..itemType = 'Bill'..category = 'Housing'..amount = 45.0..dueDate = now.subtract(const Duration(days: 2))..isPaid = false..isSample = true..ownerId = ownerId,
+      VaultItem()..uuid = uuid.v4()..title = 'Internet Subscription (Demo)'..itemType = 'Bill'..category = 'Subscriptions'..amount = 29.99..dueDate = now.add(const Duration(days: 5))..isPaid = false..isSample = true..ownerId = ownerId,
+      VaultItem()..uuid = uuid.v4()..title = 'Visa Credit Card (Demo)'..itemType = 'Bill'..category = 'Loans'..amount = 150.0..dueDate = now.add(const Duration(days: 10))..isPaid = false..isSample = true..ownerId = ownerId,
+      VaultItem()..uuid = uuid.v4()..title = 'Car Insurance (Demo)'..itemType = 'Bill'..category = 'Auto'..amount = 85.50..dueDate = now.add(const Duration(days: 15))..isPaid = false..isSample = true..ownerId = ownerId,
+      VaultItem()..uuid = uuid.v4()..title = 'Identity Card (Demo)'..itemType = 'Document'..category = 'Identity'..dueDate = now.add(const Duration(days: 450))..isSample = true..ownerId = ownerId,
+      VaultItem()..uuid = uuid.v4()..title = 'Rental Agreement (Demo)'..itemType = 'Document'..category = 'Legal'..dueDate = now.add(const Duration(days: 60))..isSample = true..ownerId = ownerId,
+    ];
+
+    await isar.writeTxn(() async {
+      await isar.collection<VaultItem>().putAll(samples);
+    });
   }
 }
 

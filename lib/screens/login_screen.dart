@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_provider.dart';
@@ -87,13 +88,13 @@ class LoginScreen extends ConsumerWidget {
         final messenger = ScaffoldMessenger.of(context);
         
         // Show loading indicator
-        showDialog(
+        unawaited(showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => const Center(
             child: CircularProgressIndicator(color: AppTheme.primaryAction),
           ),
-        );
+        ));
 
         final userCredential = await ref.read(authServiceProvider).signInWithGoogle();
         

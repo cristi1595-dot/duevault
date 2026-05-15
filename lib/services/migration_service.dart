@@ -12,7 +12,7 @@ class MigrationService {
 
 
   static Future<void> runMigrations(Isar isar) async {
-    final config = await isar.appConfigs.get(0) ?? AppConfig();
+    final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
     
     if (config.dataVersion < currentDataVersion) {
       logger.i('MigrationService: Starting migration from v${config.dataVersion} to v$currentDataVersion');
@@ -30,7 +30,7 @@ class MigrationService {
       await isar.writeTxn(() async {
         config.dataVersion = currentDataVersion;
         config.lastLocalChange = DateTime.now(); // This triggers AutoSync
-        await isar.appConfigs.put(config);
+        await isar.collection<AppConfig>().put(config);
       });
       
       logger.i('MigrationService: Migration complete.');
@@ -55,8 +55,8 @@ class MigrationService {
       'Health Insurance': 'Health',
     };
 
-    final items = await isar.vaultItems.where().findAll();
-    List<VaultItem> toUpdate = [];
+    final items = await isar.collection<VaultItem>().where().findAll();
+    final List<VaultItem> toUpdate = [];
 
     for (var item in items) {
       if (categoryMapping.containsKey(item.category)) {
@@ -68,7 +68,7 @@ class MigrationService {
     
     if (toUpdate.isNotEmpty) {
       await isar.writeTxn(() async {
-        await isar.vaultItems.putAll(toUpdate);
+        await isar.collection<VaultItem>().putAll(toUpdate);
       });
     }
     
@@ -87,11 +87,11 @@ class MigrationService {
       'Subscription': 'Subscriptions', 
     };
  
-    final items = await isar.vaultItems.where().findAll();
-    List<VaultItem> toUpdate = [];
+    final allItems = await isar.collection<VaultItem>().where().findAll();
+    final List<VaultItem> toUpdate = [];
  
     await isar.writeTxn(() async {
-      for (var item in items) {
+      for (final item in allItems) {
         if (categoryMapping.containsKey(item.category)) {
           item.category = categoryMapping[item.category]!;
           item.lastModified = DateTime.now();
@@ -99,7 +99,7 @@ class MigrationService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        await isar.vaultItems.putAll(toUpdate);
+        await isar.collection<VaultItem>().putAll(toUpdate);
       }
     });
     

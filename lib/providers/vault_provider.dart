@@ -1,11 +1,12 @@
 import 'dart:io';
-import 'package:uuid/uuid.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/vault_item.dart';
 import '../models/app_config.dart';
+import '../services/migration_service.dart';
+import '../models/vault_item.dart';
 import '../repositories/vault_repository.dart';
 import '../utils/logger.dart';
 import '../providers/database_provider.dart';
@@ -16,7 +17,6 @@ import '../services/firebase_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/encryption_service.dart';
 import '../services/drive_service.dart';
-import '../services/migration_service.dart';
 
 
 final vaultRepositoryProvider = Provider<VaultRepository>((ref) {
@@ -43,36 +43,6 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     return [];
   }
 
-  /// Rules: 
-  /// 1. Bill + DirectDebit + Expired -> Auto-archive
-  /// 2. Bill/Doc + Paid + Expired -> Auto-archive
-  Future<void> _autoArchiveExpiredItems(String ownerId) async {
-    final isar = ref.read(isarProvider);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final toArchive = await isar.vaultItems.filter()
-        .ownerIdEqualTo(ownerId)
-        .isArchivedEqualTo(false)
-        .and()
-        .group((q) => q
-          .group((q2) => q2.directDebitEqualTo(true).dueDateLessThan(today))
-          .or()
-          .group((q2) => q2.isPaidEqualTo(true).dueDateLessThan(today))
-        )
-        .findAll();
-
-    if (toArchive.isNotEmpty) {
-      logger.i('VaultNotifier: Auto-archiving ${toArchive.length} expired items.');
-      await isar.writeTxn(() async {
-        for (var item in toArchive) {
-          item.isArchived = true;
-          await isar.vaultItems.put(item);
-        }
-      });
-      await _markAsDirty();
-    }
-  }
 
   Future<void> _markAsDirty() async {
     final config = await _repository.getConfig();
@@ -97,9 +67,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       final ownerId = user?.uid ?? 'local_user';
 
       // Run Smart Auto-Archive (Backgrounded, non-blocking)
-      _autoArchiveExpiredItems(ownerId).catchError((e) {
+      unawaited(_repository.autoArchiveExpiredItems(ownerId).then((_) => _markAsDirty()).catchError((e) {
         logger.e('VaultNotifier: Auto-archive error', error: e);
-      });
+      }));
       
       final freshItems = await _repository.getItems(ownerId);
 
@@ -108,22 +78,15 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         final config = await _repository.getConfig();
         if (!config.hasSeenDemo && freshItems.isEmpty) {
           logger.i('Vault: Fresh install detected. Generating sample data for Guest.');
-          await _generateSampleData();
+          await _repository.generateSampleData('local_user');
           final updatedItems = await _repository.getItems('local_user');
           state = updatedItems;
         }
       } else {
         // Real user logged in -> Ensure sample data from guest mode is gone
-        final isar = ref.read(isarProvider);
-        final samples = await isar.vaultItems.filter().isSampleEqualTo(true).findAll();
-        if (samples.isNotEmpty) {
-          await isar.writeTxn(() async {
-            await isar.vaultItems.deleteAll(samples.map((s) => s.id).toList());
-          });
-          logger.i('Vault: Deleted ${samples.length} sample items after login.');
-          // Re-load items to show clean state
-          state = await _repository.getItems(user.uid);
-        }
+        await _repository.deleteSamplesForUser(user.uid);
+        // Re-load items to show clean state
+        state = await _repository.getItems(user.uid);
         
         // Also mark as having seen demo so it doesn't reappear if they log out
         final config = await _repository.getConfig();
@@ -140,27 +103,6 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     }
   }
 
-  Future<void> _generateSampleData() async {
-    final now = DateTime.now();
-    final uuid = const Uuid();
-    final samples = [
-      VaultItem()..uuid = uuid.v4()..title = 'Electricity Bill (Demo)'..itemType = 'Bill'..category = 'Housing'..amount = 45.0..dueDate = now.subtract(const Duration(days: 2))..isPaid = false..isSample = true..ownerId = 'local_user',
-      VaultItem()..uuid = uuid.v4()..title = 'Internet Subscription (Demo)'..itemType = 'Bill'..category = 'Subscriptions'..amount = 29.99..dueDate = now.add(const Duration(days: 5))..isPaid = false..isSample = true..ownerId = 'local_user',
-      VaultItem()..uuid = uuid.v4()..title = 'Visa Credit Card (Demo)'..itemType = 'Bill'..category = 'Loans'..amount = 150.0..dueDate = now.add(const Duration(days: 10))..isPaid = false..isSample = true..ownerId = 'local_user',
-      VaultItem()..uuid = uuid.v4()..title = 'Car Insurance (Demo)'..itemType = 'Bill'..category = 'Auto'..amount = 85.50..dueDate = now.add(const Duration(days: 15))..isPaid = false..isSample = true..ownerId = 'local_user',
-      VaultItem()..uuid = uuid.v4()..title = 'Identity Card (Demo)'..itemType = 'Document'..category = 'Identity'..dueDate = now.add(const Duration(days: 450))..isSample = true..ownerId = 'local_user',
-      VaultItem()..uuid = uuid.v4()..title = 'Rental Agreement (Demo)'..itemType = 'Document'..category = 'Legal'..dueDate = now.add(const Duration(days: 60))..isSample = true..ownerId = 'local_user',
-    ];
-
-    final isar = ref.read(isarProvider);
-    await isar.writeTxn(() async {
-      await isar.vaultItems.putAll(samples);
-    });
-
-    final config = await _repository.getConfig();
-    config.hasSeenDemo = true;
-    await _repository.updateConfig(config);
-  }
 
   Future<void> refreshVault() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -180,13 +122,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     // 1. Delete samples if adding real data
     if (!item.isSample) {
-      final isar = ref.read(isarProvider);
-      final samples = await isar.vaultItems.filter().isSampleEqualTo(true).findAll();
-      if (samples.isNotEmpty) {
-        await isar.writeTxn(() async {
-          await isar.vaultItems.deleteAll(samples.map((s) => s.id).toList());
-        });
-      }
+      await _repository.deleteSamplesForUser(user?.uid ?? 'local_user');
     }
 
     // 2. Assign Owner ID (CRITICAL FIX: Was missing, items were disappearing)
@@ -228,12 +164,12 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     // 2. Persistent update
     final isar = ref.read(isarProvider);
-    final item = await isar.vaultItems.get(id);
+    final item = await isar.collection<VaultItem>().get(id);
     if (item != null) {
       item.isArchived = archived;
       item.lastModified = DateTime.now();
       await isar.writeTxn(() async {
-        await isar.vaultItems.put(item);
+        await isar.collection<VaultItem>().put(item);
       });
       await _loadItems(FirebaseAuth.instance.currentUser);
       await _markAsDirty();
@@ -262,7 +198,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
   Future<void> removeAttachment(int itemId, String localPath) async {
     final isar = ref.read(isarProvider);
-    final item = await isar.vaultItems.get(itemId);
+    final item = await isar.collection<VaultItem>().get(itemId);
     if (item == null) return;
 
     // 1. Remove from local file system
@@ -282,7 +218,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         final cloudId = item.cloudFileIds[index];
         if (cloudId.isNotEmpty) {
           // Trigger async cloud deletion
-          _deleteFromCloud(cloudId);
+          unawaited(_deleteFromCloud(cloudId));
         }
         item.cloudFileIds.removeAt(index);
       }
@@ -293,7 +229,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       
       // 3. Persist change
       await isar.writeTxn(() async {
-        await isar.vaultItems.put(item);
+        await isar.collection<VaultItem>().put(item);
       });
 
       await _loadItems(FirebaseAuth.instance.currentUser);
@@ -326,7 +262,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     final isar = ref.read(isarProvider);
     
     // 1. Notifications cleanup
-    final allItems = await isar.vaultItems.where().findAll();
+    final allItems = await isar.collection<VaultItem>().where().findAll();
     for (final item in allItems) {
       await NotificationService.cancelNotification(item.id);
     }
@@ -341,9 +277,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     await EncryptionService.deleteKey();
 
     await isar.writeTxn(() async {
-      await isar.vaultItems.clear();
+      await isar.collection<VaultItem>().clear();
       if (alsoDeleteCloud) {
-        await isar.appConfigs.clear();
+        await isar.collection<AppConfig>().clear();
       }
     });
 

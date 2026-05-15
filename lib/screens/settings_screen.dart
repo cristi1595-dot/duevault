@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,9 +42,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _checkStatus() async {
-    bool? batteryDisabled =
+    final bool? batteryDisabled =
         await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
-    bool notificationsGranted = await Permission.notification.isGranted;
+    final bool notificationsGranted = await Permission.notification.isGranted;
     
     // Senior Fix: On Android 13+, we also need Exact Alarm permission for reliability
     bool exactAlarmsGranted = true;
@@ -546,11 +547,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             }
             if (context.mounted) {
-              Navigator.pushAndRemoveUntil(
+              unawaited(Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const MainNavigation()),
                 (route) => false,
-              );
+              ));
             }
           } else {
             messenger.showSnackBar(
@@ -935,12 +936,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   if (confirm == true) {
                     if (!context.mounted) return;
-                    showDialog(
+                    unawaited(showDialog(
                       context: context,
                       barrierDismissible: false,
                       builder: (ctx) =>
                           const Center(child: CircularProgressIndicator()),
-                    );
+                    ));
 
                     try {
                       await ref
@@ -1020,12 +1021,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 if (confirm == true) {
                   if (!context.mounted) return;
-                  showDialog(
+                  unawaited(showDialog(
                     context: context,
                     barrierDismissible: false,
                     builder: (ctx) =>
                         const Center(child: CircularProgressIndicator()),
-                  );
+                  ));
 
                   try {
                     await ref
@@ -1047,13 +1048,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       );
                       // Force navigation back to start
-                      Navigator.pushAndRemoveUntil(
+                      unawaited(Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const MainNavigation(),
                         ),
                         (route) => false,
-                      );
+                      ));
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -1204,13 +1205,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ref.read(isGuestProvider.notifier).state = true;
 
                       if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
+                        unawaited(Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
                             builder: (_) => const MainNavigation(),
                           ),
                           (route) => false,
-                        );
+                        ));
                         
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Signed out. You are now in Guest mode.')),

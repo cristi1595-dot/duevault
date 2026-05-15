@@ -33,7 +33,7 @@ class PermissionHelper {
   /// Checks and requests photo/gallery permission.
   static Future<bool> requestGalleryPermission(BuildContext context) async {
     // For Android 13+, we use photos, for older we use storage
-    Permission permission = Permission.photos;
+    const permission = Permission.photos;
     
     var status = await permission.status;
     if (status.isRestricted || status.isDenied) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import '../theme/app_theme.dart';
@@ -48,10 +49,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final status = await Permission.notification.request();
     if (status.isGranted) {
       if (mounted) {
-        _pageController.nextPage(
+        unawaited(_pageController.nextPage(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
-        );
+        ));
       }
     } else {
       if (mounted) {
@@ -281,13 +282,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return ElevatedButton(
       onPressed: () async {
         final messenger = ScaffoldMessenger.of(context);
-        showDialog(
+        unawaited(showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => const Center(
             child: CircularProgressIndicator(color: AppTheme.primaryAction),
           ),
-        );
+        ));
 
         final userCredential = await ref.read(authServiceProvider).signInWithGoogle();
         if (!mounted) return;

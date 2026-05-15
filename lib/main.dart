@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'theme/app_theme.dart';
@@ -24,7 +26,8 @@ import 'widgets/security_lock_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'providers/security_provider.dart';
 import 'services/auto_sync_service.dart';
-import 'package:duevault_app/widgets/bento_error_screen.dart';
+import 'widgets/bento_error_screen.dart';
+import 'dart:async';
 import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
 
@@ -41,12 +44,23 @@ void main() async {
     
     // Parallelize ONLY critical initializations
     await Firebase.initializeApp();
+
+    // Pass all uncaught "fatal" errors from the framework to Crashlytics
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    
+    // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
     final appDir = await getApplicationDocumentsDirectory();
 
     // Initialize notifications in the background to not block the UI
-    NotificationService.initialize().catchError((e, stack) {
+    unawaited(NotificationService.initialize().catchError((e, stack) {
       logger.e('Notification init skipped', error: e, stackTrace: stack);
-    });
+    }));
 
     // Lazy load background services after 5 seconds
     Future.delayed(const Duration(seconds: 5), () {

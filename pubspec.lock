@@ -417,6 +417,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.7.0"
+  firebase_crashlytics:
+    dependency: "direct main"
+    description:
+      name: firebase_crashlytics
+      sha256: "9935ea36aaae0dfc789b80a1981fd70c6c7e9956791e9e7c2210ab83f9c963bd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.2"
+  firebase_crashlytics_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_crashlytics_platform_interface
+      sha256: ade20d7d86698ded596bf16ab0e7060ef1dae9258ab6705536a39ae047ccef59
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.8.22"
   fixnum:
     dependency: transitive
     description:
@@ -968,6 +984,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mocktail:
+    dependency: "direct dev"
+    description:
+      name: mocktail
+      sha256: "5e1bf53cc7baa8062a33b84424deb61513858ea05c601b8509e683815b5914aa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   native_toolchain_c:
     dependency: transitive
     description:
@@ -1041,7 +1065,7 @@ packages:
     source: hosted
     version: "2.2.1"
   path_provider_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: path_provider_platform_interface
       sha256: "88f5779f72ba699763fa3a3b06aa4bf6de76c8e5de842cf6f29e2e06476c2334"
@@ -1121,7 +1145,7 @@ packages:
     source: hosted
     version: "3.1.6"
   plugin_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: plugin_platform_interface
       sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
