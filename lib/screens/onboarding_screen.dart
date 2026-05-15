@@ -95,7 +95,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildNotificationScreen() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -166,7 +166,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildBatteryScreen() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -227,7 +227,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildLoginScreen() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

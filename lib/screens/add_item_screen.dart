@@ -198,6 +198,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   }
 
   Future<void> _pickDate() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: _dueDate ?? DateTime.now(),
@@ -222,7 +223,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         );
       },
     );
-    if (picked != null) setState(() => _dueDate = picked);
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+    }
+    // Force keyboard down globally
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   Future<void> _submit() async {
@@ -266,7 +271,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     item.attachedFiles = _attachedFiles;
 
     await ref.read(vaultProvider.notifier).addItem(item);
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      // Direct to Home: pop until we reach the root (HomeScreen)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   void _showValidationError(String message) {
@@ -309,7 +317,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Form(
           key: _formKey,
           child: Column(
@@ -330,6 +338,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 label: 'TITLE',
                 child: TextFormField(
                   controller: _titleController,
+                  textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 17,
@@ -499,6 +508,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 child: TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 15,

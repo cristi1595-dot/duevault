@@ -22,13 +22,17 @@ void callbackDispatcher() {
       Isar? isar = Isar.getInstance();
       final bool shouldClose = isar == null;
       if (isar == null) {
-        final dir = await getApplicationDocumentsDirectory();
-        isar = await Isar.open(
-          [UserSchema, VaultItemSchema, AppConfigSchema],
-          directory: dir.path,
-        );
-
-
+        try {
+          final dir = await getApplicationDocumentsDirectory();
+          isar = await Isar.open(
+            [UserSchema, VaultItemSchema, AppConfigSchema],
+            directory: dir.path,
+            inspector: false, // Essential for Android 15 background isolates
+          );
+        } catch (e) {
+          logger.e('BackgroundService: Failed to open Isar', error: e);
+          return Future.value(false);
+        }
       }
 
 

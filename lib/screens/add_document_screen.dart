@@ -194,6 +194,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Future<void> _pickDate() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: _expiryDate ?? DateTime.now(),
@@ -218,7 +219,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         );
       },
     );
-    if (picked != null) setState(() => _expiryDate = picked);
+    if (picked != null) {
+      setState(() => _expiryDate = picked);
+    }
+    // Force keyboard down globally
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   Future<void> _submit() async {
@@ -236,7 +241,10 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     item.isPaid = false; 
 
     await ref.read(vaultProvider.notifier).addItem(item);
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      // Direct to Home: pop until we reach the root (HomeScreen)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   void _showValidationError(String message) {
@@ -279,7 +287,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -358,6 +366,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 label: 'DOCUMENT TITLE',
                 child: TextFormField(
                   controller: _titleController,
+                  textCapitalization: TextCapitalization.sentences,
                   onChanged: (val) => setState(() {}),
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
@@ -411,6 +420,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 child: TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 15,

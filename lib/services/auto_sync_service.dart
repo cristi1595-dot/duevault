@@ -160,22 +160,34 @@ class AutoSyncService {
       final driveService = DriveService(GoogleAuthClient(authHeaders));
 
       try {
-        // Use Smart Merge instead of blind restore
+        // 1. Check if cloud backup exists first
+        final cloudChecksum = await driveService.getBackupChecksum();
+        
+        if (cloudChecksum == null) {
+          logger.i('AutoSyncService: No cloud backup found.');
+          
+          // 2. If NO backup exists but we have local data, upload it now
+          final localItems = _ref.read(vaultProvider);
+          final hasRealLocalData = localItems.any((item) => !item.isSample);
+          
+          if (hasRealLocalData) {
+            logger.i('AutoSyncService: Uploading initial local data to new account...');
+            final success = await driveService.backupDatabase();
+            if (success) return 'uploaded';
+          } else {
+            // No cloud data and no local data
+            return 'empty';
+          }
+          return 'none';
+        }
+
+        // 3. If cloud backup exists, perform Smart Merge
         final success = await _mergeWithCloud(driveService);
         if (success) {
           // Senior QA Fix: Migrate guest data to real UID so it becomes visible in the UI immediately
           await _ref.read(vaultProvider.notifier).migrateGuestData(FirebaseAuth.instance.currentUser!.uid);
           await _syncAttachments(driveService);
           return 'restored';
-        }
-
-        // 3. If NO backup exists but we have local data, upload it now
-        final localItems = _ref.read(vaultProvider);
-        final hasRealLocalData = localItems.any((item) => !item.isSample);
-        if (hasRealLocalData) {
-          logger.i('AutoSyncService: No cloud backup found, uploading local data...');
-          final success = await driveService.backupDatabase();
-          if (success) return 'uploaded';
         }
       } finally {
         driveService.dispose();

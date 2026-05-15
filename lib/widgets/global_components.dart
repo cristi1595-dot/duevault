@@ -5,7 +5,6 @@ import '../screens/item_detail_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/sync_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../providers/vault_provider.dart';
 import '../main.dart';
@@ -18,16 +17,20 @@ class CategoryUtils {
   }
 }
 
-
 class VaultSnackBar {
   static void show({
     required String message,
     String? actionLabel,
     VoidCallback? onAction,
     Color? backgroundColor,
+    Duration? duration,
   }) {
-    scaffoldMessengerKey.currentState?.clearSnackBars();
-    scaffoldMessengerKey.currentState?.showSnackBar(
+    final messenger = scaffoldMessengerKey.currentState;
+    messenger?.removeCurrentSnackBar();
+
+    final snckDuration = duration ?? const Duration(milliseconds: 3000);
+
+    final controller = messenger?.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -43,9 +46,9 @@ class VaultSnackBar {
             ),
           ],
         ),
-        duration: const Duration(seconds: 2),
-        backgroundColor: backgroundColor ?? const Color(0xFF2D2D2D), 
-        behavior: SnackBarBehavior.fixed, // Attached to bottom as requested
+        duration: snckDuration,
+        backgroundColor: backgroundColor ?? const Color(0xFF2D2D2D),
+        behavior: SnackBarBehavior.fixed,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -53,12 +56,22 @@ class VaultSnackBar {
             ? SnackBarAction(
                 label: actionLabel,
                 onPressed: onAction ?? () {},
-                textColor: Colors.white, // White text on colored background
-                backgroundColor: Colors.black.withValues(alpha: 0.2), // Darker overlay for button
+                textColor: Colors.white,
+                backgroundColor: Colors.black.withValues(alpha: 0.2),
               )
             : null,
       ),
     );
+
+    // Manual safety trigger: forcefully close the snackbar after the duration
+    // in case the OS accessibility or kernel blocks the automatic dismissal.
+    Future.delayed(snckDuration + const Duration(milliseconds: 100), () {
+      try {
+        controller?.close();
+      } catch (_) {
+        // Already closed, ignore
+      }
+    });
   }
 }
 
@@ -69,10 +82,10 @@ class SyncStatusIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(syncProvider);
-    
+
     IconData iconData;
     Color iconColor;
-    
+
     switch (syncState.status) {
       case SyncStatus.syncing:
         iconData = Icons.sync;
@@ -88,22 +101,29 @@ class SyncStatusIndicator extends ConsumerWidget {
         break;
       case SyncStatus.idle:
         iconData = Icons.cloud_queue;
-        iconColor = Theme.of(context).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
+        iconColor = Theme.of(
+          context,
+        ).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
     }
 
     return Tooltip(
-      message: syncState.status == SyncStatus.syncing 
-        ? 'Syncing with Google Drive...' 
-        : (syncState.lastSync != null ? 'Last sync: ${syncState.lastSync!.hour}:${syncState.lastSync!.minute.toString().padLeft(2, '0')}' : 'Not synced'),
+      message: syncState.status == SyncStatus.syncing
+          ? 'Syncing with Google Drive...'
+          : (syncState.lastSync != null
+                ? 'Last sync: ${syncState.lastSync!.hour}:${syncState.lastSync!.minute.toString().padLeft(2, '0')}'
+                : 'Not synced'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: syncState.status == SyncStatus.syncing
-          ? SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: iconColor),
-            )
-          : Icon(iconData, color: iconColor, size: 20),
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: iconColor,
+                ),
+              )
+            : Icon(iconData, color: iconColor, size: 20),
       ),
     );
   }
@@ -134,7 +154,9 @@ class BentoCard extends StatelessWidget {
         color: color ?? Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: borderColor ?? Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          color:
+              borderColor ??
+              Theme.of(context).dividerColor.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -224,28 +246,78 @@ class VaultItemTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final daysLeft = _calculateDaysLeft(item.dueDate);
     final isOverdue = item.isOverdue;
-    final bool isInHistory = item.isArchived || (item.isPaid && daysLeft < 0);
-    final itemColor = item.itemType == 'Bill' ? AppTheme.primaryAction : AppTheme.safeGreen;
+    final bool isExpired = item.isExpired;
+    final bool isBill = item.itemType == 'Bill';
+    final bool isDoc = item.itemType == 'Document';
+    
+    // Red Box logic: 
+    // - Bills: Unpaid AND (Overdue OR due in <= 3 days)
+    // - Documents: Not Renewed AND Expired
+    final bool showRed = !item.isPaid && (
+      (isBill && (isOverdue || (daysLeft >= 0 && daysLeft <= 3))) ||
+      (isDoc && isExpired)
+    );
+
+    final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
+    final itemColor = isBill ? AppTheme.primaryAction : AppTheme.safeGreen;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-        child: Slidable(
+        child: Dismissible(
           key: ValueKey(item.id),
-          startActionPane: ActionPane(
-            motion: const BehindMotion(),
-            dismissible: DismissiblePane(onDismissed: () {
-              final notifier = ref.read(vaultProvider.notifier);
+          direction: DismissDirection.horizontal,
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.endToStart) {
+              // Show confirmation only for DELETE
+              return await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Item?'),
+                  content: Text(
+                    'Are you sure you want to permanently delete "${item.title}"? This cannot be undone.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('CANCEL'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: TextButton.styleFrom(foregroundColor: AppTheme.urgentRed),
+                      child: const Text('DELETE'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            // For Archive, we don't need a dialog as it's easily reversible
+            return true;
+          },
+          onDismissed: (direction) {
+            final notifier = ref.read(vaultProvider.notifier);
+            if (direction == DismissDirection.startToEnd) {
+              // ARCHIVE / RESTORE Logic (Swipe Right)
               if (isInHistory) {
-                notifier.toggleArchiveStatus(item.id, false);
+                // If it's in history, "Restore to Vault" means unarchive AND unpay (if it was paid/expired)
+                if (item.isArchived) {
+                  notifier.toggleArchiveStatus(item.id, false);
+                }
+                if (item.isPaid) {
+                  notifier.updatePaidStatus(item.id, false);
+                }
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
                   backgroundColor: AppTheme.primaryAction,
-                  onAction: () => notifier.toggleArchiveStatus(item.id, true),
+                  onAction: () {
+                    if (item.isArchived) notifier.toggleArchiveStatus(item.id, true);
+                    if (item.isPaid) notifier.updatePaidStatus(item.id, true);
+                  },
                 );
               } else {
+                // Normal Archive
                 notifier.toggleArchiveStatus(item.id, true);
                 VaultSnackBar.show(
                   message: 'Moved to History',
@@ -254,174 +326,222 @@ class VaultItemTile extends ConsumerWidget {
                   onAction: () => notifier.toggleArchiveStatus(item.id, false),
                 );
               }
-            }),
-            children: [
-              if (isInHistory)
-                SlidableAction(
-                  onPressed: (context) {
-                    ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, false);
-                    VaultSnackBar.show(
-                      message: 'Restored to Vault',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.primaryAction,
-                      onAction: () => ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, true),
-                    );
-                  },
-                  backgroundColor: AppTheme.primaryAction,
-                  foregroundColor: Colors.white,
-                  icon: Icons.unarchive_rounded,
-                  label: 'Vault',
-                )
-              else
-                SlidableAction(
-                  onPressed: (context) {
-                    ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, true);
-                    VaultSnackBar.show(
-                      message: 'Moved to History',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => ref.read(vaultProvider.notifier).toggleArchiveStatus(item.id, false),
-                    );
-                  },
-                  backgroundColor: AppTheme.safeGreen,
-                  foregroundColor: Colors.white,
-                  icon: Icons.archive_rounded,
-                  label: 'Archive',
-                ),
-            ],
-          ),
-          endActionPane: ActionPane(
-            motion: const StretchMotion(),
-            dismissible: DismissiblePane(
-              onDismissed: () {
-                // This triggers on full swipe
-                ref.read(vaultProvider.notifier).deleteItem(item.id);
-              },
-              confirmDismiss: () async {
-                // This allows us to show the dialog before the full swipe completes
-                final confirmed = await _showDeleteConfirmation(context, ref);
-                return confirmed == true;
-              },
-            ),
-            children: [
-              SlidableAction(
-                onPressed: (context) async {
-                  final confirmed = await _showDeleteConfirmation(context, ref);
-                  if (confirmed != true && context.mounted) {
-                    Slidable.of(context)?.close();
-                  }
-                },
+            } else {
+              // DELETE Logic (Swipe Left)
+              final deletedItem = item;
+              notifier.deleteItem(item.id);
+              VaultSnackBar.show(
+                message: 'Item deleted',
+                actionLabel: 'UNDO',
                 backgroundColor: AppTheme.urgentRed,
-                foregroundColor: Colors.white,
-                icon: Icons.delete_outline_rounded,
-                label: 'Delete',
-              ),
-            ],
+                onAction: () => notifier.addItem(deletedItem),
+              );
+            }
+          },
+          background: Container(
+            color: isInHistory ? AppTheme.primaryAction : AppTheme.safeGreen,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Icon(
+                  isInHistory ? Icons.unarchive_rounded : Icons.archive_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  isInHistory ? 'Vault' : 'Archive',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          secondaryBackground: Container(
+            color: AppTheme.urgentRed,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                SizedBox(width: 16),
+                Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+              ],
+            ),
           ),
           child: InkWell(
-            onTap: onTap ?? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-              );
-            },
+            onTap:
+                onTap ??
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(item: item),
+                    ),
+                  );
+                },
             borderRadius: BorderRadius.circular(24),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.zero,
               decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
+                color: showRed
+                    ? AppTheme.urgentRed.withValues(alpha: 0.12)
+                    : Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isOverdue ? AppTheme.urgentRed.withValues(alpha: 0.3) : Theme.of(context).dividerColor,
-                  width: isOverdue ? 2 : 1,
+                  color: showRed
+                      ? AppTheme.urgentRed.withValues(alpha: 0.5)
+                      : Theme.of(context).dividerColor,
+                  width: showRed ? 2.5 : 1,
                 ),
               ),
-              child: Row(
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: itemColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      CategoryUtils.getIcon(item.category),
-                      color: itemColor,
-                      size: 24,
-                    ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: itemColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Icon(
+                          CategoryUtils.getIcon(item.category),
+                          color: itemColor,
+                          size: 32,
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: itemColor,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Text(
+                            item.itemType == 'Bill' ? 'B' : 'D',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           item.title.isEmpty ? item.category : item.title,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            decoration: item.isPaid ? TextDecoration.lineThrough : null,
-                            color: item.isPaid ? Theme.of(context).textTheme.bodyMedium?.color : null,
-                          ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                decoration: item.isPaid
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: item.isPaid
+                                    ? Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium?.color
+                                    : null,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          item.dueDate != null 
-                            ? 'Due ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
-                            : 'No due date',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          item.dueDate != null
+                              ? 'Due ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
+                              : 'No due date',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 15,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        currency.formatAmount(item.amount ?? 0.0),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isOverdue ? AppTheme.urgentRed : null,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (item.isPaid)
-                        StatusBadge(
-                          label: item.itemType == 'Bill' ? 'PAID' : 'RENEWED',
-                          isPaid: true,
-                        )
-                      else ...[
-                        Row(
-                          children: [
-                            StatusBadge(
-                              label: isOverdue 
-                                  ? (item.itemType == 'Bill' ? 'OVERDUE' : 'EXPIRED') 
-                                  : (daysLeft == 0 ? 'TODAY' : '$daysLeft DAYS'),
-                              daysLeft: daysLeft,
-                            ),
-                            if (onCheckPressed != null) ...[
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: onCheckPressed,
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: AppTheme.primaryAction.withValues(alpha: 0.2)),
-                                  ),
-                                  child: const Icon(Icons.check_rounded, color: AppTheme.primaryAction, size: 18),
-                                ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 110,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (item.itemType != 'Document') ...[
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              currency.formatAmount(item.amount ?? 0.0),
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: showRed ? AppTheme.urgentRed : null,
                               ),
-                            ],
-                          ],
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                        ],
+                        StatusBadge(
+                          label: item.isPaid
+                              ? (item.itemType == 'Bill' ? 'PAID' : 'RENEWED')
+                              : (isOverdue
+                                    ? (item.itemType == 'Bill' ? 'OVERDUE' : 'EXPIRED')
+                                    : (daysLeft == 0 ? 'TODAY' : '$daysLeft DAYS')),
+                          isPaid: item.isPaid,
+                          daysLeft: item.isPaid ? null : daysLeft,
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ],
+                    if (!item.isPaid && onCheckPressed != null) ...[
+                      const SizedBox(width: 12),
+                      InkWell(
+                        onTap: onCheckPressed,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryAction.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppTheme.primaryAction.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.check_rounded,
+                              color: AppTheme.primaryAction,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -439,33 +559,23 @@ class VaultItemTile extends ConsumerWidget {
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
-  Future<bool?> _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Item?'),
-        content: Text('Are you sure you want to permanently delete "${item.title}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context, true);
-              ref.read(vaultProvider.notifier).deleteItem(item.id);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppTheme.urgentRed),
-            child: const Text('DELETE'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// 7. CriticalAlertCard: For overdue warnings.
@@ -488,7 +598,11 @@ class CriticalAlertCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -522,13 +636,16 @@ class IntegratedBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inactiveColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
+    final inactiveColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
 
     return Container(
       height: 80,
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        border: Border(top: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+        ),
       ),
       padding: EdgeInsets.zero,
       child: Row(
@@ -542,7 +659,12 @@ class IntegratedBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, Color inactiveColor) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label,
+    Color inactiveColor,
+  ) {
     final isSelected = currentIndex == index;
     final activeColor = AppTheme.primaryAction;
     final color = isSelected ? activeColor : inactiveColor;
@@ -553,11 +675,7 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 4),
           Text(
             label,
@@ -625,34 +743,44 @@ class CustomInputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: AppTheme.labelCapsStyle(context),
-        ),
+        Text(label.toUpperCase(), style: AppTheme.labelCapsStyle(context)),
         const SizedBox(height: 8),
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            ),
           ),
           child: TextFormField(
             controller: controller,
             obscureText: obscureText,
             keyboardType: keyboardType,
+            textCapitalization: TextCapitalization.sentences,
             maxLines: maxLines,
             validator: validator,
-            style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 16),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               hintText: hintText,
               prefix: prefix,
               suffixIcon: suffix,
-              hintStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5)),
+              hintStyle: TextStyle(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+              ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),
@@ -695,7 +823,10 @@ class PrimaryButton extends StatelessWidget {
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -756,10 +887,7 @@ class SecondaryButton extends StatelessWidget {
             ],
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ],
         ),

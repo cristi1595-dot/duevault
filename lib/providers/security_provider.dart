@@ -106,6 +106,15 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       return;
     }
 
+    if (enabled) {
+      // Senior UX Fix: Request immediate authentication to verify the owner before enabling
+      final authenticated = await authenticate(force: true);
+      if (!authenticated) {
+        // If authentication fails or is cancelled, don't enable security
+        return;
+      }
+    }
+
     state = state.copyWith(isEnabled: enabled);
     
     await repository.updateConfig(
@@ -128,12 +137,15 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     state = state.copyWith(lockOnBackground: enabled);
   }
 
-  Future<bool> authenticate() async {
+  Future<bool> authenticate({bool force = false}) async {
     // If security is disabled or hardware doesn't support it, just unlock
-    if (!state.isEnabled || !state.canAuthenticate) {
+    // (Unless forced, e.g. during activation)
+    if (!force && (!state.isEnabled || !state.canAuthenticate)) {
       state = state.copyWith(isLocked: false);
       return true;
     }
+    
+    if (!state.canAuthenticate) return false;
     
     if (state.isAuthenticating) return false;
 
@@ -174,6 +186,14 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     if (state.isEnabled) {
       state = state.copyWith(isLocked: true);
     }
+  }
+
+  Future<void> reset() async {
+    state = state.copyWith(isEnabled: false, isLocked: false);
+    final config = await repository.getConfig();
+    config.isSecurityEnabled = false;
+    await repository.updateConfig(config);
+    logger.i('Security: Reset complete (disabled and unlocked).');
   }
 }
 

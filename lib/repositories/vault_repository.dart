@@ -38,6 +38,7 @@ class VaultRepository {
         await isar.writeTxn(() async {
           item.isDeleted = true;
           item.lastModified = DateTime.now();
+          item.wasSynced = false; // Mark for sync engine
           item.cloudFileIds = []; // Clear cloud IDs for cleanup
           await isar.vaultItems.put(item);
         });
@@ -128,6 +129,7 @@ class VaultRepository {
       }
 
       item.lastModified = DateTime.now();
+      item.wasSynced = false; // Mark for sync engine
 
       // 5. Persist
       try {
@@ -184,6 +186,7 @@ class VaultRepository {
 
       item.isPaid = isPaid;
       item.lastModified = DateTime.now();
+      item.wasSynced = false; // Mark for sync engine
 
       await isar.writeTxn(() async {
         await isar.vaultItems.put(item);
@@ -231,7 +234,8 @@ class VaultRepository {
         ..isPaid = false
         ..uuid = nextUuid 
         ..originalDueDay = parent.originalDueDay
-        ..lastModified = DateTime.now();
+        ..lastModified = DateTime.now()
+        ..wasSynced = false; // Mark for sync engine
 
       await isar.writeTxn(() async {
         await isar.vaultItems.put(nextItem);
@@ -259,17 +263,28 @@ class VaultRepository {
           .findAll();
       
       if (guestItems.isNotEmpty) {
-        // Prepare all items in memory (Senior Optimization)
-        for (var item in guestItems) {
-          item.ownerId = newUid;
-          item.lastModified = DateTime.now();
-        }
-
         await isar.writeTxn(() async {
-          // Use putAll for batch performance
-          await isar.vaultItems.putAll(guestItems);
+          for (var item in guestItems) {
+            // Check for potential duplicate in the destination UID (Senior QA Fix)
+            final existing = await isar.vaultItems.filter()
+                .ownerIdEqualTo(newUid)
+                .uuidEqualTo(item.uuid)
+                .findFirst();
+            
+            if (existing != null) {
+              // Duplicate found! Keep the one that's already in the account (likely synced from cloud)
+              // and delete the local guest copy to prevent duplication in UI.
+              await isar.vaultItems.delete(item.id);
+              logger.i('Migration: Duplicate skipped for ${item.title} (UUID match).');
+            } else {
+              // No duplicate, safe to migrate
+              item.ownerId = newUid;
+              item.lastModified = DateTime.now();
+              await isar.vaultItems.put(item);
+            }
+          }
         });
-        logger.i('Migrated ${guestItems.length} items from guest to $newUid');
+        logger.i('Migration process completed for guest data.');
       }
     } catch (e, stack) {
       logger.e('Error migrating guest data', error: e, stackTrace: stack);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:isar/isar.dart';
@@ -18,19 +19,25 @@ import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'models/app_config.dart';
 import 'providers/database_provider.dart';
+import 'providers/navigation_provider.dart';
 import 'widgets/security_lock_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'providers/security_provider.dart';
 import 'services/auto_sync_service.dart';
-import 'services/migration_service.dart';
-import 'widgets/bento_error_screen.dart';
+import 'package:duevault_app/widgets/bento_error_screen.dart';
 import 'utils/logger.dart';
+import 'services/firebase_sync_service.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Stability Fix for Android 15: Lock to Portrait to avoid memory crashes on rotation
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     
     // Parallelize ONLY critical initializations
     await Firebase.initializeApp();
@@ -53,10 +60,11 @@ void main() async {
     final isar = await Isar.open(
       [UserSchema, VaultItemSchema, AppConfigSchema],
       directory: appDir.path,
+      inspector: false, // Fix for Android 15/Pixel 9 userfaultfd timeout
     );
 
-    // Run Data Migrations (Auto-update categories, etc.)
-    await MigrationService.runMigrations(isar);
+    // Run Data Migrations (Postponed to VaultNotifier for Android 15 stability)
+    // await MigrationService.runMigrations(isar);
 
 
 
@@ -104,6 +112,9 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize Firebase Sync (Senior Architecture)
+    ref.read(firebaseSyncServiceProvider).initialize();
   }
 
   @override
@@ -125,21 +136,39 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
       NotificationService.initialize();
 
       if (user != null) {
-        logger.i('App resumed: Triggering Smart Sync & Timezone check...');
-        // We use Future.delayed to ensure the app is fully ready
-        Future.delayed(const Duration(milliseconds: 500), () {
-          ref.read(autoSyncServiceProvider).syncOnStartup();
-        });
+        logger.i('App resumed: Triggering Safe Sync sequence...');
+        _runSafeSyncSequence();
       }
     }
 
-    // 3. Immediate Sync on Pause (Background backup)
     if (state == AppLifecycleState.paused) {
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null) {
         logger.i('App paused: Triggering immediate background backup...');
         ref.read(autoSyncServiceProvider).scheduleBackup(immediate: true);
+        ref.read(firebaseSyncServiceProvider).sync(); // Immediate Firebase Sync
       }
+    }
+  }
+
+  /// Sequential sync to avoid Isar write lock contention on resume
+  Future<void> _runSafeSyncSequence() async {
+    try {
+      // 1. Wait for system and animations to fully settle
+      await Future.delayed(const Duration(milliseconds: 1200));
+      
+      // 2. Google Drive Sync
+      await ref.read(autoSyncServiceProvider).syncOnStartup();
+      
+      // 3. Small gap
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // 4. Firebase Sync
+      await ref.read(firebaseSyncServiceProvider).sync();
+      
+      logger.i('Safe Sync sequence completed.');
+    } catch (e, stack) {
+      logger.e('Error during safe sync sequence', error: e, stackTrace: stack);
     }
   }
 
@@ -203,15 +232,8 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
   }
 }
 
-class MainNavigation extends ConsumerStatefulWidget {
+class MainNavigation extends ConsumerWidget {
   const MainNavigation({super.key});
-
-  @override
-  ConsumerState<MainNavigation> createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends ConsumerState<MainNavigation> {
-  int _currentIndex = 0;
 
   final List<Widget> _screens = const [
     HomeScreen(),
@@ -219,17 +241,19 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(bottomNavIndexProvider);
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: IntegratedBottomNavBar(
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         onTap: (index) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          setState(() => _currentIndex = index);
+          ref.read(bottomNavIndexProvider.notifier).state = index;
         },
         onAddPressed: () {
           showModalBottomSheet(

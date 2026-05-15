@@ -11,14 +11,26 @@ class Currency {
   const Currency(this.code, this.symbol);
 
   String formatAmount(double amount) {
-    final amountString = amount.toStringAsFixed(2);
+    // Show decimals only if they are not zero
+    String amountString;
+    if (amount % 1 == 0) {
+      amountString = amount.toInt().toString();
+    } else {
+      amountString = amount.toStringAsFixed(2);
+      // Optional: remove trailing zero if it's like 10.50 -> 10.5? 
+      // The user said "afisezale daca au zecimale", so 10.50 is fine.
+      // But let's make it clean.
+      if (amountString.endsWith('0')) {
+        amountString = amountString.substring(0, amountString.length - 1);
+      }
+    }
+
     if (code == 'RON') {
       return '$amountString lei';
     }
     if (code == 'PLN') {
       return '$amountString $symbol';
     }
-    // Most global currencies use the symbol at the front (USD, EUR, GBP, INR, JPY, etc.)
     return '$symbol$amountString';
   }
 }

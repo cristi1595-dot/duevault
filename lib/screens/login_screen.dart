@@ -14,16 +14,22 @@ class LoginScreen extends ConsumerWidget {
 
   Future<void> _completeOnboarding(WidgetRef ref, {bool isGuest = false}) async {
     final isar = ref.read(isarProvider);
+    
+    // 1. Update Database first
     await isar.writeTxn(() async {
       final config = await isar.appConfigs.get(0) ?? AppConfig();
       config.hasSeenOnboarding = true;
       config.isGuest = isGuest;
       await isar.appConfigs.put(config);
     });
-    ref.read(hasSeenOnboardingProvider.notifier).state = true;
+
+    // 2. Update States - CRITICAL: Set isGuest FIRST so main.dart logic
+    // (user != null || isGuest) is already true when hasSeenOnboarding triggers a rebuild.
     if (isGuest) {
       ref.read(isGuestProvider.notifier).state = true;
     }
+    
+    ref.read(hasSeenOnboardingProvider.notifier).state = true;
   }
 
   @override
@@ -32,7 +38,7 @@ class LoginScreen extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,

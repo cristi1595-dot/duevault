@@ -72,23 +72,29 @@ class NotificationService {
 
   static Future<bool> requestPermissions() async {
     // 1. Request Notification Permission (UI)
+    // This works fine for POST_NOTIFICATIONS on Android 13+
     final status = await Permission.notification.request();
 
     // 2. Request Exact Alarm Permission (Required for Android 14+)
+    // Senior Fix: Do NOT call .request() on scheduleExactAlarm as it's not a runtime permission
+    // and causes "No requestable permission" error. Instead, we check and can guide to settings.
     if (status.isGranted) {
-      // For Android 13+, exact alarms require special permission
-      if (await Permission.scheduleExactAlarm.isDenied) {
-        await Permission.scheduleExactAlarm.request();
+      final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+      if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+        logger.i('NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.');
+        // We don't force open here to avoid jarring UX, 
+        // the "Fix Now" button in settings will handle the deep link.
       }
     }
 
-    // 3. Fallback to plugin-specific request
+    // 3. Fallback to plugin-specific request for compatibility
     final androidImplementation =
         _notificationsPlugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (androidImplementation != null) {
       await androidImplementation.requestNotificationsPermission();
+      // requestExactAlarmsPermission() in the plugin handles the intent correctly
       await androidImplementation.requestExactAlarmsPermission();
     }
 

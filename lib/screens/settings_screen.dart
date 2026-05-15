@@ -4,6 +4,7 @@ import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
+import 'package:app_settings/app_settings.dart';
 import '../models/app_config.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
@@ -20,7 +21,6 @@ import '../providers/notification_provider.dart';
 import '../providers/database_provider.dart';
 import '../main.dart';
 import '../utils/logger.dart';
-import 'login_screen.dart';
 
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -44,12 +44,95 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     bool? batteryDisabled =
         await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
     bool notificationsGranted = await Permission.notification.isGranted;
+    
+    // Senior Fix: On Android 13+, we also need Exact Alarm permission for reliability
+    bool exactAlarmsGranted = true;
+    try {
+      exactAlarmsGranted = await Permission.scheduleExactAlarm.isGranted;
+    } catch (_) {
+      // Not applicable on this platform/version
+    }
 
     if (mounted) {
       setState(() {
         _isBatteryOptimizationDisabled = batteryDisabled;
-        _isNotificationPermissionGranted = notificationsGranted;
+        _isNotificationPermissionGranted =
+            notificationsGranted && exactAlarmsGranted;
       });
+    }
+  }
+
+  Future<void> _runNotificationWizard() async {
+    // 1. Request Notification Permissions (System Dialog)
+    await NotificationService.requestPermissions();
+
+    // 2. Step 1: Open App Settings for Notifications
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Step 1: Please ensure Notifications are allowed.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    await AppSettings.openAppSettings(type: AppSettingsType.notification);
+
+    // Bridge: Wait for user to come back and confirm step 2
+    if (mounted) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.battery_saver, color: AppTheme.primaryAction),
+              SizedBox(width: 12),
+              Text('Step 2: Battery'),
+            ],
+          ),
+          content: const Text(
+            'Almost done! Next, we need to disable battery optimization to ensure reminders arrive exactly on time.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'CONTINUE TO BATTERY',
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 3. Step 2: Battery Settings
+    await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+
+    // Small delay to allow system to update before we re-check
+    await Future.delayed(const Duration(seconds: 1));
+    await _checkStatus();
+
+    // 4. Final Warning if not fully enabled
+    if (_isBatteryOptimizationDisabled != true ||
+        !_isNotificationPermissionGranted) {
+      if (mounted) {
+        VaultSnackBar.show(
+          message:
+              'Reminders may not work reliably without background permissions.',
+          backgroundColor: AppTheme.urgentRed.withValues(alpha: 0.8),
+          duration: const Duration(seconds: 5),
+        );
+      }
+    } else {
+      if (mounted) {
+        VaultSnackBar.show(
+          message: '✓ Notifications & Background tasks are now optimized!',
+          backgroundColor: AppTheme.safeGreen,
+        );
+      }
     }
   }
 
@@ -65,7 +148,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'Settings',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
@@ -81,7 +164,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -164,15 +247,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const Text(
                               'Enable Global Reminders',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 17,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Switch(
                               value: globalEnabled,
-                              onChanged: (v) => ref
-                                  .read(globalNotificationsProvider.notifier)
-                                  .toggle(v),
+                              onChanged: (v) async {
+                                await ref
+                                    .read(globalNotificationsProvider.notifier)
+                                    .toggle(v);
+                                if (v && context.mounted) {
+                                  await _runNotificationWizard();
+                                }
+                              },
                               activeThumbColor: AppTheme.primaryAction,
                             ),
                           ],
@@ -189,14 +277,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     Text(
                                       'Early 3-Day Alert',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     Text(
                                       'Fixed early reminder for bills',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 13,
                                         color: Colors.grey,
                                       ),
                                     ),
@@ -246,7 +334,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     child: Text(
                                       'Custom Reminder',
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -255,7 +343,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     '$alertDays ${alertDays == 1 ? "Day" : "Days"} before',
                                     style: const TextStyle(
                                       color: AppTheme.primaryAction,
-                                      fontSize: 13,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -295,50 +383,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ],
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Background Restrictions',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
+                        GestureDetector(
+                          onTap: (_isBatteryOptimizationDisabled == true &&
+                                  _isNotificationPermissionGranted)
+                              ? null
+                              : () async {
+                                  await _runNotificationWizard();
+                                },
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Background Restrictions',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Allow app to run in background for alerts.',
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall?.color,
-                                      fontSize: 10,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Allow app to run in background for alerts.',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall?.color,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () async {
-                                // 1. Request Notification Permissions first
-                                await NotificationService.requestPermissions();
-
-                                // 2. Then Battery Optimization
-                                if (_isBatteryOptimizationDisabled != true) {
-                                  await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
-                                }
-
-                                // Small delay to allow system to update before we re-check
-                                await Future.delayed(
-                                  const Duration(seconds: 1),
-                                );
-                                _checkStatus();
-                              },
-                              child: Container(
+                              const SizedBox(width: 12),
+                              Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 8,
@@ -347,13 +427,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                   color:
                                       (_isBatteryOptimizationDisabled == true &&
-                                          _isNotificationPermissionGranted)
-                                      ? AppTheme.safeGreen.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : AppTheme.urgentRed.withValues(
-                                          alpha: 0.1,
-                                        ),
+                                              _isNotificationPermissionGranted)
+                                          ? AppTheme.safeGreen.withValues(
+                                              alpha: 0.1,
+                                            )
+                                          : AppTheme.urgentRed.withValues(
+                                              alpha: 0.1,
+                                            ),
                                   border: Border.all(
                                     color:
                                         (_isBatteryOptimizationDisabled ==
@@ -393,14 +473,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             ? AppTheme.safeGreen
                                             : AppTheme.urgentRed,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     );
@@ -408,7 +488,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
 
             _buildSecuritySettings(context, ref),
             const SizedBox(height: 10),
@@ -512,7 +592,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Sign in with Google',
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 15,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -777,6 +857,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               } else if (result == 'uploaded') {
                 message = '✓ Local data backed up to cloud!';
                 color = AppTheme.primaryAction;
+              } else if (result == 'empty') {
+                message = 'No backup found in cloud.';
+                color = AppTheme.warningYellow;
               } else {
                 message = 'Your vault is already up to date.';
                 color = null;
@@ -800,6 +883,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildDataManagement(BuildContext context, WidgetRef ref) {
+    final isGuest = FirebaseAuth.instance.currentUser == null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -812,7 +896,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _buildSettingItem(
                 icon: Icons.phonelink_erase,
                 title: 'Clear Local Data',
-                subtitle: 'Deletes local items only. Cloud backup stays safe.',
+                subtitle: isGuest 
+                  ? 'Deletes all bills and documents from this phone.'
+                  : 'Deletes local items only. Cloud backup stays safe.',
                 onTap: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -823,8 +909,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       title: const Text('Clear Local Data'),
-                      content: const Text(
-                        'This will delete all bills and documents from this phone. Your settings and Google Drive backup will NOT be deleted.',
+                      content: Text(
+                        isGuest 
+                          ? 'This will permanently delete all bills and documents from this phone. This action cannot be undone.'
+                          : 'This will delete all bills and documents from this phone. Your settings and Google Drive backup will NOT be deleted.',
                       ),
                       actions: [
                         TextButton(
@@ -861,9 +949,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (context.mounted) {
                         Navigator.pop(context); // Close progress
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
-                              'Local data cleared. Settings and Cloud backup preserved.',
+                              isGuest 
+                                ? 'Local data cleared.'
+                                : 'Local data cleared. Settings and Cloud backup preserved.',
                             ),
                           ),
                         );
@@ -1031,7 +1121,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           : (user?.email?.split('@').first ?? 'Guest User'),
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1039,7 +1129,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       isGuest ? 'Local mode active' : (user.email ?? ''),
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyMedium?.color,
-                        fontSize: 11,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -1065,7 +1155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         title: const Text('Sign Out'),
                         content: const Text(
-                          'Are you sure you want to sign out? Your encrypted data will remain safe on this device for a faster experience when you return.',
+                          'Are you sure you want to sign out? Your encrypted data will remain safe on this device.',
                         ),
                         actions: [
                           TextButton(
@@ -1098,25 +1188,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'SettingsScreen: Sign Out confirmed. Clearing session flags.',
                       );
 
-                      // 1. Reset Isar config (Persistence fix)
+                      // 1. Reset Security (FaceID/PIN) - as requested
+                      await ref.read(securityProvider.notifier).reset();
+
+                      // 2. Reset Isar config (Persistence fix)
                       final isar = ref.read(isarProvider);
                       await isar.writeTxn(() async {
                         final config = await isar.appConfigs.get(0) ?? AppConfig();
-                        config.isGuest = false;
+                        config.isGuest = true; // Switch back to guest mode automatically
                         await isar.appConfigs.put(config);
                       });
 
-                      // 2. Perform logout
+                      // 3. Perform logout
                       await ref.read(authServiceProvider).signOut();
-                      ref.read(isGuestProvider.notifier).state = false;
+                      ref.read(isGuestProvider.notifier).state = true;
 
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
+                            builder: (_) => const MainNavigation(),
                           ),
                           (route) => false,
+                        );
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Signed out. You are now in Guest mode.')),
                         );
                       }
                     }
@@ -1127,8 +1224,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Text(
                         'Sign Out',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       SizedBox(width: 8),
@@ -1136,12 +1233,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                 )
-              else
-                Icon(
-                  Icons.verified_user_outlined,
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                  size: 18,
-                ),
             ],
           ),
         );
@@ -1153,12 +1244,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 4, top: 12),
+      padding: const EdgeInsets.only(left: 4, bottom: 4, top: 8),
       child: Text(
         title,
         style: AppTheme.labelCapsStyle(context).copyWith(
           color: Theme.of(context).textTheme.bodySmall?.color,
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: 1.1,
         ),
       ),
@@ -1190,7 +1281,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title,
         style: TextStyle(
           color: titleColor ?? Theme.of(context).textTheme.bodyLarge?.color,
-          fontSize: 13,
+          fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1199,7 +1290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle,
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodySmall?.color,
-                fontSize: 10,
+                fontSize: 12,
               ),
             )
           : null,
@@ -1210,7 +1301,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             color: Theme.of(context).textTheme.bodySmall?.color,
             size: 14,
           ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
     );
   }
 
@@ -1239,7 +1330,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'Currency',
         style: TextStyle(
           color: Theme.of(context).textTheme.bodyLarge?.color,
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1249,7 +1340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             : '${current.code} (${current.symbol})',
         style: TextStyle(
           color: Theme.of(context).textTheme.bodyMedium?.color,
-          fontSize: 11,
+          fontSize: 13,
         ),
       ),
       trailing: DropdownButton<Currency>(
@@ -1274,7 +1365,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value.code,
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 13,
+                fontSize: 15,
               ),
             ),
           );
@@ -1323,7 +1414,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 title: const Text(
                   'FaceID / Fingerprint / PIN',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 trailing: Switch(
                   value: security.isEnabled,
