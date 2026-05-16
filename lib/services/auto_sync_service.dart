@@ -182,10 +182,9 @@ class AutoSyncService {
         }
 
         // 3. If cloud backup exists, perform Smart Merge
-        final success = await _mergeWithCloud(driveService);
+        final success = await _mergeWithCloud(driveService, isLoginSync: true);
         if (success) {
-          // Senior QA Fix: Migrate guest data to real UID so it becomes visible in the UI immediately
-          await _ref.read(vaultProvider.notifier).migrateGuestData(FirebaseAuth.instance.currentUser!.uid);
+          // Sync attachments for the merged items
           await _syncAttachments(driveService);
           return 'restored';
         }
@@ -263,7 +262,7 @@ class AutoSyncService {
           if (cloudTime != null) {
              if (localTime == null || cloudTime.isAfter(localTime.add(const Duration(seconds: 5)))) {
                 logger.i('AutoSyncService: Cloud data is different and newer. Triggering smart merge...');
-                await _mergeWithCloud(driveService);
+                await _mergeWithCloud(driveService, isLoginSync: false);
                 await _syncAttachments(driveService);
               } 
               else if (localTime.isAfter(cloudTime.add(const Duration(seconds: 5)))) {
@@ -282,7 +281,7 @@ class AutoSyncService {
 
   /// Advanced Smart Merge: Resolves multi-device conflicts using UUIDs and timestamps.
   /// Does NOT overwrite the whole DB.
-  Future<bool> _mergeWithCloud(DriveService driveService) async {
+  Future<bool> _mergeWithCloud(DriveService driveService, {bool isLoginSync = false}) async {
     final localIsar = _ref.read(isarProvider);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
@@ -343,7 +342,7 @@ class AutoSyncService {
       for (var localItem in localItems) {
         final existsInCloud = cloudItems.any((i) => i.uuid == localItem.uuid);
         if (!existsInCloud) {
-          if (localItem.wasSynced) {
+          if (localItem.wasSynced && !isLoginSync) {
             // Item was in cloud before, but is gone now -> Deleted from another device
             logger.i('AutoSyncService: Local item "${localItem.title}" was deleted from cloud. Removing locally...');
             await localIsar.writeTxn(() async {

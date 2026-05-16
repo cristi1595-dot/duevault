@@ -11,10 +11,17 @@ import 'add_document_screen.dart';
 import '../widgets/encrypted_image.dart';
 import '../services/encryption_service.dart';
 
-class ItemDetailScreen extends ConsumerWidget {
+class ItemDetailScreen extends ConsumerStatefulWidget {
   final VaultItem item;
 
   const ItemDetailScreen({super.key, required this.item});
+
+  @override
+  ConsumerState<ItemDetailScreen> createState() => _ItemDetailScreenState();
+}
+
+class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
+  bool _isBusy = false;
 
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;
@@ -25,7 +32,9 @@ class ItemDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    final item = widget.item;
     // Watch specifically for this item's changes
     final currentItem = ref.watch(vaultProvider).firstWhere((i) => i.id == item.id, orElse: () => item);
     final currency = ref.watch(currencyProvider);
@@ -239,20 +248,27 @@ class ItemDetailScreen extends ConsumerWidget {
             // 5. Actions
             if (!currentItem.isPaid)
               PrimaryButton(
-                label: currentItem.itemType == 'Bill' ? 'Mark as Paid' : 'Mark as Renewed',
-                icon: Icons.check_circle_outline,
-                onPressed: () async {
-                  final notifier = ref.read(vaultProvider.notifier);
-                  await notifier.updatePaidStatus(currentItem.id, true);
-                  
-                  if (context.mounted) {
-                    final actionText = currentItem.itemType == 'Bill' ? 'paid' : 'renewed';
-                    VaultSnackBar.show(
-                      message: '${currentItem.title.isEmpty ? currentItem.category : currentItem.title} marked as $actionText',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(currentItem.id, false),
-                    );
+                label: _isBusy 
+                    ? 'Processing...' 
+                    : (currentItem.itemType == 'Bill' ? 'Mark as Paid' : 'Mark as Renewed'),
+                icon: _isBusy ? null : Icons.check_circle_outline,
+                onPressed: _isBusy ? null : () async {
+                  setState(() => _isBusy = true);
+                  try {
+                    final notifier = ref.read(vaultProvider.notifier);
+                    await notifier.updatePaidStatus(currentItem.id, true);
+                    
+                    if (context.mounted) {
+                      final actionText = currentItem.itemType == 'Bill' ? 'paid' : 'renewed';
+                      VaultSnackBar.show(
+                        message: '${currentItem.title.isEmpty ? currentItem.category : currentItem.title} marked as $actionText',
+                        actionLabel: 'UNDO',
+                        backgroundColor: AppTheme.safeGreen,
+                        onAction: () => notifier.updatePaidStatus(currentItem.id, false),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isBusy = false);
                   }
                 },
               ),
@@ -297,9 +313,9 @@ class ItemDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             SecondaryButton(
-              label: 'Delete Item',
-              icon: Icons.delete_outline,
-              onPressed: () => _confirmDelete(context, ref, currentItem),
+              label: _isBusy ? 'Please wait...' : 'Delete Item',
+              icon: _isBusy ? null : Icons.delete_outline,
+              onPressed: _isBusy ? null : () => _confirmDelete(context, ref, currentItem),
             ),
             const SizedBox(height: 40),
           ],

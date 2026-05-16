@@ -101,9 +101,8 @@ class SyncStatusIndicator extends ConsumerWidget {
         break;
       case SyncStatus.idle:
         iconData = Icons.cloud_queue;
-        iconColor = Theme.of(
-          context,
-        ).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
+        iconColor = Theme.of(context).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
+        break;
     }
 
     return Tooltip(
@@ -249,14 +248,14 @@ class VaultItemTile extends ConsumerWidget {
     final bool isExpired = item.isExpired;
     final bool isBill = item.itemType == 'Bill';
     final bool isDoc = item.itemType == 'Document';
-    
-    // Red Box logic: 
+
+    // Red Box logic:
     // - Bills: Unpaid AND (Overdue OR due in <= 3 days)
     // - Documents: Not Renewed AND Expired
-    final bool showRed = !item.isPaid && (
-      (isBill && (isOverdue || (daysLeft >= 0 && daysLeft <= 3))) ||
-      (isDoc && isExpired)
-    );
+    final bool showRed =
+        !item.isPaid &&
+        ((isBill && (isOverdue || (daysLeft >= 0 && daysLeft <= 3))) ||
+            (isDoc && isExpired));
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
     final itemColor = isBill ? AppTheme.primaryAction : AppTheme.safeGreen;
@@ -285,7 +284,9 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: TextButton.styleFrom(foregroundColor: AppTheme.urgentRed),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.urgentRed,
+                      ),
                       child: const Text('DELETE'),
                     ),
                   ],
@@ -312,8 +313,12 @@ class VaultItemTile extends ConsumerWidget {
                   actionLabel: 'UNDO',
                   backgroundColor: AppTheme.primaryAction,
                   onAction: () {
-                    if (item.isArchived) notifier.toggleArchiveStatus(item.id, true);
-                    if (item.isPaid) notifier.updatePaidStatus(item.id, true);
+                    if (item.isArchived) {
+                      notifier.toggleArchiveStatus(item.id, true);
+                    }
+                    if (item.isPaid) {
+                      notifier.updatePaidStatus(item.id, true);
+                    }
                   },
                 );
               } else {
@@ -368,9 +373,20 @@ class VaultItemTile extends ConsumerWidget {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  'Delete',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 SizedBox(width: 16),
-                Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+                Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ],
             ),
           ),
@@ -403,115 +419,156 @@ class VaultItemTile extends ConsumerWidget {
               child: IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: itemColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
+                  children: [
+                    Container(
+                      width: 60,
+                      decoration: BoxDecoration(
+                        color: itemColor.withValues(alpha: 0.1),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(22),
+                          bottomLeft: Radius.circular(22),
+                          topRight: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
                         ),
-                        child: Icon(
-                          CategoryUtils.getIcon(item.category),
-                          color: itemColor,
-                          size: 32,
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: itemColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Text(
-                            item.itemType == 'Bill' ? 'B' : 'D',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+                        border: Border.all(
+                          color: showRed
+                              ? AppTheme.urgentRed.withValues(alpha: 0.5)
+                              : itemColor.withValues(alpha: 0.2),
+                          width: 1.5,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title.isEmpty ? item.category : item.title,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                decoration: item.isPaid
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: item.isPaid
-                                    ? Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium?.color
-                                    : null,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.dueDate != null
-                              ? 'Due ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
-                              : 'No due date',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 110,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (item.itemType != 'Document') ...[
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              currency.formatAmount(item.amount ?? 0.0),
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: showRed ? AppTheme.urgentRed : null,
-                              ),
-                              textAlign: TextAlign.center,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Center(
+                            child: Icon(
+                              CategoryUtils.getIcon(item.category),
+                              color: itemColor,
+                              size: 34,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: itemColor,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(10),
+                                  bottomRight: Radius.circular(18),
+                                ),
+                              ),
+                              child: Text(
+                                item.itemType == 'Bill' ? 'B' : 'D',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
-                        StatusBadge(
-                          label: item.isPaid
-                              ? (item.itemType == 'Bill' ? 'PAID' : 'RENEWED')
-                              : (isOverdue
-                                    ? (item.itemType == 'Bill' ? 'OVERDUE' : 'EXPIRED')
-                                    : (daysLeft == 0 ? 'TODAY' : '$daysLeft DAYS')),
-                          isPaid: item.isPaid,
-                          daysLeft: item.isPaid ? null : daysLeft,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 42, // Optimized height for 2 lines
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  () {
+                                    final rawTitle = item.title.isEmpty
+                                        ? item.category
+                                        : item.title;
+                                    return rawTitle.length > 40
+                                        ? '${rawTitle.substring(0, 37)}...'
+                                        : rawTitle;
+                                  }(),
+                                  maxLines: 2,
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        height: 1.0, // Tighter line height
+                                        decoration: item.isPaid
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: item.isPaid
+                                            ? Theme.of(
+                                                context,
+                                              ).textTheme.bodyMedium?.color
+                                            : null,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            item.dueDate != null
+                                ? 'Due ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
+                                : 'No due date',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 110,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (item.itemType != 'Document') ...[
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                currency.formatAmount(item.amount ?? 0.0),
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: showRed
+                                          ? AppTheme.urgentRed
+                                          : null,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                          ],
+                          StatusBadge(
+                            label: item.isPaid
+                                ? (item.itemType == 'Bill' ? 'PAID' : 'RENEWED')
+                                : (isOverdue
+                                      ? (item.itemType == 'Bill'
+                                            ? 'OVERDUE'
+                                            : 'EXPIRED')
+                                      : (daysLeft == 0
+                                            ? 'TODAY'
+                                            : '$daysLeft DAYS')),
+                            isPaid: item.isPaid,
+                            daysLeft: item.isPaid ? null : daysLeft,
+                          ),
+                        ],
+                      ),
+                    ),
                     if (!item.isPaid && onCheckPressed != null) ...[
                       const SizedBox(width: 12),
                       InkWell(
@@ -575,7 +632,6 @@ class VaultItemTile extends ConsumerWidget {
     ];
     return months[month - 1];
   }
-
 }
 
 /// 7. CriticalAlertCard: For overdue warnings.
@@ -649,11 +705,11 @@ class IntegratedBottomNavBar extends StatelessWidget {
       ),
       padding: EdgeInsets.zero,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildNavItem(0, Icons.home_filled, 'Home', inactiveColor),
+          Expanded(child: _buildNavItem(0, Icons.home_filled, 'Home', inactiveColor)),
           _buildAddButton(),
-          _buildNavItem(1, Icons.folder_copy, 'Vault', inactiveColor),
+          Expanded(child: _buildNavItem(1, Icons.folder_copy, 'Vault', inactiveColor)),
         ],
       ),
     );
@@ -675,13 +731,13 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 4),
+          Icon(icon, color: color, size: 34),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -694,20 +750,13 @@ class IntegratedBottomNavBar extends StatelessWidget {
     return GestureDetector(
       onTap: onAddPressed,
       child: Container(
-        width: 56,
-        height: 56,
+        width: 80,
+        height: 80,
         decoration: BoxDecoration(
           color: AppTheme.primaryAction,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryAction.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(20), // Matches Bento style radius
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+        child: const Icon(Icons.add, color: Colors.white, size: 40),
       ),
     );
   }

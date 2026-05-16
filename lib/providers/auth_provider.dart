@@ -9,7 +9,7 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
 
-final isGuestProvider = StateProvider<bool>((ref) => false);
+final isGuestProvider = StateProvider<bool>((ref) => true);
 final hasSeenOnboardingProvider = StateProvider<bool>((ref) => false);
 
 final authServiceProvider = Provider<AuthService>((ref) {

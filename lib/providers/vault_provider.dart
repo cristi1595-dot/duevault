@@ -18,31 +18,37 @@ import '../services/notification_service.dart';
 import '../services/encryption_service.dart';
 import '../services/drive_service.dart';
 
-
 final vaultRepositoryProvider = Provider<VaultRepository>((ref) {
   final isar = ref.watch(isarProvider);
   return VaultRepository(isar);
 });
 
-
 class VaultNotifier extends Notifier<List<VaultItem>> {
   late VaultRepository _repository;
   bool _isLoading = false;
+  Completer<void>? _loadCompleter;
+  int _currentLoadVersion = 0;
 
   @override
   List<VaultItem> build() {
     _repository = ref.watch(vaultRepositoryProvider);
-    
+
     // Watch auth state to trigger reload on login/logout
     final authState = ref.watch(authStateProvider);
-    final user = authState.valueOrNull;
 
-    // Load items async
-    _loadItems(user);
-    
+    // Use the user from the stream to trigger re-loads
+    authState.whenData((user) {
+      _loadItems(user);
+    });
+
     return [];
   }
 
+  Future<void> waitForLoad() async {
+    if (_isLoading && _loadCompleter != null) {
+      await _loadCompleter!.future;
+    }
+  }
 
   Future<void> _markAsDirty() async {
     final config = await _repository.getConfig();
@@ -50,34 +56,77 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     await _repository.updateConfig(config);
   }
 
-  Future<void> _loadItems(User? user) async {
+  Future<void> _loadItems(User? initialUser) async {
     if (_isLoading) return;
     _isLoading = true;
-    
+    _loadCompleter = Completer<void>();
+    final loadVersion = ++_currentLoadVersion;
+
     try {
-      // Senior Architecture Fix: Give Android 15/Pixel 9 kernel time to stabilize 
-      // before hitting Isar native libraries. Increased delay for rotation-like stability.
-      await Future.delayed(const Duration(milliseconds: 2500));
-      
+      // Stabilization Fix for Android 15/Pixel 9 kernel (userfaultfd)
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // CRITICAL: Ensure we are not in the build phase
+      await Future.microtask(() {});
+
+      // Re-fetch current user to ensure we use the latest auth state
+      final user = FirebaseAuth.instance.currentUser;
+
       final isar = ref.read(isarProvider);
-      
+
       // Perform Migrations here (lazy-loaded)
       await MigrationService.runMigrations(isar);
 
       final ownerId = user?.uid ?? 'local_user';
+      logger.i(
+        'VaultNotifier: Loading items for owner: $ownerId (v$loadVersion)',
+      );
 
       // Run Smart Auto-Archive (Backgrounded, non-blocking)
-      unawaited(_repository.autoArchiveExpiredItems(ownerId).then((_) => _markAsDirty()).catchError((e) {
-        logger.e('VaultNotifier: Auto-archive error', error: e);
-      }));
-      
+      unawaited(
+        _repository
+            .autoArchiveExpiredItems(ownerId)
+            .then((_) => _markAsDirty())
+            .catchError((e) {
+              logger.e('VaultNotifier: Auto-archive error', error: e);
+            }),
+      );
+
       final freshItems = await _repository.getItems(ownerId);
+
+      // Senior Debug: Also check if any guest items were left behind
+      if (ownerId != 'local_user') {
+        final guestCount = await isar
+            .collection<VaultItem>()
+            .filter()
+            .ownerIdEqualTo('local_user')
+            .isSampleEqualTo(false)
+            .count();
+        if (guestCount > 0) {
+          logger.w(
+            'VaultNotifier: Found $guestCount ORPHAN guest items while logged in as $ownerId!',
+          );
+        }
+      }
+
+      // ABORT if a newer load has started
+      if (loadVersion != _currentLoadVersion) {
+        logger.w(
+          'VaultNotifier: Discarding load v$loadVersion (newer version exists)',
+        );
+        return;
+      }
+      logger.i(
+        'VaultNotifier: Found ${freshItems.length} items in DB for $ownerId',
+      );
 
       // Check if we need to add sample data (ONLY at the very first opening for guest mode)
       if (user == null) {
         final config = await _repository.getConfig();
         if (!config.hasSeenDemo && freshItems.isEmpty) {
-          logger.i('Vault: Fresh install detected. Generating sample data for Guest.');
+          logger.i(
+            'Vault: Fresh install detected. Generating sample data for Guest.',
+          );
           await _repository.generateSampleData('local_user');
           final updatedItems = await _repository.getItems('local_user');
           state = updatedItems;
@@ -87,7 +136,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         await _repository.deleteSamplesForUser(user.uid);
         // Re-load items to show clean state
         state = await _repository.getItems(user.uid);
-        
+
         // Also mark as having seen demo so it doesn't reappear if they log out
         final config = await _repository.getConfig();
         if (!config.hasSeenDemo) {
@@ -98,16 +147,21 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
       // Final fetch to ensure state is perfectly in sync with DB changes above
       state = await _repository.getItems(ownerId);
+    } catch (e) {
+      logger.e('VaultNotifier: Error loading items', error: e);
     } finally {
       _isLoading = false;
+      if (_loadCompleter?.isCompleted == false) {
+        _loadCompleter?.complete();
+      }
     }
   }
-
 
   Future<void> refreshVault() async {
     final user = FirebaseAuth.instance.currentUser;
     await _loadItems(user);
   }
+
 
   void _triggerSync() {
     ref.read(autoSyncServiceProvider).scheduleBackup();
@@ -125,8 +179,14 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       await _repository.deleteSamplesForUser(user?.uid ?? 'local_user');
     }
 
-    // 2. Assign Owner ID (CRITICAL FIX: Was missing, items were disappearing)
-    item.ownerId = user?.uid ?? 'local_user';
+    // 2. Assign Owner ID (CRITICAL FIX: Respect isGuest state strictly)
+    final isGuest = ref.read(isGuestProvider);
+
+    if (isGuest || user == null) {
+      item.ownerId = 'local_user';
+    } else {
+      item.ownerId = user.uid;
+    }
 
     // 3. Save via Repository
     await _repository.saveItem(
@@ -146,7 +206,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     state = state.map((item) {
       if (item.id == id) {
         // Create a new item with updated status for immediate UI feedback
-        return VaultItem.fromMap(item.toMap())..id = item.id..isPaid = isPaid;
+        return VaultItem.fromMap(item.toMap())
+          ..id = item.id
+          ..isPaid = isPaid;
       }
       return item;
     }).toList();
@@ -189,12 +251,26 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
   }
 
   Future<void> migrateGuestData(String newUid) async {
+    // 1. Move data in DB
     await _repository.migrateGuestData(newUid);
-    await _loadItems(FirebaseAuth.instance.currentUser);
+
+    // 2. Update UI immediately and cancel any pending background loads
+    _currentLoadVersion++;
+    final items = await _repository.getItems(newUid);
+    logger.i(
+      'Migration: UI updated with ${items.length} items for UID: $newUid (canceling stale loads)',
+    );
+    state = items;
+
+    // 3. Mark for sync
     await _markAsDirty();
     _triggerSync();
   }
 
+  Future<void> deleteGuestData() async {
+    await _repository.deleteGuestData();
+    await _loadItems(FirebaseAuth.instance.currentUser);
+  }
 
   Future<void> removeAttachment(int itemId, String localPath) async {
     final isar = ref.read(isarProvider);
@@ -222,11 +298,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         }
         item.cloudFileIds.removeAt(index);
       }
-      
+
       // Update item lists
       item.attachedFiles.removeAt(index);
       item.lastModified = DateTime.now();
-      
+
       // 3. Persist change
       await isar.writeTxn(() async {
         await isar.collection<VaultItem>().put(item);
@@ -235,7 +311,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       await _loadItems(FirebaseAuth.instance.currentUser);
       await _markAsDirty();
       _triggerSync();
-      
+
       logger.i('Attachment removed: $localPath');
     }
   }
@@ -244,7 +320,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     final authService = ref.read(authServiceProvider);
     final token = await authService.getFreshAccessToken();
     if (token != null) {
-      final driveService = DriveService(GoogleAuthClient({'Authorization': 'Bearer $token'}));
+      final driveService = DriveService(
+        GoogleAuthClient({'Authorization': 'Bearer $token'}),
+      );
       try {
         await driveService.deleteFile(fileId);
         logger.i('Cloud file deleted: $fileId');
@@ -256,11 +334,12 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     }
   }
 
-
   Future<void> clearAllData({bool alsoDeleteCloud = false}) async {
-    logger.w('VaultNotifier: clearAllData called! alsoDeleteCloud: $alsoDeleteCloud');
+    logger.w(
+      'VaultNotifier: clearAllData called! alsoDeleteCloud: $alsoDeleteCloud',
+    );
     final isar = ref.read(isarProvider);
-    
+
     // 1. Notifications cleanup
     final allItems = await isar.collection<VaultItem>().where().findAll();
     for (final item in allItems) {
@@ -289,7 +368,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     }
 
     state = [];
-    
+
     // 3. Cloud wipe
     if (alsoDeleteCloud) {
       final user = FirebaseAuth.instance.currentUser;
@@ -301,7 +380,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         final authService = ref.read(authServiceProvider);
         final token = await authService.getFreshAccessToken();
         if (token != null) {
-          final driveService = DriveService(GoogleAuthClient({'Authorization': 'Bearer $token'}));
+          final driveService = DriveService(
+            GoogleAuthClient({'Authorization': 'Bearer $token'}),
+          );
           try {
             await driveService.deleteBackup();
           } finally {
@@ -316,4 +397,3 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 final vaultProvider = NotifierProvider<VaultNotifier, List<VaultItem>>(() {
   return VaultNotifier();
 });
-

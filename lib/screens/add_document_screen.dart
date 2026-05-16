@@ -35,6 +35,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   List<String> _attachedFiles = [];
   bool _useOcr = true;
   bool _isProcessingOcr = false;
+  bool _isSaving = false;
   final ImagePicker _picker = ImagePicker();
 
   final List<CategoryData> _categories = AppCategories.docCategories;
@@ -227,6 +228,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
     final item = _isEdit ? widget.item! : VaultItem();
@@ -240,10 +242,16 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     item.attachedFiles = _attachedFiles;
     item.isPaid = false; 
 
-    await ref.read(vaultProvider.notifier).addItem(item);
-    if (mounted) {
-      // Direct to Home: pop until we reach the root (HomeScreen)
-      Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(vaultProvider.notifier).addItem(item);
+      if (mounted) {
+        // Direct to Home: pop until we reach the root (HomeScreen)
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      _showValidationError('Error saving document: $e');
     }
   }
 
@@ -510,9 +518,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               const SizedBox(height: 24),
 
               PrimaryButton(
-                label: _isEdit ? 'Update Document' : 'Save Document',
-                icon: Icons.check_circle_outline,
-                onPressed: _isFormValid ? _submit : null,
+                label: _isSaving 
+                    ? 'Saving...' 
+                    : (_isEdit ? 'Update Document' : 'Save Document'),
+                icon: _isSaving ? null : Icons.check_circle_outline,
+                onPressed: (_isFormValid && !_isSaving) ? _submit : null,
               ),
               const SizedBox(height: 40),
             ],

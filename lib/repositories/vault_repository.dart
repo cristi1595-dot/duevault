@@ -19,13 +19,18 @@ class VaultRepository {
   /// Load all items for a specific owner
   Future<List<VaultItem>> getItems(String ownerId) async {
     try {
-      return await isar.collection<VaultItem>()
+      return await isar
+          .collection<VaultItem>()
           .filter()
           .ownerIdEqualTo(ownerId)
           .isDeletedEqualTo(false)
           .findAll();
     } catch (e, stack) {
-      logger.e('Error loading items for owner: $ownerId', error: e, stackTrace: stack);
+      logger.e(
+        'Error loading items for owner: $ownerId',
+        error: e,
+        stackTrace: stack,
+      );
       return [];
     }
   }
@@ -53,11 +58,20 @@ class VaultRepository {
   }
 
   /// Add or update a vault item with file processing and encryption
-  Future<VaultItem> saveItem(VaultItem item, {int? alertDays, bool? threeDayAlertEnabled, bool notificationsEnabled = false}) async {
+  Future<VaultItem> saveItem(
+    VaultItem item, {
+    int? alertDays,
+    bool? threeDayAlertEnabled,
+    bool notificationsEnabled = false,
+  }) async {
     try {
       // 1. Normalize dates
       if (item.dueDate != null) {
-        item.dueDate = DateTime(item.dueDate!.year, item.dueDate!.month, item.dueDate!.day);
+        item.dueDate = DateTime(
+          item.dueDate!.year,
+          item.dueDate!.month,
+          item.dueDate!.day,
+        );
         if (item.recurrence != 'None') {
           item.originalDueDay ??= item.dueDate!.day;
         }
@@ -83,9 +97,10 @@ class VaultRepository {
         if (!path.contains('app_flutter/attachments')) {
           final originalFile = File(path);
           if (await originalFile.exists()) {
-            final fileName = 'doc_${DateTime.now().microsecondsSinceEpoch}_${p.basename(path)}';
+            final fileName =
+                'doc_${DateTime.now().microsecondsSinceEpoch}_${p.basename(path)}';
             final newPath = '${attachmentsDir.path}/$fileName';
-            
+
             // Optimization: Read and Write once. Encryption is handled in-place for now,
             // but we ensure the file exists in the destination first.
             try {
@@ -93,7 +108,7 @@ class VaultRepository {
               final fileToSave = File(newPath);
               await fileToSave.writeAsBytes(bytes);
               await EncryptionService.encryptFile(newPath);
-              
+
               // Calculate MD5 of the encrypted file for cloud comparison
               final encryptedBytes = await fileToSave.readAsBytes();
               checksums.add(md5.convert(encryptedBytes).toString());
@@ -103,7 +118,7 @@ class VaultRepository {
               }
               rethrow;
             }
-            
+
             finalPaths.add(newPath);
           }
         } else {
@@ -120,7 +135,9 @@ class VaultRepository {
       item.cloudFileChecksums = checksums;
 
       // 4. Encrypt notes
-      if (item.notes != null && item.notes!.isNotEmpty && !item.notes!.startsWith('encrypted:')) {
+      if (item.notes != null &&
+          item.notes!.isNotEmpty &&
+          !item.notes!.startsWith('encrypted:')) {
         // Check if already encrypted to avoid double encryption (Senior check)
         final encrypted = await EncryptionService.encryptText(item.notes);
         if (encrypted != null) {
@@ -138,13 +155,18 @@ class VaultRepository {
         });
       } on IsarError catch (e) {
         if (e.toString().contains('full') || e.toString().contains('Disk')) {
-          throw Exception('Storage is full. Please free up some space and try again.');
+          throw Exception(
+            'Storage is full. Please free up some space and try again.',
+          );
         }
         rethrow;
       }
 
       // 6. Notifications
-      if (notificationsEnabled && (item.itemType == 'Bill' || item.itemType == 'Document') && item.dueDate != null && !item.isPaid) {
+      if (notificationsEnabled &&
+          (item.itemType == 'Bill' || item.itemType == 'Document') &&
+          item.dueDate != null &&
+          !item.isPaid) {
         await NotificationService.scheduleVaultReminder(
           id: item.id,
           title: item.title,
@@ -170,15 +192,23 @@ class VaultRepository {
       if (item == null) return null;
 
       // Handle UNDO for recurring bills
-      if (!isPaid && item.recurrence != 'None' && item.dueDate != null && item.itemType == 'Bill') {
-        final nextDate = DateHelper.calculateNextDueDate(item.dueDate!, item.recurrence);
+      if (!isPaid &&
+          item.recurrence != 'None' &&
+          item.dueDate != null &&
+          item.itemType == 'Bill') {
+        final nextDate = DateHelper.calculateNextDueDate(
+          item.dueDate!,
+          item.recurrence,
+        );
         final nextUuid = 'next_${item.uuid}_${nextDate.millisecondsSinceEpoch}';
-        
-        final existingNext = await isar.collection<VaultItem>().filter()
+
+        final existingNext = await isar
+            .collection<VaultItem>()
+            .filter()
             .uuidEqualTo(nextUuid)
             .isPaidEqualTo(false)
             .findFirst();
-        
+
         if (existingNext != null) {
           await softDeleteItem(existingNext.id);
         }
@@ -194,9 +224,11 @@ class VaultRepository {
 
       if (isPaid) {
         await NotificationService.cancelNotification(id);
-        
+
         // Generate next instance for recurring bills
-        if (item.recurrence != 'None' && item.dueDate != null && item.itemType == 'Bill') {
+        if (item.recurrence != 'None' &&
+            item.dueDate != null &&
+            item.itemType == 'Bill') {
           await _generateNextRecurringInstance(item);
         }
       }
@@ -215,9 +247,11 @@ class VaultRepository {
       parent.recurrence,
       targetDay: parent.originalDueDay,
     );
-    
+
     final nextUuid = 'next_${parent.uuid}_${nextDate.millisecondsSinceEpoch}';
-    final existingNext = await isar.collection<VaultItem>().filter()
+    final existingNext = await isar
+        .collection<VaultItem>()
+        .filter()
         .uuidEqualTo(nextUuid)
         .findFirst();
 
@@ -232,7 +266,7 @@ class VaultRepository {
         ..directDebit = parent.directDebit
         ..dueDate = nextDate
         ..isPaid = false
-        ..uuid = nextUuid 
+        ..uuid = nextUuid
         ..originalDueDay = parent.originalDueDay
         ..lastModified = DateTime.now()
         ..wasSynced = false; // Mark for sync engine
@@ -257,60 +291,100 @@ class VaultRepository {
   /// Migrate items from 'local_user' to a real UID
   Future<void> migrateGuestData(String newUid) async {
     try {
-      final guestItems = await isar.collection<VaultItem>()
+      final guestItems = await isar
+          .collection<VaultItem>()
           .filter()
-          .ownerIdEqualTo('local_user')
+          .group((q) => q.ownerIdEqualTo('local_user').or().ownerIdEqualTo(''))
           .findAll();
-      
+
       if (guestItems.isNotEmpty) {
+        logger.i('Migration: Starting for ${guestItems.length} items...');
         await isar.writeTxn(() async {
           for (var item in guestItems) {
-            // Check for potential duplicate in the destination UID (Senior QA Fix)
-            final existing = await isar.collection<VaultItem>().filter()
+            // Senior QA: Don't migrate sample data if the user is logging in
+            if (item.isSample) {
+              logger.i('Migration: Skipping sample item: ${item.title}');
+              await isar.collection<VaultItem>().delete(item.id);
+              continue;
+            }
+
+            final existing = await isar
+                .collection<VaultItem>()
+                .filter()
                 .ownerIdEqualTo(newUid)
                 .uuidEqualTo(item.uuid)
                 .findFirst();
-            
+
             if (existing != null) {
-              // Duplicate found! Keep the one that's already in the account (likely synced from cloud)
-              // and delete the local guest copy to prevent duplication in UI.
+              logger.i(
+                'Migration: Item "${item.title}" already exists in cloud account. Deleting guest copy.',
+              );
               await isar.collection<VaultItem>().delete(item.id);
-              logger.i('Migration: Duplicate skipped for ${item.title} (UUID match).');
             } else {
-              // No duplicate, safe to migrate
+              logger.i('Migration: Moving "${item.title}" to $newUid');
               item.ownerId = newUid;
               item.lastModified = DateTime.now();
+              item.wasSynced = false;
               await isar.collection<VaultItem>().put(item);
             }
           }
         });
-        logger.i('Migration process completed for guest data.');
+        logger.i('Migration: Finished processing guest items.');
+      } else {
+        logger.i('Migration: No guest data found to migrate.');
       }
     } catch (e, stack) {
       logger.e('Error migrating guest data', error: e, stackTrace: stack);
     }
   }
 
-  /// Rules: 
+  Future<void> deleteGuestData() async {
+    try {
+      final guestItems = await isar
+          .collection<VaultItem>()
+          .filter()
+          .group((q) => q.ownerIdEqualTo('local_user').or().ownerIdEqualTo(''))
+          .findAll();
+
+      if (guestItems.isNotEmpty) {
+        logger.i('Deletion: Starting to delete ${guestItems.length} guest items...');
+        await isar.writeTxn(() async {
+          await isar.collection<VaultItem>().deleteAll(
+            guestItems.map((item) => item.id).toList(),
+          );
+        });
+        logger.i('Deletion: Finished deleting guest items.');
+      }
+    } catch (e, stack) {
+      logger.e('Error deleting guest data', error: e, stackTrace: stack);
+    }
+  }
+
+  /// Rules:
   /// 1. Bill + DirectDebit + Expired -> Auto-archive
   /// 2. Bill/Doc + Paid + Expired -> Auto-archive
   Future<void> autoArchiveExpiredItems(String ownerId) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    final toArchive = await isar.collection<VaultItem>().filter()
+    final toArchive = await isar
+        .collection<VaultItem>()
+        .filter()
         .ownerIdEqualTo(ownerId)
         .isArchivedEqualTo(false)
         .and()
-        .group((q) => q
-          .group((q2) => q2.directDebitEqualTo(true).dueDateLessThan(today))
-          .or()
-          .group((q2) => q2.isPaidEqualTo(true).dueDateLessThan(today))
+        .group(
+          (q) => q
+              .group((q2) => q2.directDebitEqualTo(true).dueDateLessThan(today))
+              .or()
+              .group((q2) => q2.isPaidEqualTo(true).dueDateLessThan(today)),
         )
         .findAll();
 
     if (toArchive.isNotEmpty) {
-      logger.i('VaultRepository: Auto-archiving ${toArchive.length} expired items.');
+      logger.i(
+        'VaultRepository: Auto-archiving ${toArchive.length} expired items.',
+      );
       await isar.writeTxn(() async {
         for (var item in toArchive) {
           item.isArchived = true;
@@ -322,10 +396,16 @@ class VaultRepository {
   }
 
   Future<void> deleteSamplesForUser(String ownerId) async {
-    final samples = await isar.collection<VaultItem>().filter().isSampleEqualTo(true).findAll();
+    final samples = await isar
+        .collection<VaultItem>()
+        .filter()
+        .isSampleEqualTo(true)
+        .findAll();
     if (samples.isNotEmpty) {
       await isar.writeTxn(() async {
-        await isar.collection<VaultItem>().deleteAll(samples.map((s) => s.id).toList());
+        await isar.collection<VaultItem>().deleteAll(
+          samples.map((s) => s.id).toList(),
+        );
       });
       logger.i('VaultRepository: Deleted ${samples.length} sample items.');
     }
@@ -335,17 +415,88 @@ class VaultRepository {
     final now = DateTime.now();
     const uuid = Uuid();
     final samples = [
-      VaultItem()..uuid = uuid.v4()..title = 'Electricity Bill (Demo)'..itemType = 'Bill'..category = 'Housing'..amount = 45.0..dueDate = now.subtract(const Duration(days: 2))..isPaid = false..isSample = true..ownerId = ownerId,
-      VaultItem()..uuid = uuid.v4()..title = 'Internet Subscription (Demo)'..itemType = 'Bill'..category = 'Subscriptions'..amount = 29.99..dueDate = now.add(const Duration(days: 5))..isPaid = false..isSample = true..ownerId = ownerId,
-      VaultItem()..uuid = uuid.v4()..title = 'Visa Credit Card (Demo)'..itemType = 'Bill'..category = 'Loans'..amount = 150.0..dueDate = now.add(const Duration(days: 10))..isPaid = false..isSample = true..ownerId = ownerId,
-      VaultItem()..uuid = uuid.v4()..title = 'Car Insurance (Demo)'..itemType = 'Bill'..category = 'Auto'..amount = 85.50..dueDate = now.add(const Duration(days: 15))..isPaid = false..isSample = true..ownerId = ownerId,
-      VaultItem()..uuid = uuid.v4()..title = 'Identity Card (Demo)'..itemType = 'Document'..category = 'Identity'..dueDate = now.add(const Duration(days: 450))..isSample = true..ownerId = ownerId,
-      VaultItem()..uuid = uuid.v4()..title = 'Rental Agreement (Demo)'..itemType = 'Document'..category = 'Legal'..dueDate = now.add(const Duration(days: 60))..isSample = true..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Electricity Bill (Demo)'
+        ..itemType = 'Bill'
+        ..category = 'Housing'
+        ..amount = 45.0
+        ..dueDate = now.subtract(const Duration(days: 2))
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Internet Subscription (Demo)'
+        ..itemType = 'Bill'
+        ..category = 'Subscriptions'
+        ..amount = 29.99
+        ..dueDate = now.add(const Duration(days: 5))
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Visa Credit Card (Demo)'
+        ..itemType = 'Bill'
+        ..category = 'Loans'
+        ..amount = 150.0
+        ..dueDate = now.add(const Duration(days: 10))
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Car Insurance (Demo)'
+        ..itemType = 'Bill'
+        ..category = 'Auto'
+        ..amount = 85.50
+        ..dueDate = now.add(const Duration(days: 15))
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Identity Card (Demo)'
+        ..itemType = 'Document'
+        ..category = 'Identity'
+        ..dueDate = now.add(const Duration(days: 450))
+        ..isSample = true
+        ..ownerId = ownerId,
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Rental Agreement (Demo)'
+        ..itemType = 'Document'
+        ..category = 'Legal'
+        ..dueDate = now.add(const Duration(days: 60))
+        ..isSample = true
+        ..ownerId = ownerId,
     ];
 
     await isar.writeTxn(() async {
       await isar.collection<VaultItem>().putAll(samples);
     });
   }
-}
 
+  /// Returns true if there is real (non-sample) data for guest mode
+  Future<bool> hasRealGuestData() async {
+    try {
+      final items = await isar
+          .collection<VaultItem>()
+          .filter()
+          .group((q) => q.ownerIdEqualTo('local_user').or().ownerIdEqualTo(''))
+          .isDeletedEqualTo(false)
+          .findAll();
+
+      // Filter manually to be 100% sure about the sample flag
+      final realItems = items.where((i) => i.isSample == false).toList();
+      logger.i(
+        'VaultRepository: Found ${items.length} guest items, ${realItems.length} are real.',
+      );
+      return realItems.isNotEmpty;
+    } catch (e) {
+      logger.e('Error checking guest data', error: e);
+      return false;
+    }
+  }
+}

@@ -171,7 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             // 1. Profile Header
             _buildCompactProfile(context, ref),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
 
             // 2. Sign In or Sync Options
             Consumer(
@@ -188,11 +188,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }
               },
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
 
             // 3. Preferences Section
             _buildSectionHeader('PREFERENCES'),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             BentoCard(
               padding: EdgeInsets.zero,
               child: Column(
@@ -220,11 +220,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
 
             // 4. Alerts & Notifications Section
             _buildSectionHeader('ALERTS & NOTIFICATIONS'),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               child: BentoCard(
@@ -489,12 +489,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
 
             _buildSecuritySettings(context, ref),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             _buildDataManagement(context, ref),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
           ],
         ),
       ),
@@ -508,13 +508,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         try {
           final result = await ref.read(authServiceProvider).signInWithGoogle();
           if (result != null) {
-            // Migrate guest data to the new user ID
-            await ref
-                .read(vaultProvider.notifier)
-                .migrateGuestData(result.user!.uid);
+            final uid = result.user!.uid;
 
             // Reset guest mode since user is now authenticated
             ref.read(isGuestProvider.notifier).state = false;
+            final isar = ref.read(isarProvider);
+            await isar.writeTxn(() async {
+              final config = await isar.appConfigs.get(0) ?? AppConfig();
+              config.isGuest = false;
+              await isar.appConfigs.put(config);
+            });
+
+            // 1. Intelligent Migration Check
+            final hasGuestData = await ref.read(vaultRepositoryProvider).hasRealGuestData();
+            
+            if (hasGuestData && context.mounted) {
+              final shouldMigrate = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: Theme.of(context).cardTheme.color,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: const Text('Migrate Local Data?'),
+                  content: const Text(
+                    'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.'
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('No, delete'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryAction,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Yes, Migrate'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (shouldMigrate == true) {
+                await ref.read(vaultProvider.notifier).migrateGuestData(uid);
+                if (context.mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('✓ Migration complete!')),
+                  );
+                }
+              } else {
+                await ref.read(vaultProvider.notifier).deleteGuestData();
+                if (context.mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('✓ Local guest data deleted.')),
+                  );
+                }
+              }
+            }
 
             messenger.showSnackBar(
               const SnackBar(
@@ -889,7 +941,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader('DATA MANAGEMENT'),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
         BentoCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -1245,7 +1297,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 4, top: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 2, top: 2),
       child: Text(
         title,
         style: AppTheme.labelCapsStyle(context).copyWith(
@@ -1383,7 +1435,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader('SECURITY'),
-        const SizedBox(height: 8),
+        const SizedBox(height: 2),
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).cardTheme.color,

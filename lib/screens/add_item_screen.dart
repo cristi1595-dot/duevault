@@ -40,6 +40,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   List<String> _attachedFiles = [];
   bool _useOcr = true;
   bool _isProcessingOcr = false;
+  bool _isSaving = false;
   final ImagePicker _picker = ImagePicker();
 
   final List<CategoryData> _categories = AppCategories.billCategories;
@@ -231,6 +232,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (_dueDate == null) {
@@ -269,11 +271,18 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     
     item.notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
     item.attachedFiles = _attachedFiles;
+    item.isPaid = false; 
 
-    await ref.read(vaultProvider.notifier).addItem(item);
-    if (mounted) {
-      // Direct to Home: pop until we reach the root (HomeScreen)
-      Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(vaultProvider.notifier).addItem(item);
+      if (mounted) {
+        // Direct to Home: pop until we reach the root (HomeScreen)
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      _showValidationError('Error saving item: $e');
     }
   }
 
@@ -598,9 +607,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               const SizedBox(height: 24),
 
               PrimaryButton(
-                label: !_isEdit ? 'Save Bill' : 'Update Bill',
-                icon: Icons.check_circle_outline,
-                onPressed: _submit,
+                label: _isSaving 
+                    ? 'Saving...' 
+                    : (!_isEdit ? 'Save Bill' : 'Update Bill'),
+                icon: _isSaving ? null : Icons.check_circle_outline,
+                onPressed: _isSaving ? null : _submit,
               ),
               const SizedBox(height: 40),
             ],

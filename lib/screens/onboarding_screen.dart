@@ -7,7 +7,6 @@ import '../widgets/global_components.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
-import '../providers/vault_provider.dart';
 import '../services/auto_sync_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -22,24 +21,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  Future<void> _completeOnboarding() async {
+  Future<void> _completeOnboarding({bool isGuest = false}) async {
     final isar = ref.read(isarProvider);
     await isar.writeTxn(() async {
       final config = await isar.appConfigs.get(0) ?? AppConfig();
       config.hasSeenOnboarding = true;
+      config.isGuest = isGuest;
       await isar.appConfigs.put(config);
     });
+    if (isGuest) {
+      ref.read(isGuestProvider.notifier).state = true;
+    }
     ref.read(hasSeenOnboardingProvider.notifier).state = true;
   }
 
   Future<void> _requestBatteryOptimization() async {
-    final isDisabled = await DisableBatteryOptimization.isBatteryOptimizationDisabled;
-    if (isDisabled == false) {
+    final isDisabledBefore = await DisableBatteryOptimization.isBatteryOptimizationDisabled;
+    if (isDisabledBefore == false) {
       await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+      // Așteptăm scurt timp pentru ca sistemul să actualizeze starea la întoarcerea în aplicație
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    
+    final isNowDisabled = await DisableBatteryOptimization.isBatteryOptimizationDisabled;
+    if (isNowDisabled == true) {
+      if (mounted) {
+        unawaited(_pageController.nextPage(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        ));
+      }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Battery optimization is already disabled!')),
+          const SnackBar(
+            content: Text('Please disable battery optimization to proceed, or click "Skip for now".'),
+            duration: Duration(seconds: 3),
+          ),
         );
       }
     }
@@ -269,10 +287,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             label: 'Use Locally (Guest)',
             icon: Icons.no_accounts_outlined,
             onPressed: () async {
-              await _completeOnboarding();
-              ref.read(isGuestProvider.notifier).state = true;
+              await _completeOnboarding(isGuest: true);
             },
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -295,7 +313,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         Navigator.pop(context);
 
         if (userCredential != null) {
-          await ref.read(vaultProvider.notifier).migrateGuestData(userCredential.user!.uid);
+          // No automatic migration here! Let the LoginScreen/Logic handle it if needed
+          // or we can add the check here too. But for now, just complete onboarding.
           await _completeOnboarding();
           
           messenger.showSnackBar(const SnackBar(content: Text('Account secured. Syncing your vault...')));

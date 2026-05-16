@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
 import '../services/auto_sync_service.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
 import '../providers/vault_provider.dart';
+import '../providers/sync_provider.dart';
+import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -74,7 +75,7 @@ class LoginScreen extends ConsumerWidget {
                   await _completeOnboarding(ref, isGuest: true);
                 },
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -96,6 +97,9 @@ class LoginScreen extends ConsumerWidget {
           ),
         ));
 
+        // 0. Mark as processing sync to hold LoginScreen mounted
+        ref.read(isProcessingAuthSyncProvider.notifier).state = true;
+
         final userCredential = await ref.read(authServiceProvider).signInWithGoogle();
         
         // Remove loading indicator
@@ -104,8 +108,65 @@ class LoginScreen extends ConsumerWidget {
         }
 
         if (userCredential != null) {
-          // Migrate guest data to the new user ID
-          await ref.read(vaultProvider.notifier).migrateGuestData(userCredential.user!.uid);
+          final uid = userCredential.user!.uid;
+          
+          // Switch off Guest mode immediately
+          ref.read(isGuestProvider.notifier).state = false;
+          
+          // 1. Intelligent Migration Check
+          final hasGuestData = await ref.read(vaultRepositoryProvider).hasRealGuestData();
+          
+          if (hasGuestData && context.mounted) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (!context.mounted) return;
+            
+            final shouldMigrate = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: Theme.of(context).cardTheme.color,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Text('Migrate Local Data?'),
+                content: const Text(
+                  'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.'
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('No, delete'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryAction,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Yes, Migrate'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldMigrate == true) {
+              await ref.read(vaultProvider.notifier).migrateGuestData(uid);
+              if (context.mounted) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('✓ Migration complete!')),
+                );
+              }
+            } else {
+              await ref.read(vaultProvider.notifier).deleteGuestData();
+              if (context.mounted) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('✓ Local guest data deleted.')),
+                );
+              }
+            }
+          }
+
+          // 2. Refresh UI immediately
+          await ref.read(vaultProvider.notifier).refreshVault();
 
           // Get the display name — handle null AND empty string
           final firebaseUser = FirebaseAuth.instance.currentUser;
@@ -120,6 +181,9 @@ class LoginScreen extends ConsumerWidget {
           
           // Intelligent sync after login
           final syncResult = await ref.read(autoSyncServiceProvider).syncAfterLogin();
+
+          // 3. FINISHED - Release the screen navigation
+          ref.read(isProcessingAuthSyncProvider.notifier).state = false;
 
           // ONLY mark onboarding complete AFTER sync is done
           // This ensures main.dart doesn't switch to MainNavigation prematurely
@@ -147,6 +211,8 @@ class LoginScreen extends ConsumerWidget {
             ));
           }
         } else {
+          // Sign in failed/canceled -> Reset busy state
+          ref.read(isProcessingAuthSyncProvider.notifier).state = false;
           messenger.showSnackBar(
             const SnackBar(content: Text('Sign in failed or was canceled')),
           );

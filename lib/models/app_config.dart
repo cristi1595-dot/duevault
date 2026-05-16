@@ -25,4 +25,5 @@ class AppConfig {
   DateTime? lastSyncCheck; // 15m cooldown for cloud checks
   String? localDatabaseChecksum; // For efficient sync
   bool needsBackup = false; // Flag for interrupted backups
+  bool guestDataMigrated = false; // Migration only happens once
 }

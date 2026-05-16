@@ -30,6 +30,7 @@ import 'widgets/bento_error_screen.dart';
 import 'dart:async';
 import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
+import 'providers/sync_provider.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -210,7 +211,7 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
               Widget root;
               if (!hasSeenOnboarding) {
                 root = const OnboardingScreen();
-              } else if (user != null || isGuest) {
+              } else if ((user != null || isGuest) && !ref.watch(isProcessingAuthSyncProvider)) {
                 root = const MainNavigation();
               } else {
                 root = const LoginScreen();
