@@ -31,7 +31,7 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   Future<void> _saveTheme(bool isDark) async {
     final config = await isar.appConfigs.get(0) ?? AppConfig();
     config.isDarkMode = isDark;
-    
+
     await isar.writeTxn(() async {
       await isar.appConfigs.put(config);
     });

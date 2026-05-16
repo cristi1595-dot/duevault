@@ -14,7 +14,6 @@ import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
 import '../utils/logger.dart';
 
-
 import '../constants/app_categories.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
@@ -40,7 +39,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
   final List<CategoryData> _categories = AppCategories.docCategories;
 
-
   @override
   void initState() {
     super.initState();
@@ -62,14 +60,22 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
   String _getCategoryHint() {
     switch (_category) {
-      case 'Identity': return 'e.g. My Passport';
-      case 'Health': return 'e.g. Blood Test Results';
-      case 'Warranty': return 'e.g. iPhone Warranty';
-      case 'Property': return 'e.g. House Deed';
-      case 'Legal': return 'e.g. Rent Contract';
-      case 'Career': return 'e.g. University Diploma';
-      case 'Travel': return 'e.g. Boarding Pass';
-      default: return 'e.g. General Document';
+      case 'Identity':
+        return 'e.g. My Passport';
+      case 'Health':
+        return 'e.g. Blood Test Results';
+      case 'Warranty':
+        return 'e.g. iPhone Warranty';
+      case 'Property':
+        return 'e.g. House Deed';
+      case 'Legal':
+        return 'e.g. Rent Contract';
+      case 'Career':
+        return 'e.g. University Diploma';
+      case 'Travel':
+        return 'e.g. Boarding Pass';
+      default:
+        return 'e.g. General Document';
     }
   }
 
@@ -81,7 +87,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     } else {
       await PermissionHelper.requestGalleryPermission(context);
     }
-    
+
     if (!mounted) return;
 
     try {
@@ -93,28 +99,34 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       if (pickedFile != null && mounted) {
         final file = File(pickedFile.path);
         final fileSize = await file.length();
-        
+
         if (fileSize > 10485760) {
-          _showValidationError('Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB');
+          _showValidationError(
+            'Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB',
+          );
           return;
         }
 
         if (_useOcr) {
           setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(File(pickedFile.path), isDocument: true);
+          final result = await OcrService.processImage(
+            File(pickedFile.path),
+            isDocument: true,
+          );
           setState(() {
             _isProcessingOcr = false;
-            
+
             // Auto-fill Title if empty
             if (_titleController.text.isEmpty) {
-              _titleController.text = result.probableTitle ?? 'Scanned Document';
+              _titleController.text =
+                  result.probableTitle ?? 'Scanned Document';
             }
-            
+
             // Auto-fill Expiry Date if found and not set
             if (result.probableDate != null && _expiryDate == null) {
               _expiryDate = result.probableDate;
             }
-            
+
             if (_attachedFiles.length < 5) {
               _attachedFiles.add(pickedFile.path);
             }
@@ -137,7 +149,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   Future<void> _pickFiles() async {
     // We try to request, but don't block, as FilePicker handles its own permissions on many platforms
     await PermissionHelper.requestGalleryPermission(context);
-    
+
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -153,7 +165,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           final fileSize = await file.length();
 
           if (fileSize > 10485760) {
-            _showValidationError('File too large: ${p.basename(path)} (Max 10MB)');
+            _showValidationError(
+              'File too large: ${p.basename(path)} (Max 10MB)',
+            );
             continue;
           }
           validPaths.add(path);
@@ -169,19 +183,25 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
         // OCR Support for Uploaded Images
         final firstImagePath = validPaths.firstWhere(
-          (path) => path.toLowerCase().endsWith('.jpg') || 
-                    path.toLowerCase().endsWith('.jpeg') || 
-                    path.toLowerCase().endsWith('.png'),
+          (path) =>
+              path.toLowerCase().endsWith('.jpg') ||
+              path.toLowerCase().endsWith('.jpeg') ||
+              path.toLowerCase().endsWith('.png'),
           orElse: () => '',
         );
 
-        if (firstImagePath.isNotEmpty && (_titleController.text.isEmpty || _expiryDate == null)) {
+        if (firstImagePath.isNotEmpty &&
+            (_titleController.text.isEmpty || _expiryDate == null)) {
           setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(File(firstImagePath), isDocument: true);
+          final result = await OcrService.processImage(
+            File(firstImagePath),
+            isDocument: true,
+          );
           setState(() {
             _isProcessingOcr = false;
             if (_titleController.text.isEmpty) {
-              _titleController.text = result.probableTitle ?? 'Scanned Document';
+              _titleController.text =
+                  result.probableTitle ?? 'Scanned Document';
             }
             if (result.probableDate != null && _expiryDate == null) {
               _expiryDate = result.probableDate;
@@ -238,9 +258,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     item.title = rawTitle.isEmpty ? _category : rawTitle;
     item.category = _category;
     item.dueDate = _expiryDate;
-    item.notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    item.notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
     item.attachedFiles = _attachedFiles;
-    item.isPaid = false; 
+    item.isPaid = false;
 
     setState(() => _isSaving = true);
     try {
@@ -268,8 +290,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool get _isEdit =>
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
-  bool get _isFormValid => 
-      _titleController.text.trim().isNotEmpty || 
+  bool get _isFormValid =>
+      _titleController.text.trim().isNotEmpty ||
       _attachedFiles.isNotEmpty ||
       _expiryDate != null;
 
@@ -283,12 +305,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         centerTitle: true,
         title: Text(
           !_isEdit ? 'Add New Document' : 'Edit Document',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).textTheme.bodyLarge?.color),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -301,7 +326,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             children: [
               Text(
                 'DOCUMENT CATEGORY',
-                style: AppTheme.labelCapsStyle(context).copyWith(fontSize: 12, letterSpacing: 1.2),
+                style: AppTheme.labelCapsStyle(
+                  context,
+                ).copyWith(fontSize: 12, letterSpacing: 1.2),
               ),
               const SizedBox(height: 10),
               BentoCard(
@@ -331,7 +358,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                           border: Border.all(
                             color: isSelected
                                 ? AppTheme.primaryAction
-                                : Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                                : Theme.of(
+                                    context,
+                                  ).dividerColor.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Column(
@@ -350,7 +379,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                               style: TextStyle(
                                 color: isSelected
                                     ? Colors.white
-                                    : Theme.of(context).textTheme.bodyLarge?.color,
+                                    : Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color,
                                 fontSize: 10,
                                 fontWeight: isSelected
                                     ? FontWeight.bold
@@ -365,7 +396,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                       ),
                     );
                   },
-
                 ),
               ),
               const SizedBox(height: 12),
@@ -385,7 +415,10 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                   ),
                 ),
               ),
@@ -396,7 +429,10 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 child: InkWell(
                   onTap: _pickDate,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -456,9 +492,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: _buildCameraCardWithOcrToggle(),
-                          ),
+                          Expanded(child: _buildCameraCardWithOcrToggle()),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildActionCard(
@@ -474,11 +508,16 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     if (_attachedFiles.isNotEmpty)
                       Container(
                         height: 90,
-                        padding: const EdgeInsets.only(left: 12, bottom: 12, top: 4),
+                        padding: const EdgeInsets.only(
+                          left: 12,
+                          bottom: 12,
+                          top: 4,
+                        ),
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _attachedFiles.length,
-                          separatorBuilder: (ctx, i) => const SizedBox(width: 10),
+                          separatorBuilder: (ctx, i) =>
+                              const SizedBox(width: 10),
                           itemBuilder: (context, index) {
                             final path = _attachedFiles[index];
                             return Stack(
@@ -486,9 +525,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                                 Container(
                                   width: 70,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).scaffoldBackgroundColor,
+                                    color: Theme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                                    border: Border.all(
+                                      color: Theme.of(
+                                        context,
+                                      ).dividerColor.withValues(alpha: 0.5),
+                                    ),
                                   ),
                                   child: _buildAttachmentIcon(path),
                                 ),
@@ -496,14 +541,22 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                                   top: 4,
                                   right: 4,
                                   child: GestureDetector(
-                                    onTap: () => setState(() => _attachedFiles.removeAt(index)),
+                                    onTap: () => setState(
+                                      () => _attachedFiles.removeAt(index),
+                                    ),
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -518,8 +571,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               const SizedBox(height: 24),
 
               PrimaryButton(
-                label: _isSaving 
-                    ? 'Saving...' 
+                label: _isSaving
+                    ? 'Saving...'
                     : (_isEdit ? 'Update Document' : 'Save Document'),
                 icon: _isSaving ? null : Icons.check_circle_outline,
                 onPressed: (_isFormValid && !_isSaving) ? _submit : null,
@@ -542,16 +595,20 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _useOcr ? AppTheme.primaryAction.withValues(alpha: 0.5) : Theme.of(context).dividerColor,
+            color: _useOcr
+                ? AppTheme.primaryAction.withValues(alpha: 0.5)
+                : Theme.of(context).dividerColor,
             width: _useOcr ? 1.5 : 1.0,
           ),
-          boxShadow: _useOcr ? [
-            BoxShadow(
-              color: AppTheme.primaryAction.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ] : null,
+          boxShadow: _useOcr
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -567,11 +624,13 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               )
             else
               Icon(
-                Icons.auto_awesome, 
-                color: _useOcr ? AppTheme.primaryAction : AppTheme.lightTextSecondary, 
-                size: 28
+                Icons.auto_awesome,
+                color: _useOcr
+                    ? AppTheme.primaryAction
+                    : AppTheme.lightTextSecondary,
+                size: 28,
               ),
-            
+
             const SizedBox(height: 6),
             Text(
               _isProcessingOcr ? 'Scanning...' : 'Smart Scan',
@@ -581,7 +640,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 fontSize: 13,
               ),
             ),
-            
+
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -589,9 +648,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 Text(
                   _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
                   style: TextStyle(
-                    fontSize: 8, 
+                    fontSize: 8,
                     fontWeight: FontWeight.bold,
-                    color: _useOcr ? AppTheme.primaryAction : Theme.of(context).textTheme.bodySmall?.color
+                    color: _useOcr
+                        ? AppTheme.primaryAction
+                        : Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -646,7 +707,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodySmall?.color ?? AppTheme.lightTextSecondary,
+                color:
+                    Theme.of(context).textTheme.bodySmall?.color ??
+                    AppTheme.lightTextSecondary,
                 fontSize: 9,
               ),
               textAlign: TextAlign.center,
@@ -679,7 +742,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            ),
           ),
           child: child,
         ),
@@ -688,7 +753,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Widget _buildAttachmentIcon(String path) {
-    final isImage = path.toLowerCase().endsWith('.jpg') ||
+    final isImage =
+        path.toLowerCase().endsWith('.jpg') ||
         path.toLowerCase().endsWith('.jpeg') ||
         path.toLowerCase().endsWith('.png');
 
@@ -696,14 +762,16 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       final isStored = path.contains('app_flutter/attachments');
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: isStored 
-          ? EncryptedImage(path: path, fit: BoxFit.cover)
-          : Image.file(
-              File(path),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.insert_drive_file, color: AppTheme.primaryAction),
-            ),
+        child: isStored
+            ? EncryptedImage(path: path, fit: BoxFit.cover)
+            : Image.file(
+                File(path),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.insert_drive_file,
+                  color: AppTheme.primaryAction,
+                ),
+              ),
       );
     } else {
       return const Center(
@@ -712,7 +780,10 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           children: [
             Icon(Icons.picture_as_pdf, color: AppTheme.urgentRed, size: 24),
             SizedBox(height: 2),
-            Text('PDF', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+            Text(
+              'PDF',
+              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       );

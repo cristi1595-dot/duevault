@@ -54,7 +54,6 @@ class DriveService {
     return md5.convert(bytes).toString();
   }
 
-
   // Backup the local Isar database and Encryption Keys to Google Drive
   Future<bool> backupDatabase() async {
     try {
@@ -67,10 +66,7 @@ class DriveService {
       }
 
       // --- 1. BACKUP ISAR DB ---
-      await _uploadToDrive(
-        fileName: 'duevault_backup.isar',
-        file: dbFile,
-      );
+      await _uploadToDrive(fileName: 'duevault_backup.isar', file: dbFile);
 
       // --- 2. BACKUP ENCRYPTION KEYS ---
       // This ensures data can be decrypted after a full wipe
@@ -79,11 +75,8 @@ class DriveService {
         final tempDir = await getTemporaryDirectory();
         final keyFile = File('${tempDir.path}/keys.json');
         await keyFile.writeAsString(keys);
-        
-        await _uploadToDrive(
-          fileName: 'duevault_keys.json',
-          file: keyFile,
-        );
+
+        await _uploadToDrive(fileName: 'duevault_keys.json', file: keyFile);
         logger.i('Encryption keys backed up.');
       }
 
@@ -95,7 +88,10 @@ class DriveService {
   }
 
   /// Helper to upload a file to Drive AppData
-  Future<void> _uploadToDrive({required String fileName, required File file}) async {
+  Future<void> _uploadToDrive({
+    required String fileName,
+    required File file,
+  }) async {
     final fileList = await driveApi.files.list(
       spaces: 'appDataFolder',
       q: "name = '$fileName'",
@@ -113,7 +109,11 @@ class DriveService {
     final media = drive.Media(file.openRead(), file.lengthSync());
 
     if (existingFileId != null) {
-      await driveApi.files.update(drive.File(), existingFileId, uploadMedia: media);
+      await driveApi.files.update(
+        drive.File(),
+        existingFileId,
+        uploadMedia: media,
+      );
     } else {
       await driveApi.files.create(driveFile, uploadMedia: media);
     }
@@ -127,10 +127,7 @@ class DriveService {
       final metaFile = File('${tempDir.path}/sync_metadata.json');
       await metaFile.writeAsString(content);
 
-      await _uploadToDrive(
-        fileName: 'sync_metadata.json',
-        file: metaFile,
-      );
+      await _uploadToDrive(fileName: 'sync_metadata.json', file: metaFile);
       logger.i('Sync metadata uploaded.');
     } catch (e, stack) {
       logger.e('Error uploading metadata', error: e, stackTrace: stack);
@@ -148,7 +145,6 @@ class DriveService {
       return null;
     }
   }
-
 
   // Restore the database from Google Drive
   Future<Isar?> restoreDatabase() async {
@@ -182,21 +178,18 @@ class DriveService {
 
       final dir = await getApplicationDocumentsDirectory();
       final dbFile = File('${dir.path}/default.isar');
-      
+
       if (await dbFile.exists()) {
         await dbFile.delete();
       }
-      
+
       await dbFile.writeAsBytes(dataStore, flush: true);
 
-      final newIsar = await Isar.open(
-        [UserSchema, VaultItemSchema, AppConfigSchema],
-        directory: dir.path,
-      );
-
-
-
-
+      final newIsar = await Isar.open([
+        UserSchema,
+        VaultItemSchema,
+        AppConfigSchema,
+      ], directory: dir.path);
 
       logger.i('Backup restored successfully.');
       return newIsar;
@@ -223,10 +216,6 @@ class DriveService {
         directory: tempDir.path,
         name: name,
       );
-
-
-
-
     } catch (e, stack) {
       logger.e('Error opening cloud DB for merge', error: e, stackTrace: stack);
       return null;
@@ -243,10 +232,12 @@ class DriveService {
     if (fileList.files == null || fileList.files!.isEmpty) return null;
 
     final fileId = fileList.files!.first.id!;
-    final drive.Media media = await driveApi.files.get(
-      fileId,
-      downloadOptions: drive.DownloadOptions.fullMedia,
-    ) as drive.Media;
+    final drive.Media media =
+        await driveApi.files.get(
+              fileId,
+              downloadOptions: drive.DownloadOptions.fullMedia,
+            )
+            as drive.Media;
 
     final bytesBuilder = BytesBuilder();
     await for (final chunk in media.stream) {
@@ -269,7 +260,11 @@ class DriveService {
       }
       return null;
     } catch (e, stack) {
-      logger.e('Error getting cloud modified time', error: e, stackTrace: stack);
+      logger.e(
+        'Error getting cloud modified time',
+        error: e,
+        stackTrace: stack,
+      );
       return null;
     }
   }
@@ -301,11 +296,15 @@ class DriveService {
         ..parents = ['appDataFolder'];
 
       final media = drive.Media(file.openRead(), file.lengthSync());
-      
+
       final result = await driveApi.files.create(driveFile, uploadMedia: media);
       return result.id;
     } catch (e, stack) {
-      logger.e('Error uploading attachment: $fileName', error: e, stackTrace: stack);
+      logger.e(
+        'Error uploading attachment: $fileName',
+        error: e,
+        stackTrace: stack,
+      );
       return null;
     }
   }
@@ -313,22 +312,28 @@ class DriveService {
   /// Downloads a file by ID to a specific local path using streaming.
   Future<bool> downloadAttachment(String fileId, String localPath) async {
     try {
-      final drive.Media media = await driveApi.files.get(
-        fileId,
-        downloadOptions: drive.DownloadOptions.fullMedia,
-      ) as drive.Media;
+      final drive.Media media =
+          await driveApi.files.get(
+                fileId,
+                downloadOptions: drive.DownloadOptions.fullMedia,
+              )
+              as drive.Media;
 
       final outputFile = File(localPath);
       if (!await outputFile.parent.exists()) {
         await outputFile.parent.create(recursive: true);
       }
-      
+
       final iosink = outputFile.openWrite();
       await iosink.addStream(media.stream);
       await iosink.close();
       return true;
     } catch (e, stack) {
-      logger.e('Error downloading attachment $fileId', error: e, stackTrace: stack);
+      logger.e(
+        'Error downloading attachment $fileId',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     }
   }

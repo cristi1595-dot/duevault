@@ -7,8 +7,6 @@ import '../utils/logger.dart';
 import '../repositories/vault_repository.dart';
 import 'vault_provider.dart';
 
-
-
 // Triggering re-analysis
 // Triggering re-analysis
 
@@ -61,7 +59,8 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     // Set initial state based on DB only first, to unlock UI immediately
     state = state.copyWith(
       isEnabled: isEnabledInDb,
-      isLocked: isEnabledInDb, // Start locked if enabled, we'll refine this below
+      isLocked:
+          isEnabledInDb, // Start locked if enabled, we'll refine this below
       lockOnBackground: lockOnBg,
     );
 
@@ -82,8 +81,10 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       canAuthenticate: hasHardware,
       isLocked: isEnabledInDb && hasHardware,
     );
-    
-    logger.i('Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardware, Locked: ${state.isLocked}');
+
+    logger.i(
+      'Security: Init - Enabled: $isEnabledInDb, HardwareSupport: $hasHardware, Locked: ${state.isLocked}',
+    );
   }
 
   Future<bool> _checkHardwareSupport() async {
@@ -97,7 +98,6 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       return false;
     }
   }
-
 
   Future<void> toggleSecurity(bool enabled) async {
     // If enabling, check if hardware can actually authenticate
@@ -116,18 +116,16 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     }
 
     state = state.copyWith(isEnabled: enabled);
-    
+
     await repository.updateConfig(
-      (await repository.getConfig())..isSecurityEnabled = enabled
+      (await repository.getConfig())..isSecurityEnabled = enabled,
     );
   }
-
 
   /// Opens the system security settings so the user can set a PIN/Biometrics
   Future<void> openSecuritySettings() async {
     await AppSettings.openAppSettings(type: AppSettingsType.security);
   }
-
 
   Future<void> toggleLockOnBackground(bool enabled) async {
     final config = await repository.getConfig();
@@ -144,9 +142,9 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       state = state.copyWith(isLocked: false);
       return true;
     }
-    
+
     if (!state.canAuthenticate) return false;
-    
+
     if (state.isAuthenticating) return false;
 
     state = state.copyWith(isAuthenticating: true);
@@ -160,7 +158,7 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
           biometricOnly: false,
         ),
       );
-      
+
       if (authenticated) {
         state = state.copyWith(isLocked: false);
       }
@@ -168,9 +166,15 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     } on PlatformException catch (e, stack) {
       // Senior Fix: Explicitly handle lockouts and other platform-specific codes for Android 16/17 readiness
       if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
-        logger.w('Security: Biometrics locked out. System will require PIN/Pattern fallback.');
+        logger.w(
+          'Security: Biometrics locked out. System will require PIN/Pattern fallback.',
+        );
       } else {
-        logger.e('Security authentication error: ${e.code}', error: e, stackTrace: stack);
+        logger.e(
+          'Security authentication error: ${e.code}',
+          error: e,
+          stackTrace: stack,
+        );
       }
       return false;
     } catch (e, stack) {
@@ -180,7 +184,6 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
       state = state.copyWith(isAuthenticating: false);
     }
   }
-
 
   void lock() {
     if (state.isEnabled) {
@@ -197,7 +200,9 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
   }
 }
 
-final securityProvider = StateNotifierProvider<SecurityNotifier, SecurityState>((ref) {
-  final repository = ref.watch(vaultRepositoryProvider);
-  return SecurityNotifier(repository, ref);
-});
+final securityProvider = StateNotifierProvider<SecurityNotifier, SecurityState>(
+  (ref) {
+    final repository = ref.watch(vaultRepositoryProvider);
+    return SecurityNotifier(repository, ref);
+  },
+);

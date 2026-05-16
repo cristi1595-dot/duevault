@@ -165,7 +165,6 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     await _loadItems(user);
   }
 
-
   void _triggerSync() {
     ref.read(autoSyncServiceProvider).scheduleBackup();
     ref.read(firebaseSyncServiceProvider).sync();

@@ -14,9 +14,12 @@ import '../providers/auth_provider.dart';
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
-  Future<void> _completeOnboarding(WidgetRef ref, {bool isGuest = false}) async {
+  Future<void> _completeOnboarding(
+    WidgetRef ref, {
+    bool isGuest = false,
+  }) async {
     final isar = ref.read(isarProvider);
-    
+
     // 1. Update Database first
     await isar.writeTxn(() async {
       final config = await isar.appConfigs.get(0) ?? AppConfig();
@@ -30,7 +33,7 @@ class LoginScreen extends ConsumerWidget {
     if (isGuest) {
       ref.read(isGuestProvider.notifier).state = true;
     }
-    
+
     ref.read(hasSeenOnboardingProvider.notifier).state = true;
   }
 
@@ -87,21 +90,25 @@ class LoginScreen extends ConsumerWidget {
     return ElevatedButton(
       onPressed: () async {
         final messenger = ScaffoldMessenger.of(context);
-        
+
         // Show loading indicator
-        unawaited(showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryAction),
+        unawaited(
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryAction),
+            ),
           ),
-        ));
+        );
 
         // 0. Mark as processing sync to hold LoginScreen mounted
         ref.read(isProcessingAuthSyncProvider.notifier).state = true;
 
-        final userCredential = await ref.read(authServiceProvider).signInWithGoogle();
-        
+        final userCredential = await ref
+            .read(authServiceProvider)
+            .signInWithGoogle();
+
         // Remove loading indicator
         if (context.mounted) {
           Navigator.pop(context);
@@ -109,26 +116,30 @@ class LoginScreen extends ConsumerWidget {
 
         if (userCredential != null) {
           final uid = userCredential.user!.uid;
-          
+
           // Switch off Guest mode immediately
           ref.read(isGuestProvider.notifier).state = false;
-          
+
           // 1. Intelligent Migration Check
-          final hasGuestData = await ref.read(vaultRepositoryProvider).hasRealGuestData();
-          
+          final hasGuestData = await ref
+              .read(vaultRepositoryProvider)
+              .hasRealGuestData();
+
           if (hasGuestData && context.mounted) {
             await Future.delayed(const Duration(milliseconds: 500));
             if (!context.mounted) return;
-            
+
             final shouldMigrate = await showDialog<bool>(
               context: context,
               barrierDismissible: false,
               builder: (ctx) => AlertDialog(
                 backgroundColor: Theme.of(context).cardTheme.color,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 title: const Text('Migrate Local Data?'),
                 content: const Text(
-                  'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.'
+                  'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.',
                 ),
                 actions: [
                   TextButton(
@@ -140,7 +151,9 @@ class LoginScreen extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryAction,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     child: const Text('Yes, Migrate'),
                   ),
@@ -170,17 +183,21 @@ class LoginScreen extends ConsumerWidget {
 
           // Get the display name — handle null AND empty string
           final firebaseUser = FirebaseAuth.instance.currentUser;
-          final rawName = userCredential.user?.displayName 
-              ?? firebaseUser?.displayName;
-          final displayName = (rawName != null && rawName.isNotEmpty) 
-              ? rawName 
+          final rawName =
+              userCredential.user?.displayName ?? firebaseUser?.displayName;
+          final displayName = (rawName != null && rawName.isNotEmpty)
+              ? rawName
               : (firebaseUser?.email?.split('@').first ?? 'User');
           messenger.showSnackBar(
-            SnackBar(content: Text('Welcome, $displayName! Syncing your data...')),
+            SnackBar(
+              content: Text('Welcome, $displayName! Syncing your data...'),
+            ),
           );
-          
+
           // Intelligent sync after login
-          final syncResult = await ref.read(autoSyncServiceProvider).syncAfterLogin();
+          final syncResult = await ref
+              .read(autoSyncServiceProvider)
+              .syncAfterLogin();
 
           // 3. FINISHED - Release the screen navigation
           ref.read(isProcessingAuthSyncProvider.notifier).state = false;
@@ -193,22 +210,22 @@ class LoginScreen extends ConsumerWidget {
             messenger.clearSnackBars();
             String message;
             Color? bgColor;
-            
+
             if (syncResult == 'restored') {
               message = '✓ Your vault data has been restored from Cloud!';
               bgColor = AppTheme.safeGreen;
             } else if (syncResult == 'uploaded') {
-              message = '✓ Your local data has been synchronized with your account!';
+              message =
+                  '✓ Your local data has been synchronized with your account!';
               bgColor = AppTheme.primaryAction;
             } else {
               message = 'Welcome! Starting fresh with your new vault.';
               bgColor = null;
             }
 
-            messenger.showSnackBar(SnackBar(
-              content: Text(message),
-              backgroundColor: bgColor,
-            ));
+            messenger.showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: bgColor),
+            );
           }
         } else {
           // Sign in failed/canceled -> Reset busy state
@@ -234,18 +251,13 @@ class LoginScreen extends ConsumerWidget {
           Image.network(
             'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
             height: 24,
-            errorBuilder: (ctx, err, st) => const Icon(
-              Icons.account_circle,
-              size: 24,
-            ),
+            errorBuilder: (ctx, err, st) =>
+                const Icon(Icons.account_circle, size: 24),
           ),
           const SizedBox(width: 12),
           const Text(
             'Sign in with Google',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),

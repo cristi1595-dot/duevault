@@ -6,18 +6,16 @@ class BentoErrorScreen extends StatelessWidget {
   final String error;
   final String? stackTrace;
 
-  const BentoErrorScreen({
-    super.key,
-    required this.error,
-    this.stackTrace,
-  });
+  const BentoErrorScreen({super.key, required this.error, this.stackTrace});
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF131313) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF131313)
+          : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -38,20 +36,22 @@ class BentoErrorScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // 2. Title & Message
               Text(
                 'Something went wrong',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
                 'DueVault encountered an unexpected error during startup. Don\'t worry, your data is safe.',
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -76,14 +76,19 @@ class BentoErrorScreen extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text('Close App', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Close App',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // 4. Advanced Details (Collapsible)
               Theme(
-                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   title: const Text(
                     'Technical Details',
@@ -95,10 +100,14 @@ class BentoErrorScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: SelectableText(
@@ -112,9 +121,13 @@ class BentoErrorScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     TextButton.icon(
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: '$error\n\n$stackTrace'));
+                        Clipboard.setData(
+                          ClipboardData(text: '$error\n\n$stackTrace'),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logs copied to clipboard')),
+                          const SnackBar(
+                            content: Text('Logs copied to clipboard'),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.copy_rounded, size: 16),

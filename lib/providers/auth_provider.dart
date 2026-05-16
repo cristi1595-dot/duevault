@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../utils/logger.dart';
 
-
 final authStateProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
@@ -21,11 +20,9 @@ class AuthService {
 
   // Standard GoogleSignIn instance - MINIMAL for testing
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '933555779274-babvkfn1rvfl7rufl386cgqq50u12fvl.apps.googleusercontent.com',
-    scopes: [
-      'email',
-      'https://www.googleapis.com/auth/drive.appdata',
-    ],
+    serverClientId:
+        '933555779274-babvkfn1rvfl7rufl386cgqq50u12fvl.apps.googleusercontent.com',
+    scopes: ['email', 'https://www.googleapis.com/auth/drive.appdata'],
   );
 
   // Cache the access token directly from GoogleSignInAuthentication
@@ -34,13 +31,13 @@ class AuthService {
   Future<UserCredential?> signInWithGoogle() async {
     try {
       logger.i('Starting Google Sign-In process...');
-      
+
       // Just sign out to be sure
       await _googleSignIn.signOut().catchError((e) {
         logger.w('Sign out error (ignored): $e');
         return null;
       });
-      
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -50,7 +47,7 @@ class AuthService {
 
       logger.i('Google Sign-In successful for: ${googleUser.email}');
       final googleAuth = await googleUser.authentication;
-      
+
       logger.i('Obtained authentication tokens.');
 
       // Save access token directly — userCredential.credential is null on Android (fix C2)

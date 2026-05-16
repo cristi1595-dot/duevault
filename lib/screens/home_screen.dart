@@ -186,7 +186,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final billSafe = items30Days.isNotEmpty;
 
     if (billCritical) {
-      cardColor = AppTheme.urgentRed.withValues(alpha: 0.12); // Slightly more prominent red
+      cardColor = AppTheme.urgentRed.withValues(
+        alpha: 0.12,
+      ); // Slightly more prominent red
       amountColor = AppTheme.urgentRed;
     } else if (billWarning) {
       cardColor = AppTheme.warningYellow.withValues(alpha: 0.08);
@@ -201,7 +203,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Independent Document Box Color
     late Color docBoxColor;
-    final bool docCritical = expiredDocs.isNotEmpty || expiredDocs3Days.isNotEmpty;
+    final bool docCritical =
+        expiredDocs.isNotEmpty || expiredDocs3Days.isNotEmpty;
     final bool docWarning = expiredDocs7Days.isNotEmpty;
 
     if (docCritical) {
@@ -210,7 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       docBoxColor = AppTheme.warningYellow;
     } else {
       // Darker/More saturated green for 0 docs as requested
-      docBoxColor = const Color(0xFF059669); 
+      docBoxColor = const Color(0xFF059669);
     }
 
     return Scaffold(
@@ -234,10 +237,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                                color: AppTheme.primaryAction.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppTheme.primaryAction.withValues(alpha: 0.2),
+                                  color: AppTheme.primaryAction.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                               ),
                               child: ClipRRect(
@@ -256,16 +263,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 Text(
                                   'DueVault',
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                                    letterSpacing: -0.5,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color,
+                                        letterSpacing: -0.5,
+                                      ),
                                 ),
                                 Text(
                                   'Smart Bill Manager',
                                   style: TextStyle(
-                                    color: Theme.of(context).textTheme.bodySmall?.color,
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.color,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -279,7 +293,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
                             );
                           },
                           child: Consumer(
@@ -293,11 +309,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 children: [
                                   if (user == null)
                                     Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
+                                      padding: const EdgeInsets.only(
+                                        right: 8.0,
+                                      ),
                                       child: Text(
                                         'Guest',
                                         style: TextStyle(
-                                          color: Theme.of(context).textTheme.bodySmall?.color,
+                                          color: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.color,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -310,19 +330,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       border: Border.all(
                                         color: user != null
                                             ? AppTheme.primaryAction
-                                            : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                                            : Theme.of(context).dividerColor
+                                                  .withValues(alpha: 0.2),
                                         width: 2,
                                       ),
                                     ),
                                     child: CircleAvatar(
                                       radius: 18,
-                                      backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                                      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).dividerColor.withValues(alpha: 0.1),
+                                      backgroundImage: photoUrl != null
+                                          ? NetworkImage(photoUrl)
+                                          : null,
                                       child: photoUrl == null
                                           ? Icon(
                                               Icons.person_outline,
                                               size: 20,
-                                              color: Theme.of(context).textTheme.bodySmall?.color,
+                                              color: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall?.color,
                                             )
                                           : null,
                                     ),
@@ -452,7 +479,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     height: 1.0,
                                   ),
                                 ),
-                                if (expiredDocs30Days.isNotEmpty || expiredDocs.isNotEmpty)
+                                if (expiredDocs30Days.isNotEmpty ||
+                                    expiredDocs.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 6.0),
                                     child: Text(

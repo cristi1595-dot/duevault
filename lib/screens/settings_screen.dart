@@ -23,7 +23,6 @@ import '../providers/database_provider.dart';
 import '../main.dart';
 import '../utils/logger.dart';
 
-
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -45,7 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final bool? batteryDisabled =
         await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
     final bool notificationsGranted = await Permission.notification.isGranted;
-    
+
     // Senior Fix: On Android 13+, we also need Exact Alarm permission for reliability
     bool exactAlarmsGranted = true;
     try {
@@ -85,7 +84,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           backgroundColor: Theme.of(context).cardTheme.color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.battery_saver, color: AppTheme.primaryAction),
@@ -101,7 +102,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text(
                 'CONTINUE TO BATTERY',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryAction,
+                ),
               ),
             ),
           ],
@@ -385,7 +389,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap: (_isBatteryOptimizationDisabled == true &&
+                          onTap:
+                              (_isBatteryOptimizationDisabled == true &&
                                   _isNotificationPermissionGranted)
                               ? null
                               : () async {
@@ -428,13 +433,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                   color:
                                       (_isBatteryOptimizationDisabled == true &&
-                                              _isNotificationPermissionGranted)
-                                          ? AppTheme.safeGreen.withValues(
-                                              alpha: 0.1,
-                                            )
-                                          : AppTheme.urgentRed.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                          _isNotificationPermissionGranted)
+                                      ? AppTheme.safeGreen.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : AppTheme.urgentRed.withValues(
+                                          alpha: 0.1,
+                                        ),
                                   border: Border.all(
                                     color:
                                         (_isBatteryOptimizationDisabled ==
@@ -520,18 +525,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             });
 
             // 1. Intelligent Migration Check
-            final hasGuestData = await ref.read(vaultRepositoryProvider).hasRealGuestData();
-            
+            final hasGuestData = await ref
+                .read(vaultRepositoryProvider)
+                .hasRealGuestData();
+
             if (hasGuestData && context.mounted) {
               final shouldMigrate = await showDialog<bool>(
                 context: context,
                 barrierDismissible: false,
                 builder: (ctx) => AlertDialog(
                   backgroundColor: Theme.of(context).cardTheme.color,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   title: const Text('Migrate Local Data?'),
                   content: const Text(
-                    'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.'
+                    'We found bills/documents saved in Guest mode. Would you like to move them to your Google account? If you choose \'No\', they will be permanently deleted.',
                   ),
                   actions: [
                     TextButton(
@@ -543,7 +552,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryAction,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: const Text('Yes, Migrate'),
                     ),
@@ -562,7 +573,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 await ref.read(vaultProvider.notifier).deleteGuestData();
                 if (context.mounted) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('✓ Local guest data deleted.')),
+                    const SnackBar(
+                      content: Text('✓ Local guest data deleted.'),
+                    ),
                   );
                 }
               }
@@ -599,11 +612,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             }
             if (context.mounted) {
-              unawaited(Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const MainNavigation()),
-                (route) => false,
-              ));
+              unawaited(
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MainNavigation()),
+                  (route) => false,
+                ),
+              );
             }
           } else {
             messenger.showSnackBar(
@@ -898,8 +913,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             );
 
             try {
-              final result =
-                  await ref.read(autoSyncServiceProvider).syncAfterLogin();
+              final result = await ref
+                  .read(autoSyncServiceProvider)
+                  .syncAfterLogin();
 
               String message;
               Color? color;
@@ -949,9 +965,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _buildSettingItem(
                 icon: Icons.phonelink_erase,
                 title: 'Clear Local Data',
-                subtitle: isGuest 
-                  ? 'Deletes all bills and documents from this phone.'
-                  : 'Deletes local items only. Cloud backup stays safe.',
+                subtitle: isGuest
+                    ? 'Deletes all bills and documents from this phone.'
+                    : 'Deletes local items only. Cloud backup stays safe.',
                 onTap: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -963,9 +979,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       title: const Text('Clear Local Data'),
                       content: Text(
-                        isGuest 
-                          ? 'This will permanently delete all bills and documents from this phone. This action cannot be undone.'
-                          : 'This will delete all bills and documents from this phone. Your settings and Google Drive backup will NOT be deleted.',
+                        isGuest
+                            ? 'This will permanently delete all bills and documents from this phone. This action cannot be undone.'
+                            : 'This will delete all bills and documents from this phone. Your settings and Google Drive backup will NOT be deleted.',
                       ),
                       actions: [
                         TextButton(
@@ -988,12 +1004,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   if (confirm == true) {
                     if (!context.mounted) return;
-                    unawaited(showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (ctx) =>
-                          const Center(child: CircularProgressIndicator()),
-                    ));
+                    unawaited(
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) =>
+                            const Center(child: CircularProgressIndicator()),
+                      ),
+                    );
 
                     try {
                       await ref
@@ -1004,9 +1022,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              isGuest 
-                                ? 'Local data cleared.'
-                                : 'Local data cleared. Settings and Cloud backup preserved.',
+                              isGuest
+                                  ? 'Local data cleared.'
+                                  : 'Local data cleared. Settings and Cloud backup preserved.',
                             ),
                           ),
                         );
@@ -1073,12 +1091,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 if (confirm == true) {
                   if (!context.mounted) return;
-                  unawaited(showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (ctx) =>
-                        const Center(child: CircularProgressIndicator()),
-                  ));
+                  unawaited(
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) =>
+                          const Center(child: CircularProgressIndicator()),
+                    ),
+                  );
 
                   try {
                     await ref
@@ -1100,13 +1120,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       );
                       // Force navigation back to start
-                      unawaited(Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const MainNavigation(),
+                      unawaited(
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MainNavigation(),
+                          ),
+                          (route) => false,
                         ),
-                        (route) => false,
-                      ));
+                      );
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -1247,8 +1269,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       // 2. Reset Isar config (Persistence fix)
                       final isar = ref.read(isarProvider);
                       await isar.writeTxn(() async {
-                        final config = await isar.appConfigs.get(0) ?? AppConfig();
-                        config.isGuest = true; // Switch back to guest mode automatically
+                        final config =
+                            await isar.appConfigs.get(0) ?? AppConfig();
+                        config.isGuest =
+                            true; // Switch back to guest mode automatically
                         await isar.appConfigs.put(config);
                       });
 
@@ -1257,16 +1281,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ref.read(isGuestProvider.notifier).state = true;
 
                       if (context.mounted) {
-                        unawaited(Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MainNavigation(),
+                        unawaited(
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MainNavigation(),
+                            ),
+                            (route) => false,
                           ),
-                          (route) => false,
-                        ));
-                        
+                        );
+
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Signed out. You are now in Guest mode.')),
+                          const SnackBar(
+                            content: Text(
+                              'Signed out. You are now in Guest mode.',
+                            ),
+                          ),
                         );
                       }
                     }
@@ -1285,7 +1315,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.logout, size: 20),
                     ],
                   ),
-                )
+                ),
             ],
           ),
         );

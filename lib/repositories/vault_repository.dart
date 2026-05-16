@@ -347,7 +347,9 @@ class VaultRepository {
           .findAll();
 
       if (guestItems.isNotEmpty) {
-        logger.i('Deletion: Starting to delete ${guestItems.length} guest items...');
+        logger.i(
+          'Deletion: Starting to delete ${guestItems.length} guest items...',
+        );
         await isar.writeTxn(() async {
           await isar.collection<VaultItem>().deleteAll(
             guestItems.map((item) => item.id).toList(),

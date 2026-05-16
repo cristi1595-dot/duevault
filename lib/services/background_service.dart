@@ -1,7 +1,6 @@
 import 'package:workmanager/workmanager.dart';
 import 'package:isar/isar.dart';
 
-
 import 'package:path_provider/path_provider.dart';
 
 import '../models/user.dart';
@@ -9,9 +8,6 @@ import '../models/vault_item.dart';
 import '../models/app_config.dart';
 import '../utils/date_helper.dart';
 import '../utils/logger.dart';
-
-
-
 
 const syncTaskName = "com.duevault.syncTask";
 
@@ -35,10 +31,7 @@ void callbackDispatcher() {
         }
       }
 
-
       final Isar db = isar;
-
-
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
@@ -46,7 +39,8 @@ void callbackDispatcher() {
       // Find ALL recurring bills that are paid and whose due date is in the past or today
       final recurringBills = await db.vaultItems
           .filter()
-          .not().recurrenceEqualTo('None')
+          .not()
+          .recurrenceEqualTo('None')
           .and()
           .isPaidEqualTo(true)
           .findAll();
@@ -56,15 +50,17 @@ void callbackDispatcher() {
       for (final bill in recurringBills) {
         if (bill.dueDate != null) {
           final nextDueDate = DateHelper.calculateNextDueDate(
-            bill.dueDate!, 
+            bill.dueDate!,
             bill.recurrence,
             targetDay: bill.originalDueDay,
           );
-          
-          if (nextDueDate.isAfter(DateTime.now()) || nextDueDate.isAtSameMomentAs(today)) {
+
+          if (nextDueDate.isAfter(DateTime.now()) ||
+              nextDueDate.isAtSameMomentAs(today)) {
             // Check if this instance already exists (using a derived UUID is better)
-            final nextUuid = 'next_${bill.uuid}_${nextDueDate.millisecondsSinceEpoch}';
-            
+            final nextUuid =
+                'next_${bill.uuid}_${nextDueDate.millisecondsSinceEpoch}';
+
             final existing = await db.vaultItems
                 .filter()
                 .uuidEqualTo(nextUuid)
@@ -96,13 +92,19 @@ void callbackDispatcher() {
         await db.writeTxn(() async {
           await db.vaultItems.putAll(newInstances);
         });
-        logger.i('BackgroundService: Generated ${newInstances.length} new recurring bill instances.');
+        logger.i(
+          'BackgroundService: Generated ${newInstances.length} new recurring bill instances.',
+        );
       }
 
       if (shouldClose) await db.close();
       return Future.value(true);
     } catch (e, stack) {
-      logger.e('BackgroundService: Error executing task', error: e, stackTrace: stack);
+      logger.e(
+        'BackgroundService: Error executing task',
+        error: e,
+        stackTrace: stack,
+      );
       return Future.value(false);
     }
   });
@@ -110,9 +112,7 @@ void callbackDispatcher() {
 
 class BackgroundService {
   static void initialize() {
-    Workmanager().initialize(
-      callbackDispatcher,
-    );
+    Workmanager().initialize(callbackDispatcher);
   }
 
   static void registerPeriodicTask() {
@@ -120,9 +120,7 @@ class BackgroundService {
       "1",
       syncTaskName,
       frequency: const Duration(hours: 24),
-      constraints: Constraints(
-        networkType: NetworkType.connected, 
-      ),
+      constraints: Constraints(networkType: NetworkType.connected),
     );
   }
 }

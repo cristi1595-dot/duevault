@@ -6,7 +6,6 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../utils/logger.dart';
 
-
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -14,7 +13,7 @@ class NotificationService {
   static Future<void> initialize() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
+
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings();
 
@@ -35,7 +34,7 @@ class NotificationService {
     try {
       final dynamic zone = await FlutterTimezone.getLocalTimezone();
       String tzName = zone.toString();
-      
+
       // Senior Fix: If it's a TimezoneInfo object string, extract just the ID
       // Example: "TimezoneInfo(Europe/London, ...)" -> "Europe/London"
       if (tzName.contains('TimezoneInfo(')) {
@@ -81,15 +80,17 @@ class NotificationService {
     if (status.isGranted) {
       final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
       if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
-        logger.i('NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.');
-        // We don't force open here to avoid jarring UX, 
+        logger.i(
+          'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
+        );
+        // We don't force open here to avoid jarring UX,
         // the "Fix Now" button in settings will handle the deep link.
       }
     }
 
     // 3. Fallback to plugin-specific request for compatibility
-    final androidImplementation =
-        _notificationsPlugin.resolvePlatformSpecificImplementation<
+    final androidImplementation = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
     if (androidImplementation != null) {
@@ -110,10 +111,10 @@ class NotificationService {
     bool isDocument = false,
   }) async {
     final typeLabel = isDocument ? 'Document' : 'Bill';
-    
+
     // 1. Primary Notification (from Slider)
     await _scheduleSingle(
-      id: id, 
+      id: id,
       title: '$typeLabel Due Soon: $title',
       body: 'This $typeLabel is due in $primaryDaysBefore days!',
       date: dueDate.subtract(Duration(days: primaryDaysBefore)),
@@ -146,7 +147,7 @@ class NotificationService {
   }) async {
     // Set reminder time to 09:00 AM
     final scheduleDate = DateTime(date.year, date.month, date.day, 9, 0);
-    
+
     if (scheduleDate.isBefore(DateTime.now())) return;
 
     await _notificationsPlugin.zonedSchedule(

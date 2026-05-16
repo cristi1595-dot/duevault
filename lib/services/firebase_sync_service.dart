@@ -21,7 +21,9 @@ class FirebaseSyncService {
 
   void initialize() {
     // Listen for connectivity changes to trigger sync
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
       if (results.any((r) => r != ConnectivityResult.none)) {
         sync();
       }
@@ -40,15 +42,15 @@ class FirebaseSyncService {
     _isSyncing = true;
     try {
       _ref.read(syncProvider.notifier).setSyncing();
-      
+
       // 1. Upload local changes (Outbound)
       await _uploadLocalChanges(user.uid);
-      
+
       // 2. Download remote changes (Inbound)
       await _downloadRemoteChanges(user.uid);
 
       _ref.read(syncProvider.notifier).setSuccess();
-      
+
       // Reset status after a delay
       Future.delayed(const Duration(seconds: 3), () {
         _ref.read(syncProvider.notifier).resetStatus();
@@ -63,7 +65,7 @@ class FirebaseSyncService {
 
   Future<void> _uploadLocalChanges(String uid) async {
     final isar = _ref.read(isarProvider);
-    
+
     // Find items modified since last sync or never synced
     final dirtyItems = await isar.vaultItems
         .filter()
@@ -74,11 +76,14 @@ class FirebaseSyncService {
     if (dirtyItems.isEmpty) return;
 
     final batch = FirebaseFirestore.instance.batch();
-    final collection = FirebaseFirestore.instance.collection('users').doc(uid).collection('items');
+    final collection = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('items');
 
     for (var item in dirtyItems) {
       final docRef = collection.doc(item.uuid);
-      // Senior Architecture: We upload the record even if isDeleted=true 
+      // Senior Architecture: We upload the record even if isDeleted=true
       // so other devices can see the "Tombstone" and delete it locally.
       batch.set(docRef, item.toMap(), SetOptions(merge: true));
     }
@@ -96,14 +101,15 @@ class FirebaseSyncService {
         }
       }
     });
-    
+
     logger.i('Uploaded ${dirtyItems.length} changes to Firebase');
   }
 
   Future<void> _downloadRemoteChanges(String uid) async {
     final isar = _ref.read(isarProvider);
     final config = await isar.appConfigs.get(0) ?? AppConfig();
-    final lastSync = config.lastCloudSync ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final lastSync =
+        config.lastCloudSync ?? DateTime.fromMillisecondsSinceEpoch(0);
 
     final snapshot = await FirebaseFirestore.instance
         .collection('users')
@@ -117,7 +123,7 @@ class FirebaseSyncService {
     await isar.writeTxn(() async {
       for (var doc in snapshot.docs) {
         final remoteItem = VaultItem.fromMap(doc.data());
-        
+
         // Find local version by UUID
         final localItem = await isar.vaultItems
             .filter()
@@ -158,7 +164,7 @@ class FirebaseSyncService {
         .collection('users')
         .doc(uid)
         .collection('items');
-    
+
     final snapshot = await collection.get();
     if (snapshot.docs.isEmpty) return;
 
@@ -166,7 +172,7 @@ class FirebaseSyncService {
     for (var doc in snapshot.docs) {
       batch.delete(doc.reference);
     }
-    
+
     await batch.commit();
     logger.w('FirebaseSyncService: Wiped all Firestore data for user $uid');
   }

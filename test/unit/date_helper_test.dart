@@ -15,17 +15,29 @@ void main() {
       expect(nextDate, DateTime(2024, 2, 15));
     });
 
-    test('Monthly recurrence handles end of month (Jan 31 -> Feb 29 in leap year)', () {
-      final initialDate = DateTime(2024, 1, 31);
-      final nextDate = DateHelper.calculateNextDueDate(initialDate, 'Monthly');
-      expect(nextDate, DateTime(2024, 2, 29));
-    });
+    test(
+      'Monthly recurrence handles end of month (Jan 31 -> Feb 29 in leap year)',
+      () {
+        final initialDate = DateTime(2024, 1, 31);
+        final nextDate = DateHelper.calculateNextDueDate(
+          initialDate,
+          'Monthly',
+        );
+        expect(nextDate, DateTime(2024, 2, 29));
+      },
+    );
 
-    test('Monthly recurrence handles end of month (Jan 31 -> Feb 28 in non-leap year)', () {
-      final initialDate = DateTime(2023, 1, 31);
-      final nextDate = DateHelper.calculateNextDueDate(initialDate, 'Monthly');
-      expect(nextDate, DateTime(2023, 2, 28));
-    });
+    test(
+      'Monthly recurrence handles end of month (Jan 31 -> Feb 28 in non-leap year)',
+      () {
+        final initialDate = DateTime(2023, 1, 31);
+        final nextDate = DateHelper.calculateNextDueDate(
+          initialDate,
+          'Monthly',
+        );
+        expect(nextDate, DateTime(2023, 2, 28));
+      },
+    );
 
     test('Yearly recurrence adds 1 year', () {
       final initialDate = DateTime(2024, 1, 1);

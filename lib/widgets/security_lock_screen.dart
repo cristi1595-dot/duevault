@@ -13,7 +13,8 @@ class SecurityLockScreen extends ConsumerStatefulWidget {
   ConsumerState<SecurityLockScreen> createState() => _SecurityLockScreenState();
 }
 
-class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with WidgetsBindingObserver {
+class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -64,10 +65,12 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with Wi
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
               child: Container(
-                color: Colors.black.withValues(alpha: 0.9), // Darker for better security feel
+                color: Colors.black.withValues(
+                  alpha: 0.9,
+                ), // Darker for better security feel
               ),
             ),
-            
+
             SafeArea(
               child: Center(
                 child: Column(
@@ -109,13 +112,16 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with Wi
                       ),
                     ),
                     const SizedBox(height: 64),
-                    
+
                     // Unlock Button
                     GestureDetector(
                       onTap: _authenticate,
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 48,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [AppTheme.primaryAction, Color(0xFF6366F1)],
@@ -123,7 +129,9 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with Wi
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryAction.withValues(alpha: 0.3),
+                              color: AppTheme.primaryAction.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -157,7 +165,7 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with Wi
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 48),
                     // Add a logout option for safety
                     TextButton(
@@ -168,7 +176,9 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen> with Wi
                       },
                       child: Text(
                         'Sign Out',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                   ],

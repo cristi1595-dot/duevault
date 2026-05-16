@@ -32,17 +32,16 @@ import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
 import 'providers/sync_provider.dart';
 
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Stability Fix for Android 15: Lock to Portrait to avoid memory crashes on rotation
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-    
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
     // Parallelize ONLY critical initializations
     await Firebase.initializeApp();
 
@@ -50,7 +49,7 @@ void main() async {
     FlutterError.onError = (errorDetails) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     };
-    
+
     // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -59,9 +58,11 @@ void main() async {
     final appDir = await getApplicationDocumentsDirectory();
 
     // Initialize notifications in the background to not block the UI
-    unawaited(NotificationService.initialize().catchError((e, stack) {
-      logger.e('Notification init skipped', error: e, stackTrace: stack);
-    }));
+    unawaited(
+      NotificationService.initialize().catchError((e, stack) {
+        logger.e('Notification init skipped', error: e, stackTrace: stack);
+      }),
+    );
 
     // Lazy load background services after 5 seconds
     Future.delayed(const Duration(seconds: 5), () {
@@ -70,7 +71,7 @@ void main() async {
       logger.i('Delayed Services: Background Sync & WorkManager initialized.');
     });
 
-    // Initialize Isar DB (Isar 3.x does not support native DB encryption, 
+    // Initialize Isar DB (Isar 3.x does not support native DB encryption,
     // we use field-level encryption in EncryptionService instead)
     final isar = await Isar.open(
       [UserSchema, VaultItemSchema, AppConfigSchema],
@@ -80,11 +81,6 @@ void main() async {
 
     // Run Data Migrations (Postponed to VaultNotifier for Android 15 stability)
     // await MigrationService.runMigrations(isar);
-
-
-
-
-
 
     // Read initial session state (Persistence fix)
     final config = await isar.appConfigs.get(0);
@@ -102,16 +98,17 @@ void main() async {
       ),
     );
   } catch (e, stackTrace) {
-    runApp(MaterialApp(
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: BentoErrorScreen(
-        error: e.toString(),
-        stackTrace: stackTrace.toString(),
+    runApp(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        home: BentoErrorScreen(
+          error: e.toString(),
+          stackTrace: stackTrace.toString(),
+        ),
       ),
-    ));
-
+    );
   }
 }
 
@@ -122,12 +119,13 @@ class DueVaultApp extends ConsumerStatefulWidget {
   ConsumerState<DueVaultApp> createState() => _DueVaultAppState();
 }
 
-class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingObserver {
+class _DueVaultAppState extends ConsumerState<DueVaultApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Initialize Firebase Sync (Senior Architecture)
     ref.read(firebaseSyncServiceProvider).initialize();
   }
@@ -142,11 +140,11 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // 1. Senior Fix: Removed "Lock when minimized" logic as per user request.
     // The app now only locks on cold start if security is enabled.
-    
+
     // 2. Smart Sync & Timezone check on Resume
     if (state == AppLifecycleState.resumed) {
       final user = ref.read(authStateProvider).valueOrNull;
-      
+
       // Re-init timezone in case of travel
       NotificationService.initialize();
 
@@ -171,16 +169,16 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
     try {
       // 1. Wait for system and animations to fully settle
       await Future.delayed(const Duration(milliseconds: 1200));
-      
+
       // 2. Google Drive Sync
       await ref.read(autoSyncServiceProvider).syncOnStartup();
-      
+
       // 3. Small gap
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       // 4. Firebase Sync
       await ref.read(firebaseSyncServiceProvider).sync();
-      
+
       logger.i('Safe Sync sequence completed.');
     } catch (e, stack) {
       logger.e('Error during safe sync sequence', error: e, stackTrace: stack);
@@ -202,43 +200,46 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
           final authState = ref.watch(authStateProvider);
           final isGuest = ref.watch(isGuestProvider);
           final security = ref.watch(securityProvider);
-          
+
           return authState.when(
             data: (user) {
               final hasSeenOnboarding = ref.watch(hasSeenOnboardingProvider);
-              logger.i('DueVault: Auth state changed. User: ${user?.uid}, Guest: $isGuest, Onboarding seen: $hasSeenOnboarding');
-              
+              logger.i(
+                'DueVault: Auth state changed. User: ${user?.uid}, Guest: $isGuest, Onboarding seen: $hasSeenOnboarding',
+              );
+
               Widget root;
               if (!hasSeenOnboarding) {
                 root = const OnboardingScreen();
-              } else if ((user != null || isGuest) && !ref.watch(isProcessingAuthSyncProvider)) {
+              } else if ((user != null || isGuest) &&
+                  !ref.watch(isProcessingAuthSyncProvider)) {
                 root = const MainNavigation();
               } else {
                 root = const LoginScreen();
               }
 
               final bool userReady = user != null || isGuest;
-              
+
               // Only show lock screen if enabled, device supports it, and user is ready
               if (security.isLocked && userReady && security.canAuthenticate) {
                 return Stack(
                   children: [
                     root,
-                    const Positioned.fill(
-                      child: SecurityLockScreen(),
-                    ),
+                    const Positioned.fill(child: SecurityLockScreen()),
                   ],
                 );
               }
 
-              
               return root;
             },
             loading: () => Scaffold(
-              backgroundColor: themeMode == ThemeMode.dark ? const Color(0xFF131313) : const Color(0xFFF8FAFC),
+              backgroundColor: themeMode == ThemeMode.dark
+                  ? const Color(0xFF131313)
+                  : const Color(0xFFF8FAFC),
               body: const Center(child: CircularProgressIndicator()),
             ),
-            error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+            error: (err, stack) =>
+                Scaffold(body: Center(child: Text('Error: $err'))),
           );
         },
       ),
@@ -250,20 +251,14 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp> with WidgetsBindingOb
 class MainNavigation extends ConsumerWidget {
   const MainNavigation({super.key});
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    VaultScreen(),
-  ];
+  final List<Widget> _screens = const [HomeScreen(), VaultScreen()];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
 
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: currentIndex, children: _screens),
       bottomNavigationBar: IntegratedBottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
@@ -290,7 +285,9 @@ class MainNavigation extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Select the type of item you want to vault.',
-                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildPopupItem(
@@ -316,7 +313,12 @@ class MainNavigation extends ConsumerWidget {
     );
   }
 
-  Widget _buildPopupItem(BuildContext context, String title, String subtitle, IconData icon) {
+  Widget _buildPopupItem(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+  ) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
@@ -370,7 +372,10 @@ class MainNavigation extends ConsumerWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Theme.of(context).textTheme.bodyMedium?.color),
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
           ],
         ),
       ),

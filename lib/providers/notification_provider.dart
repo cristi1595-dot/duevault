@@ -34,9 +34,10 @@ class AlertDaysNotifier extends StateNotifier<int> {
 }
 
 /// Provider for the fixed 3-day early alert
-final threeDayAlertEnabledProvider = StateNotifierProvider<ThreeDayAlertNotifier, bool>((ref) {
-  return ThreeDayAlertNotifier(ref);
-});
+final threeDayAlertEnabledProvider =
+    StateNotifierProvider<ThreeDayAlertNotifier, bool>((ref) {
+      return ThreeDayAlertNotifier(ref);
+    });
 
 class ThreeDayAlertNotifier extends StateNotifier<bool> {
   final Ref _ref;
@@ -64,9 +65,10 @@ class ThreeDayAlertNotifier extends StateNotifier<bool> {
 }
 
 /// Provider for global notification toggle
-final globalNotificationsProvider = StateNotifierProvider<GlobalNotificationsNotifier, bool>((ref) {
-  return GlobalNotificationsNotifier(ref);
-});
+final globalNotificationsProvider =
+    StateNotifierProvider<GlobalNotificationsNotifier, bool>((ref) {
+      return GlobalNotificationsNotifier(ref);
+    });
 
 class GlobalNotificationsNotifier extends StateNotifier<bool> {
   final Ref _ref;
@@ -90,7 +92,7 @@ class GlobalNotificationsNotifier extends StateNotifier<bool> {
       config.globalNotificationsEnabled = enabled;
       await isar.appConfigs.put(config);
     });
-    
+
     // Request permissions when enabling
     if (enabled) {
       await NotificationService.requestPermissions();

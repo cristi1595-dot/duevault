@@ -10,11 +10,7 @@ class SyncState {
   final String? message;
   final DateTime? lastSync;
 
-  const SyncState({
-    required this.status,
-    this.message,
-    this.lastSync,
-  });
+  const SyncState({required this.status, this.message, this.lastSync});
 
   SyncState copyWith({
     SyncStatus? status,
@@ -122,7 +118,8 @@ final wifiOnlyProvider = StateNotifierProvider<WifiOnlyNotifier, bool>((ref) {
 // Last Sync Timestamp Provider
 final lastSyncTimestampProvider = StreamProvider<DateTime?>((ref) {
   final isar = ref.watch(isarProvider);
-  return isar.appConfigs.watchObject(0, fireImmediately: true)
+  return isar.appConfigs
+      .watchObject(0, fireImmediately: true)
       .map((config) => config?.lastCloudSync);
 });
 

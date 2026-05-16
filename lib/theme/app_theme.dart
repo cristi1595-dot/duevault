@@ -11,8 +11,10 @@ class AppTheme {
   static const Color accentPurple = Color(0xFF8B5CF6);
 
   // --- DARK MODE PALETTE ---
-  static const Color darkBackground = Color(0xFF0F1115); // Deeper, more modern dark
-  static const Color darkSurface = Color(0xFF1B1F26);    // Tonal surface
+  static const Color darkBackground = Color(
+    0xFF0F1115,
+  ); // Deeper, more modern dark
+  static const Color darkSurface = Color(0xFF1B1F26); // Tonal surface
   static const Color darkBorder = Color(0xFF2D333D);
   static const Color darkTextPrimary = Colors.white;
   static const Color darkTextSecondary = Color(0xFF94A3B8);
@@ -56,11 +58,8 @@ class AppTheme {
     required Color textPrimary,
     required Color textSecondary,
   }) {
-    final base = ThemeData(
-      brightness: brightness,
-      useMaterial3: true,
-    );
-    
+    final base = ThemeData(brightness: brightness, useMaterial3: true);
+
     return base.copyWith(
       scaffoldBackgroundColor: background,
       primaryColor: primaryAction,
@@ -135,14 +134,20 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: primaryAction, width: 2), // M3 focus border is 2dp
+          borderSide: const BorderSide(
+            color: primaryAction,
+            width: 2,
+          ), // M3 focus border is 2dp
         ),
         hintStyle: TextStyle(color: textSecondary),
       ),
@@ -150,11 +155,16 @@ class AppTheme {
   }
 
   // Helper getters for static access (though dynamic is preferred via Theme.of)
-  static Color getBackground(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
-  static Color getSurface(BuildContext context) => Theme.of(context).cardTheme.color!;
-  static Color getBorder(BuildContext context) => Theme.of(context).colorScheme.outline;
-  static Color getTextPrimary(BuildContext context) => Theme.of(context).textTheme.bodyLarge!.color!;
-  static Color getTextSecondary(BuildContext context) => Theme.of(context).textTheme.bodyMedium!.color!;
+  static Color getBackground(BuildContext context) =>
+      Theme.of(context).scaffoldBackgroundColor;
+  static Color getSurface(BuildContext context) =>
+      Theme.of(context).cardTheme.color!;
+  static Color getBorder(BuildContext context) =>
+      Theme.of(context).colorScheme.outline;
+  static Color getTextPrimary(BuildContext context) =>
+      Theme.of(context).textTheme.bodyLarge!.color!;
+  static Color getTextSecondary(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium!.color!;
 
   static TextStyle labelCapsStyle(BuildContext context) {
     return GoogleFonts.inter(
@@ -165,7 +175,7 @@ class AppTheme {
     );
   }
 
-  // Maintain backward compatibility for static constants if possible, 
+  // Maintain backward compatibility for static constants if possible,
   // but warn that they are no longer static-only.
   // We'll keep the names but they should ideally come from Theme.of(context)
   static const Color textSecondary = darkTextSecondary;

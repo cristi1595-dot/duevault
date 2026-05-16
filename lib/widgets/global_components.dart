@@ -101,7 +101,9 @@ class SyncStatusIndicator extends ConsumerWidget {
         break;
       case SyncStatus.idle:
         iconData = Icons.cloud_queue;
-        iconColor = Theme.of(context).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
+        iconColor = Theme.of(
+          context,
+        ).textTheme.bodySmall!.color!.withValues(alpha: 0.5);
         break;
     }
 
@@ -707,9 +709,13 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: _buildNavItem(0, Icons.home_filled, 'Home', inactiveColor)),
+          Expanded(
+            child: _buildNavItem(0, Icons.home_filled, 'Home', inactiveColor),
+          ),
           _buildAddButton(),
-          Expanded(child: _buildNavItem(1, Icons.folder_copy, 'Vault', inactiveColor)),
+          Expanded(
+            child: _buildNavItem(1, Icons.folder_copy, 'Vault', inactiveColor),
+          ),
         ],
       ),
     );

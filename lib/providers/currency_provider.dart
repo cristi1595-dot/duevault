@@ -17,7 +17,7 @@ class Currency {
       amountString = amount.toInt().toString();
     } else {
       amountString = amount.toStringAsFixed(2);
-      // Optional: remove trailing zero if it's like 10.50 -> 10.5? 
+      // Optional: remove trailing zero if it's like 10.50 -> 10.5?
       // The user said "afisezale daca au zecimale", so 10.50 is fine.
       // But let's make it clean.
       if (amountString.endsWith('0')) {
@@ -67,10 +67,9 @@ class CurrencyNotifier extends StateNotifier<Currency> {
     );
   }
 
-
   Future<void> setCurrency(Currency currency) async {
     state = currency;
-    
+
     final config = await repository.getConfig();
     config.currencyCode = currency.code;
     await repository.updateConfig(config);
@@ -82,8 +81,9 @@ class CurrencyNotifier extends StateNotifier<Currency> {
   }
 }
 
-final currencyProvider = StateNotifierProvider<CurrencyNotifier, Currency>((ref) {
+final currencyProvider = StateNotifierProvider<CurrencyNotifier, Currency>((
+  ref,
+) {
   final repository = ref.watch(vaultRepositoryProvider);
   return CurrencyNotifier(repository, ref);
 });
-

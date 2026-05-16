@@ -20,11 +20,13 @@ enum SortOption { date, name, amount }
 class _VaultScreenState extends ConsumerState<VaultScreen> {
   // Use PageController for infinite looping
   static const int _initialPageIndex = 4000;
-  final PageController _pageController = PageController(initialPage: _initialPageIndex);
+  final PageController _pageController = PageController(
+    initialPage: _initialPageIndex,
+  );
   final TextEditingController _searchController = TextEditingController();
-  
+
   int _currentPageIndex = _initialPageIndex;
-  
+
   String _searchQuery = '';
   String? _selectedCategory;
   SortOption _sortBy = SortOption.date;
@@ -62,7 +64,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             Text(
               'No items found',
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                 fontSize: 16,
               ),
             ),
@@ -71,29 +75,32 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       );
     }
     return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return VaultItemTile(
-            item: item,
-            currency: currency,
-            onCheckPressed: item.isPaid || item.isArchived
-                ? null
-                : () {
-                    final notifier = ref.read(vaultProvider.notifier);
-                    notifier.updatePaidStatus(item.id, true);
-                    final actionText = item.itemType == 'Bill' ? 'Paid' : 'Renewed';
-                    VaultSnackBar.show(
-                      message: '${item.title.isEmpty ? item.category : item.title} $actionText',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, false),
-                    );
-                  },
-          );
-        },
-      );
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return VaultItemTile(
+          item: item,
+          currency: currency,
+          onCheckPressed: item.isPaid || item.isArchived
+              ? null
+              : () {
+                  final notifier = ref.read(vaultProvider.notifier);
+                  notifier.updatePaidStatus(item.id, true);
+                  final actionText = item.itemType == 'Bill'
+                      ? 'Paid'
+                      : 'Renewed';
+                  VaultSnackBar.show(
+                    message:
+                        '${item.title.isEmpty ? item.category : item.title} $actionText',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.safeGreen,
+                    onAction: () => notifier.updatePaidStatus(item.id, false),
+                  );
+                },
+        );
+      },
+    );
   }
 
   @override
@@ -111,41 +118,48 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     }).toList();
 
     List<dynamic> getItemsForTab(int tabIndex) {
-      return searchFiltered.where((item) {
-        final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
-        final shouldBeInHistory = item.isArchived || (item.isPaid && isExpired);
-        
-        if (tabIndex == 3) return shouldBeInHistory;
-        if (shouldBeInHistory) return false;
-        
-        if (tabIndex == 1) return item.itemType == 'Bill';
-        if (tabIndex == 2) return item.itemType == 'Document';
-        return true;
-      }).where((item) {
-        return _selectedCategory == null || item.category == _selectedCategory;
-      }).toList()..sort((a, b) {
-        int result;
-        switch (_sortBy) {
-          case SortOption.date:
-            if (a.dueDate == null && b.dueDate == null) {
-              result = 0;
-            } else if (a.dueDate == null) {
-              result = 1;
-            } else if (b.dueDate == null) {
-              result = -1;
-            } else {
-              result = a.dueDate!.compareTo(b.dueDate!);
-            }
-            break;
-          case SortOption.name:
-            result = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-            break;
-          case SortOption.amount:
-            result = (a.amount ?? 0).compareTo(b.amount ?? 0);
-            break;
-        }
-        return _sortAscending ? result : -result;
-      });
+      return searchFiltered
+          .where((item) {
+            final isExpired =
+                item.dueDate != null && item.dueDate!.isBefore(today);
+            final shouldBeInHistory =
+                item.isArchived || (item.isPaid && isExpired);
+
+            if (tabIndex == 3) return shouldBeInHistory;
+            if (shouldBeInHistory) return false;
+
+            if (tabIndex == 1) return item.itemType == 'Bill';
+            if (tabIndex == 2) return item.itemType == 'Document';
+            return true;
+          })
+          .where((item) {
+            return _selectedCategory == null ||
+                item.category == _selectedCategory;
+          })
+          .toList()
+        ..sort((a, b) {
+          int result;
+          switch (_sortBy) {
+            case SortOption.date:
+              if (a.dueDate == null && b.dueDate == null) {
+                result = 0;
+              } else if (a.dueDate == null) {
+                result = 1;
+              } else if (b.dueDate == null) {
+                result = -1;
+              } else {
+                result = a.dueDate!.compareTo(b.dueDate!);
+              }
+              break;
+            case SortOption.name:
+              result = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+              break;
+            case SortOption.amount:
+              result = (a.amount ?? 0).compareTo(b.amount ?? 0);
+              break;
+          }
+          return _sortAscending ? result : -result;
+        });
     }
 
     // Existing categories for CURRENT tab
@@ -159,16 +173,28 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
       return true;
     }).toList();
 
-    final existingCategoryNames = currentTabItems.map((e) => e.category).toSet();
+    final existingCategoryNames = currentTabItems
+        .map((e) => e.category)
+        .toSet();
     final List<Map<String, dynamic>> displayedCategories = [];
     for (var cat in _billCategories) {
       if (existingCategoryNames.contains(cat.name)) {
-        displayedCategories.add({'name': cat.name, 'icon': cat.icon, 'color': cat.color, 'type': 'B'});
+        displayedCategories.add({
+          'name': cat.name,
+          'icon': cat.icon,
+          'color': cat.color,
+          'type': 'B',
+        });
       }
     }
     for (var cat in _docCategories) {
       if (existingCategoryNames.contains(cat.name)) {
-        displayedCategories.add({'name': cat.name, 'icon': cat.icon, 'color': cat.color, 'type': 'D'});
+        displayedCategories.add({
+          'name': cat.name,
+          'icon': cat.icon,
+          'color': cat.color,
+          'type': 'D',
+        });
       }
     }
 
@@ -178,7 +204,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.asset('assets/images/app_icon.png', width: 28, height: 28, fit: BoxFit.cover),
+              child: Image.asset(
+                'assets/images/app_icon.png',
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(width: 12),
             const Text('Vault', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -188,7 +219,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
               child: Consumer(
                 builder: (context, ref, child) {
                   final authState = ref.watch(authStateProvider);
@@ -199,14 +233,30 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       if (user == null)
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: Text('Guest', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
+                          child: Text(
+                            'Guest',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: Theme.of(context).cardTheme.color,
-                        backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                        backgroundImage: photoUrl != null
+                            ? NetworkImage(photoUrl)
+                            : null,
                         child: photoUrl == null
-                            ? Icon(Icons.person, color: Theme.of(context).textTheme.bodyMedium?.color, size: 18)
+                            ? Icon(
+                                Icons.person,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.color,
+                                size: 18,
+                              )
                             : null,
                       ),
                     ],
@@ -225,11 +275,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Container(
-              height: 42, padding: const EdgeInsets.all(4),
+              height: 42,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 children: [
@@ -251,25 +304,56 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   child: Container(
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).dividerColor.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: TextField(
                       controller: _searchController,
                       textCapitalization: TextCapitalization.sentences,
-                      onChanged: (value) => setState(() => _searchQuery = value),
-                      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 14),
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: 14,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Search...',
-                        hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.3)),
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.4), size: 20),
+                        hintStyle: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.3),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.color?.withValues(alpha: 0.4),
+                          size: 20,
+                        ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear, color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.4), size: 16),
-                                onPressed: () { _searchController.clear(); setState(() => _searchQuery = ''); },
+                                icon: Icon(
+                                  Icons.clear,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color
+                                      ?.withValues(alpha: 0.4),
+                                  size: 16,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
                               )
                             : null,
                       ),
@@ -278,28 +362,56 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  height: 40, width: 40,
+                  height: 40,
+                  width: 40,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: PopupMenuButton<SortOption>(
-                    icon: const Icon(Icons.sort, color: AppTheme.primaryAction, size: 20),
+                    icon: const Icon(
+                      Icons.sort,
+                      color: AppTheme.primaryAction,
+                      size: 20,
+                    ),
                     offset: const Offset(0, 50),
                     color: AppTheme.surface,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     onSelected: (option) {
                       if (_sortBy == option) {
                         setState(() => _sortAscending = !_sortAscending);
                       } else {
-                        setState(() { _sortBy = option; _sortAscending = true; });
+                        setState(() {
+                          _sortBy = option;
+                          _sortAscending = true;
+                        });
                       }
                     },
                     itemBuilder: (context) => [
-                      _buildSortItem(SortOption.date, 'Date', Icons.calendar_today),
-                      _buildSortItem(SortOption.name, 'Name', Icons.sort_by_alpha),
-                      _buildSortItem(SortOption.amount, 'Amount', Icons.payments_outlined),
+                      _buildSortItem(
+                        SortOption.date,
+                        'Date',
+                        Icons.calendar_today,
+                      ),
+                      _buildSortItem(
+                        SortOption.name,
+                        'Name',
+                        Icons.sort_by_alpha,
+                      ),
+                      _buildSortItem(
+                        SortOption.amount,
+                        'Amount',
+                        Icons.payments_outlined,
+                      ),
                     ],
                   ),
                 ),
@@ -344,17 +456,36 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     );
   }
 
-  PopupMenuItem<SortOption> _buildSortItem(SortOption value, String label, IconData icon) {
+  PopupMenuItem<SortOption> _buildSortItem(
+    SortOption value,
+    String label,
+    IconData icon,
+  ) {
     return PopupMenuItem(
       value: value,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
+          Icon(
+            icon,
+            size: 18,
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+          ),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
           const Spacer(),
           if (_sortBy == value)
-            Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: AppTheme.primaryAction),
+            Icon(
+              _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 14,
+              color: AppTheme.primaryAction,
+            ),
         ],
       ),
     );
@@ -365,23 +496,56 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     return GestureDetector(
       onTap: () => setState(() => _selectedCategory = null),
       child: Container(
-        width: 76, height: 72,
+        width: 76,
+        height: 72,
         decoration: BoxDecoration(
-          gradient: isSelected ? LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [AppTheme.primaryAction, AppTheme.primaryAction.withValues(alpha: 0.8)],
-          ) : null,
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryAction,
+                    AppTheme.primaryAction.withValues(alpha: 0.8),
+                  ],
+                )
+              : null,
           color: isSelected ? null : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? AppTheme.primaryAction : Theme.of(context).dividerColor.withValues(alpha: 0.5)),
-          boxShadow: isSelected ? [BoxShadow(color: AppTheme.primaryAction.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))] : null,
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.primaryAction
+                : Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryAction.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.grid_view_rounded, color: isSelected ? Colors.black : AppTheme.primaryAction, size: 26),
+            Icon(
+              Icons.grid_view_rounded,
+              color: isSelected ? Colors.black : AppTheme.primaryAction,
+              size: 26,
+            ),
             const SizedBox(height: 6),
-            Text('ALL', style: TextStyle(color: isSelected ? Colors.black : Theme.of(context).textTheme.bodySmall?.color, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+            Text(
+              'ALL',
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.black
+                    : Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
           ],
         ),
       ),
@@ -395,7 +559,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         child: GridView.builder(
           scrollDirection: Axis.horizontal,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, mainAxisExtent: 110, mainAxisSpacing: 8, crossAxisSpacing: 8,
+            crossAxisCount: 2,
+            mainAxisExtent: 110,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
           ),
           itemCount: categories.length,
           itemBuilder: (context, index) {
@@ -403,23 +570,90 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             final isSelected = _selectedCategory == cat['name'];
             final Color catColor = cat['color'];
             return GestureDetector(
-              onTap: () => setState(() => _selectedCategory = isSelected ? null : cat['name']),
+              onTap: () => setState(
+                () => _selectedCategory = isSelected ? null : cat['name'],
+              ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: isSelected ? catColor.withValues(alpha: 0.15) : Theme.of(context).cardTheme.color,
+                  color: isSelected
+                      ? catColor.withValues(alpha: 0.15)
+                      : Theme.of(context).cardTheme.color,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isSelected ? catColor : Theme.of(context).dividerColor.withValues(alpha: 0.5), width: isSelected ? 1.5 : 1),
+                  border: Border.all(
+                    color: isSelected
+                        ? catColor
+                        : Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    width: isSelected ? 1.5 : 1,
+                  ),
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(cat['icon'], color: isSelected ? catColor : catColor.withValues(alpha: 0.5), size: 20),
-                      const SizedBox(width: 8),
-                      Flexible(child: Text(cat['name'].toString().toUpperCase(), style: TextStyle(color: isSelected ? Theme.of(context).textTheme.bodyLarge?.color : Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7), fontSize: 11, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    ])),
-                    Positioned(right: -1, bottom: -1, child: Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), decoration: BoxDecoration(color: cat['type'] == 'B' ? AppTheme.primaryAction : AppTheme.safeGreen, borderRadius: const BorderRadius.only(topLeft: Radius.circular(6), bottomRight: Radius.circular(12))), child: Text(cat['type'], style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)))),
+                    Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            cat['icon'],
+                            color: isSelected
+                                ? catColor
+                                : catColor.withValues(alpha: 0.5),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              cat['name'].toString().toUpperCase(),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.color
+                                    : Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color
+                                          ?.withValues(alpha: 0.7),
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -1,
+                      bottom: -1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cat['type'] == 'B'
+                              ? AppTheme.primaryAction
+                              : AppTheme.safeGreen,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(6),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          cat['type'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -439,11 +673,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           final current = _currentPageIndex;
           final currentTab = current % 4;
           int offset = index - currentTab;
-          
+
           // Ensure we take the shortest path in the infinite loop
           if (offset > 2) offset -= 4;
           if (offset < -2) offset += 4;
-          
+
           _pageController.animateToPage(
             current + offset,
             duration: const Duration(milliseconds: 300),
@@ -455,10 +689,28 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           decoration: BoxDecoration(
             color: isSelected ? AppTheme.primaryAction : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected ? [BoxShadow(color: AppTheme.primaryAction.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryAction.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           alignment: Alignment.center,
-          child: Text(label, style: TextStyle(color: isSelected ? Colors.black : Theme.of(context).textTheme.bodySmall?.color, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontSize: 12, letterSpacing: 0.5)),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.black
+                  : Theme.of(context).textTheme.bodySmall?.color,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
       ),
     );

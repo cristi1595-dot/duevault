@@ -15,7 +15,6 @@ import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
 import '../utils/logger.dart';
 
-
 import '../constants/app_categories.dart';
 
 class AddItemScreen extends ConsumerStatefulWidget {
@@ -44,7 +43,6 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   final ImagePicker _picker = ImagePicker();
 
   final List<CategoryData> _categories = AppCategories.billCategories;
-
 
   @override
   void initState() {
@@ -78,7 +76,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     } else {
       await PermissionHelper.requestGalleryPermission(context);
     }
-    
+
     if (!mounted) return;
 
     try {
@@ -90,10 +88,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       if (pickedFile != null && mounted) {
         final file = File(pickedFile.path);
         final fileSize = await file.length();
-        
+
         // 10MB limit (10 * 1024 * 1024)
         if (fileSize > 10485760) {
-          _showValidationError('Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB');
+          _showValidationError(
+            'Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB',
+          );
           return;
         }
 
@@ -102,25 +102,27 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           final result = await OcrService.processImage(File(pickedFile.path));
           setState(() {
             _isProcessingOcr = false;
-            if (result.probableAmount != null && _amountController.text.isEmpty) {
+            if (result.probableAmount != null &&
+                _amountController.text.isEmpty) {
               _amountController.text = result.probableAmount.toString();
             }
             if (result.probableDate != null && _dueDate == null) {
               _dueDate = result.probableDate;
             }
             if (_titleController.text.isEmpty && result.probableDate != null) {
-              _titleController.text = 'Scanned Bill - ${result.probableDate!.day}/${result.probableDate!.month}/${result.probableDate!.year}';
+              _titleController.text =
+                  'Scanned Bill - ${result.probableDate!.day}/${result.probableDate!.month}/${result.probableDate!.year}';
             } else if (_titleController.text.isEmpty) {
               _titleController.text = 'Scanned Bill';
             }
             if (_attachedFiles.length < 5) {
               _attachedFiles.add(pickedFile.path);
             }
-            
+
             // Optionally add raw OCR text to notes if empty
             if (_notesController.text.isEmpty && result.rawText.isNotEmpty) {
-               // _notesController.text = 'OCR Text:\n${result.rawText}';
-               // Decided to keep notes clean, or user can uncomment this
+              // _notesController.text = 'OCR Text:\n${result.rawText}';
+              // Decided to keep notes clean, or user can uncomment this
             }
           });
         } else {
@@ -141,7 +143,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   Future<void> _pickFiles() async {
     // Try to request, but don't block
     await PermissionHelper.requestGalleryPermission(context);
-    
+
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -157,7 +159,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           final fileSize = await file.length();
 
           if (fileSize > 10485760) {
-            _showValidationError('File too large: ${p.basename(path)} (Max 10MB)');
+            _showValidationError(
+              'File too large: ${p.basename(path)} (Max 10MB)',
+            );
             continue;
           }
           validPaths.add(path);
@@ -173,19 +177,24 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
         // OCR Support for Uploaded Images
         final firstImagePath = validPaths.firstWhere(
-          (path) => path.toLowerCase().endsWith('.jpg') || 
-                    path.toLowerCase().endsWith('.jpeg') || 
-                    path.toLowerCase().endsWith('.png'),
+          (path) =>
+              path.toLowerCase().endsWith('.jpg') ||
+              path.toLowerCase().endsWith('.jpeg') ||
+              path.toLowerCase().endsWith('.png'),
           orElse: () => '',
         );
 
-        if (firstImagePath.isNotEmpty && (_amountController.text.isEmpty || _dueDate == null)) {
+        if (firstImagePath.isNotEmpty &&
+            (_amountController.text.isEmpty || _dueDate == null)) {
           setState(() => _isProcessingOcr = true);
           final result = await OcrService.processImage(File(firstImagePath));
           setState(() {
             _isProcessingOcr = false;
-            if (result.probableAmount != null && _amountController.text.isEmpty) {
-              _amountController.text = result.probableAmount!.toStringAsFixed(2);
+            if (result.probableAmount != null &&
+                _amountController.text.isEmpty) {
+              _amountController.text = result.probableAmount!.toStringAsFixed(
+                2,
+              );
             }
             if (result.probableDate != null && _dueDate == null) {
               _dueDate = result.probableDate;
@@ -263,15 +272,17 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     item.dueDate = _dueDate;
     item.recurrence = _recurrence;
     item.directDebit = _directDebit;
-    
+
     // If Direct Debit is ON, we treat it as paid automatically
     if (_directDebit) {
       item.isPaid = true;
     }
-    
-    item.notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+
+    item.notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
     item.attachedFiles = _attachedFiles;
-    item.isPaid = false; 
+    item.isPaid = false;
 
     setState(() => _isSaving = true);
     try {
@@ -299,7 +310,6 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   bool get _isEdit =>
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
-
   @override
   Widget build(BuildContext context) {
     final currency = ref.watch(currencyProvider);
@@ -308,15 +318,18 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       appBar: AppBar(
         title: Text(
           !_isEdit ? 'Add New Bill' : 'Edit Bill',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).textTheme.bodyLarge?.color),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -329,7 +342,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             children: [
               Text(
                 'BILL CATEGORY',
-                style: AppTheme.labelCapsStyle(context).copyWith(fontSize: 12, letterSpacing: 1.2),
+                style: AppTheme.labelCapsStyle(
+                  context,
+                ).copyWith(fontSize: 12, letterSpacing: 1.2),
               ),
               const SizedBox(height: 10),
               BentoCard(
@@ -412,8 +427,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                     : 'Select',
                                 style: TextStyle(
                                   color: _dueDate != null
-                                      ? Theme.of(context).textTheme.bodyLarge?.color
-                                      : Theme.of(context).textTheme.bodyMedium?.color,
+                                      ? Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color
+                                      : Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color,
                                   fontSize: 15,
                                 ),
                               ),
@@ -439,7 +458,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     child: _buildBentoInput(
                       label: 'RECURRENCE',
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 0,
+                        ),
                         child: DropdownButton<String>(
                           value: _recurrence,
                           isExpanded: true,
@@ -450,7 +472,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             color: Theme.of(context).textTheme.bodyLarge?.color,
                             fontSize: 13,
                           ),
-                          items: ['None', 'Weekly', 'Monthly', 'Yearly'].map((String value) {
+                          items: ['None', 'Weekly', 'Monthly', 'Yearly'].map((
+                            String value,
+                          ) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Text(value),
@@ -479,7 +503,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                 children: [
                                   Icon(
                                     Icons.account_balance_outlined,
-                                    color: _directDebit ? AppTheme.primaryAction : Theme.of(context).textTheme.bodySmall?.color,
+                                    color: _directDebit
+                                        ? AppTheme.primaryAction
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.color,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -487,7 +515,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                     child: Text(
                                       'Direct Debit',
                                       style: TextStyle(
-                                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -499,9 +529,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                             ),
                             Switch(
                               value: _directDebit,
-                              onChanged: (val) => setState(() => _directDebit = val),
+                              onChanged: (val) =>
+                                  setState(() => _directDebit = val),
                               activeThumbColor: AppTheme.primaryAction,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                             ),
                           ],
                         ),
@@ -545,9 +577,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: _buildCameraCardWithOcrToggle(),
-                          ),
+                          Expanded(child: _buildCameraCardWithOcrToggle()),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildActionCard(
@@ -563,11 +593,16 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     if (_attachedFiles.isNotEmpty)
                       Container(
                         height: 90,
-                        padding: const EdgeInsets.only(left: 12, bottom: 12, top: 4),
+                        padding: const EdgeInsets.only(
+                          left: 12,
+                          bottom: 12,
+                          top: 4,
+                        ),
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _attachedFiles.length,
-                          separatorBuilder: (ctx, i) => const SizedBox(width: 10),
+                          separatorBuilder: (ctx, i) =>
+                              const SizedBox(width: 10),
                           itemBuilder: (context, index) {
                             final path = _attachedFiles[index];
                             return Stack(
@@ -575,9 +610,13 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                 Container(
                                   width: 70,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).scaffoldBackgroundColor,
+                                    color: Theme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Theme.of(context).dividerColor),
+                                    border: Border.all(
+                                      color: Theme.of(context).dividerColor,
+                                    ),
                                   ),
                                   child: _buildAttachmentIcon(path),
                                 ),
@@ -585,14 +624,22 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                   top: 4,
                                   right: 4,
                                   child: GestureDetector(
-                                    onTap: () => setState(() => _attachedFiles.removeAt(index)),
+                                    onTap: () => setState(
+                                      () => _attachedFiles.removeAt(index),
+                                    ),
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -607,8 +654,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               const SizedBox(height: 24),
 
               PrimaryButton(
-                label: _isSaving 
-                    ? 'Saving...' 
+                label: _isSaving
+                    ? 'Saving...'
                     : (!_isEdit ? 'Save Bill' : 'Update Bill'),
                 icon: _isSaving ? null : Icons.check_circle_outline,
                 onPressed: _isSaving ? null : _submit,
@@ -654,7 +701,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodySmall?.color ?? AppTheme.lightTextSecondary,
+                color:
+                    Theme.of(context).textTheme.bodySmall?.color ??
+                    AppTheme.lightTextSecondary,
                 fontSize: 9,
               ),
               textAlign: TextAlign.center,
@@ -675,16 +724,20 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _useOcr ? AppTheme.primaryAction.withValues(alpha: 0.5) : Theme.of(context).dividerColor,
+            color: _useOcr
+                ? AppTheme.primaryAction.withValues(alpha: 0.5)
+                : Theme.of(context).dividerColor,
             width: _useOcr ? 1.5 : 1.0,
           ),
-          boxShadow: _useOcr ? [
-            BoxShadow(
-              color: AppTheme.primaryAction.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ] : null,
+          boxShadow: _useOcr
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -700,11 +753,13 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               )
             else
               Icon(
-                Icons.auto_awesome, 
-                color: _useOcr ? AppTheme.primaryAction : AppTheme.lightTextSecondary, 
-                size: 28
+                Icons.auto_awesome,
+                color: _useOcr
+                    ? AppTheme.primaryAction
+                    : AppTheme.lightTextSecondary,
+                size: 28,
               ),
-            
+
             const SizedBox(height: 6),
             Text(
               _isProcessingOcr ? 'Scanning...' : 'Smart Scan',
@@ -714,7 +769,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 fontSize: 13,
               ),
             ),
-            
+
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -722,9 +777,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 Text(
                   _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
                   style: TextStyle(
-                    fontSize: 8, 
+                    fontSize: 8,
                     fontWeight: FontWeight.bold,
-                    color: _useOcr ? AppTheme.primaryAction : Theme.of(context).textTheme.bodySmall?.color
+                    color: _useOcr
+                        ? AppTheme.primaryAction
+                        : Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -768,7 +825,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            ),
           ),
           child: child,
         ),
@@ -778,14 +837,22 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
   String _getCategoryHint() {
     switch (_category) {
-      case 'Housing': return 'e.g. Monthly Rent';
-      case 'Utilities': return 'e.g. Electricity Bill';
-      case 'Loans': return 'e.g. Bank Loan';
-      case 'Subscription': return 'e.g. Netflix / Spotify';
-      case 'Auto': return 'e.g. Fuel / Repairs';
-      case 'Telecom': return 'e.g. Internet Bill';
-      case 'Insurance': return 'e.g. Health Insurance';
-      default: return 'e.g. Grocery Bill';
+      case 'Housing':
+        return 'e.g. Monthly Rent';
+      case 'Utilities':
+        return 'e.g. Electricity Bill';
+      case 'Loans':
+        return 'e.g. Bank Loan';
+      case 'Subscription':
+        return 'e.g. Netflix / Spotify';
+      case 'Auto':
+        return 'e.g. Fuel / Repairs';
+      case 'Telecom':
+        return 'e.g. Internet Bill';
+      case 'Insurance':
+        return 'e.g. Health Insurance';
+      default:
+        return 'e.g. Grocery Bill';
     }
   }
 
@@ -809,7 +876,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             setState(() {
               _category = cat.name;
               // Auto-set recurrence based on category
-              if (['Housing', 'Utilities', 'Subscription', 'Telecom'].contains(_category)) {
+              if ([
+                'Housing',
+                'Utilities',
+                'Subscription',
+                'Telecom',
+              ].contains(_category)) {
                 _recurrence = 'Monthly';
               } else {
                 _recurrence = 'None';
@@ -834,9 +906,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 Icon(
                   cat.icon,
                   size: 28, // Maximized icon
-                  color: isSelected
-                      ? Colors.white
-                      : AppTheme.primaryAction,
+                  color: isSelected ? Colors.white : AppTheme.primaryAction,
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -846,9 +916,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                         ? Colors.white
                         : Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 10, // Slightly larger font
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -863,7 +931,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   }
 
   Widget _buildAttachmentIcon(String path) {
-    final isImage = path.toLowerCase().endsWith('.jpg') ||
+    final isImage =
+        path.toLowerCase().endsWith('.jpg') ||
         path.toLowerCase().endsWith('.jpeg') ||
         path.toLowerCase().endsWith('.png');
 
@@ -872,13 +941,15 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: isStored
-          ? EncryptedImage(path: path, fit: BoxFit.cover)
-          : Image.file(
-              File(path),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.insert_drive_file, color: AppTheme.primaryAction),
-            ),
+            ? EncryptedImage(path: path, fit: BoxFit.cover)
+            : Image.file(
+                File(path),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.insert_drive_file,
+                  color: AppTheme.primaryAction,
+                ),
+              ),
       );
     } else {
       return const Center(
@@ -887,7 +958,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
           children: [
             Icon(Icons.picture_as_pdf, color: AppTheme.urgentRed, size: 24),
             SizedBox(height: 2),
-            Text('PDF', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+            Text(
+              'PDF',
+              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       );

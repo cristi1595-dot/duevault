@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../utils/logger.dart';
 
-
 class OcrResult {
   final String rawText;
   final double? probableAmount;
@@ -19,17 +18,24 @@ class OcrResult {
 }
 
 class OcrService {
-  static final _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+  static final _textRecognizer = TextRecognizer(
+    script: TextRecognitionScript.latin,
+  );
 
   /// Process an image file and extract potential data
   /// [isDocument] helps prioritize future dates for expiry
-  static Future<OcrResult> processImage(File imageFile, {bool isDocument = false}) async {
+  static Future<OcrResult> processImage(
+    File imageFile, {
+    bool isDocument = false,
+  }) async {
     try {
       final inputImage = InputImage.fromFile(imageFile);
-      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
-      
+      final RecognizedText recognizedText = await _textRecognizer.processImage(
+        inputImage,
+      );
+
       final String fullText = recognizedText.text;
-      
+
       // Attempt to extract amount and date
       final amount = isDocument ? null : _extractAmount(fullText);
       final date = _extractDate(fullText, preferFuture: isDocument);
@@ -45,7 +51,6 @@ class OcrService {
       logger.e('OCR Error', error: e, stackTrace: stack);
       return OcrResult(rawText: '');
     }
-
   }
 
   /// Closes the recognizer when no longer needed
@@ -57,7 +62,7 @@ class OcrService {
     // Look for numbers that look like currency/amounts (e.g., 123.45 or 123,45)
     final RegExp amountRegex = RegExp(r'\b\d{1,5}[.,]\d{2}\b');
     final matches = amountRegex.allMatches(text);
-    
+
     if (matches.isEmpty) return null;
 
     final List<double> amounts = [];
@@ -80,7 +85,9 @@ class OcrService {
 
   static DateTime? _extractDate(String text, {bool preferFuture = false}) {
     // Look for common date formats: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY
-    final RegExp dateRegex = RegExp(r'\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b');
+    final RegExp dateRegex = RegExp(
+      r'\b(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})\b',
+    );
     final matches = dateRegex.allMatches(text);
 
     final List<DateTime> dates = [];
@@ -121,7 +128,7 @@ class OcrService {
 
   static String? _extractTitle(String text) {
     final upperText = text.toUpperCase();
-    
+
     // Keywords for auto-title
     final Map<String, List<String>> keywords = {
       'Passport': ['PASAPORT', 'PASSPORT', 'REPUBLICA ROMANIA'],

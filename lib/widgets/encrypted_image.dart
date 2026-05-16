@@ -49,9 +49,10 @@ class _EncryptedImageState extends State<EncryptedImage> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
         }
-        
+
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return widget.errorWidget ?? const Center(child: Icon(Icons.error_outline));
+          return widget.errorWidget ??
+              const Center(child: Icon(Icons.error_outline));
         }
 
         return Image.memory(

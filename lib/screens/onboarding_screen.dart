@@ -36,26 +36,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _requestBatteryOptimization() async {
-    final isDisabledBefore = await DisableBatteryOptimization.isBatteryOptimizationDisabled;
+    final isDisabledBefore =
+        await DisableBatteryOptimization.isBatteryOptimizationDisabled;
     if (isDisabledBefore == false) {
       await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
       // Așteptăm scurt timp pentru ca sistemul să actualizeze starea la întoarcerea în aplicație
       await Future.delayed(const Duration(milliseconds: 500));
     }
-    
-    final isNowDisabled = await DisableBatteryOptimization.isBatteryOptimizationDisabled;
+
+    final isNowDisabled =
+        await DisableBatteryOptimization.isBatteryOptimizationDisabled;
     if (isNowDisabled == true) {
       if (mounted) {
-        unawaited(_pageController.nextPage(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        ));
+        unawaited(
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please disable battery optimization to proceed, or click "Skip for now".'),
+            content: Text(
+              'Please disable battery optimization to proceed, or click "Skip for now".',
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -67,16 +73,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final status = await Permission.notification.request();
     if (status.isGranted) {
       if (mounted) {
-        unawaited(_pageController.nextPage(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        ));
+        unawaited(
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notifications are highly recommended for bill alerts!'),
+            content: Text(
+              'Notifications are highly recommended for bill alerts!',
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -300,15 +310,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return ElevatedButton(
       onPressed: () async {
         final messenger = ScaffoldMessenger.of(context);
-        unawaited(showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryAction),
+        unawaited(
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryAction),
+            ),
           ),
-        ));
+        );
 
-        final userCredential = await ref.read(authServiceProvider).signInWithGoogle();
+        final userCredential = await ref
+            .read(authServiceProvider)
+            .signInWithGoogle();
         if (!mounted) return;
         Navigator.pop(context);
 
@@ -316,16 +330,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           // No automatic migration here! Let the LoginScreen/Logic handle it if needed
           // or we can add the check here too. But for now, just complete onboarding.
           await _completeOnboarding();
-          
-          messenger.showSnackBar(const SnackBar(content: Text('Account secured. Syncing your vault...')));
-          
-          final syncResult = await ref.read(autoSyncServiceProvider).syncAfterLogin();
+
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Account secured. Syncing your vault...'),
+            ),
+          );
+
+          final syncResult = await ref
+              .read(autoSyncServiceProvider)
+              .syncAfterLogin();
           if (!mounted) return;
-          
+
           messenger.clearSnackBars();
           String syncMsg;
           Color? bgColor;
-          
+
           if (syncResult == 'restored') {
             syncMsg = '✓ Vault restored successfully!';
             bgColor = AppTheme.safeGreen;
@@ -336,14 +356,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             syncMsg = '✓ Vault ready!';
             bgColor = null;
           }
-          
-          messenger.showSnackBar(SnackBar(
-            content: Text(syncMsg),
-            backgroundColor: bgColor,
-            behavior: SnackBarBehavior.floating,
-          ));
+
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(syncMsg),
+              backgroundColor: bgColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } else {
-          messenger.showSnackBar(const SnackBar(content: Text('Sign in failed')));
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Sign in failed')),
+          );
         }
       },
       style: ElevatedButton.styleFrom(
@@ -363,10 +387,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Image.network(
             'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
             height: 24,
-            errorBuilder: (ctx, err, st) => const Icon(Icons.account_circle, size: 24),
+            errorBuilder: (ctx, err, st) =>
+                const Icon(Icons.account_circle, size: 24),
           ),
           const SizedBox(width: 12),
-          const Text('Sign in with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Sign in with Google',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -383,9 +411,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             width: _currentPage == index ? 32 : 10,
             height: 10,
             decoration: BoxDecoration(
-              color: _currentPage == index 
-                ? AppTheme.primaryAction 
-                : AppTheme.textSecondary.withValues(alpha: 0.2),
+              color: _currentPage == index
+                  ? AppTheme.primaryAction
+                  : AppTheme.textSecondary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(5),
             ),
           );
