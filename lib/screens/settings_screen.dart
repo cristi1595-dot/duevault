@@ -56,6 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Future<void> _checkStatusAndAutoEnable() async {
     await _checkStatus();
+    if (!mounted) return;
     
     // Auto-enable notifications toggle if both permissions are now granted
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
