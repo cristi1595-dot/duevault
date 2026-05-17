@@ -9,6 +9,8 @@ import '../providers/database_provider.dart';
 import '../models/app_config.dart';
 import '../services/auto_sync_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
+
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -17,9 +19,55 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with WidgetsBindingObserver {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissionsOnResume();
+    }
+  }
+
+  Future<void> _checkPermissionsOnResume() async {
+    if (_currentPage == 0) {
+      final isGranted = await Permission.notification.isGranted;
+      if (isGranted && mounted) {
+        unawaited(
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
+      }
+    } else if (_currentPage == 1) {
+      final isBatteryDisabled =
+          await DisableBatteryOptimization.isBatteryOptimizationDisabled ?? false;
+      if (isBatteryDisabled && mounted) {
+        unawaited(
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _completeOnboarding({bool isGuest = false}) async {
     final isar = ref.read(isarProvider);
@@ -69,8 +117,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _showAppSettingsDialog() async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardTheme.color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Notifications Disabled'),
+        content: const Text(
+          'To enable notifications, please allow them for DueVault in your device settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await AppSettings.openAppSettings(type: AppSettingsType.notification);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAction,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _requestNotificationPermission() async {
-    final status = await Permission.notification.request();
+    final status = await Permission.notification.status;
+    
     if (status.isGranted) {
       if (mounted) {
         unawaited(
@@ -79,6 +169,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             curve: Curves.easeInOut,
           ),
         );
+      }
+      return;
+    }
+
+    if (status.isPermanentlyDenied) {
+      if (mounted) {
+        await _showAppSettingsDialog();
+      }
+      return;
+    }
+
+    final requestStatus = await Permission.notification.request();
+    if (requestStatus.isGranted) {
+      if (mounted) {
+        unawaited(
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          ),
+        );
+      }
+    } else if (requestStatus.isPermanentlyDenied) {
+      if (mounted) {
+        await _showAppSettingsDialog();
       }
     } else {
       if (mounted) {

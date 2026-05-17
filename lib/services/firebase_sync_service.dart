@@ -39,6 +39,15 @@ class FirebaseSyncService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // Check if we are processing a critical auth/migration sync
+    final isProcessing = _ref.read(isProcessingAuthSyncProvider);
+    if (isProcessing) {
+      logger.i(
+        'FirebaseSyncService: Sync skipped because isProcessingAuthSync is active.',
+      );
+      return;
+    }
+
     _isSyncing = true;
     try {
       _ref.read(syncProvider.notifier).setSyncing();

@@ -38,6 +38,15 @@ class AutoSyncService {
     final autoSyncEnabled = _ref.read(autoSyncProvider);
     if (!autoSyncEnabled) return;
 
+    // Abort if a critical auth/migration sync is in progress
+    final isProcessing = _ref.read(isProcessingAuthSyncProvider);
+    if (isProcessing) {
+      logger.i(
+        'AutoSyncService: Backup scheduled but skipped because isProcessingAuthSync is active.',
+      );
+      return;
+    }
+
     _debounceTimer?.cancel();
 
     if (immediate) {
@@ -52,6 +61,15 @@ class AutoSyncService {
   /// Perform the actual backup in the background
   Future<void> _performBackup() async {
     if (_isSyncing || !_isSignedIn) return;
+
+    // Abort if a critical auth/migration sync is in progress
+    final isProcessing = _ref.read(isProcessingAuthSyncProvider);
+    if (isProcessing) {
+      logger.i(
+        'AutoSyncService: Backup aborted because isProcessingAuthSync is active.',
+      );
+      return;
+    }
 
     // 1. Check Preferences
     final autoSyncEnabled = _ref.read(autoSyncProvider);

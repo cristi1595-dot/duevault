@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:intl/intl.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:intl/intl.dart';
 import '../models/app_config.dart';
-import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
 import '../providers/currency_provider.dart';
@@ -30,14 +29,47 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
   bool? _isBatteryOptimizationDisabled;
   bool _isNotificationPermissionGranted = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkStatusAndAutoEnable();
+    }
+  }
+
+  Future<void> _checkStatusAndAutoEnable() async {
+    await _checkStatus();
+    
+    // Auto-enable notifications toggle if both permissions are now granted
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+    final hasNotification = await Permission.notification.isGranted;
+    final hasBattery = !isAndroid ||
+        (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+        
+    if (hasNotification && hasBattery) {
+      final globalEnabled = ref.read(globalNotificationsProvider);
+      if (!globalEnabled) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
+        await _checkStatus();
+      }
+    }
   }
 
   Future<void> _checkStatus() async {
@@ -45,99 +77,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
     final bool notificationsGranted = await Permission.notification.isGranted;
 
-    // Senior Fix: On Android 13+, we also need Exact Alarm permission for reliability
-    bool exactAlarmsGranted = true;
-    try {
-      exactAlarmsGranted = await Permission.scheduleExactAlarm.isGranted;
-    } catch (_) {
-      // Not applicable on this platform/version
-    }
-
     if (mounted) {
       setState(() {
         _isBatteryOptimizationDisabled = batteryDisabled;
-        _isNotificationPermissionGranted =
-            notificationsGranted && exactAlarmsGranted;
+        _isNotificationPermissionGranted = notificationsGranted;
       });
     }
   }
 
-  Future<void> _runNotificationWizard() async {
-    // 1. Request Notification Permissions (System Dialog)
-    await NotificationService.requestPermissions();
-
-    // 2. Step 1: Open App Settings for Notifications
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Step 1: Please ensure Notifications are allowed.'),
-          duration: Duration(seconds: 3),
+  Future<void> _showAppSettingsDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardTheme.color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-      );
-    }
-    await AppSettings.openAppSettings(type: AppSettingsType.notification);
-
-    // Bridge: Wait for user to come back and confirm step 2
-    if (mounted) {
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Theme.of(context).cardTheme.color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.battery_saver, color: AppTheme.primaryAction),
-              SizedBox(width: 12),
-              Text('Step 2: Battery'),
-            ],
-          ),
-          content: const Text(
-            'Almost done! Next, we need to disable battery optimization to ensure reminders arrive exactly on time.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'CONTINUE TO BATTERY',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryAction,
-                ),
+        title: const Text('Notifications Disabled'),
+        content: const Text(
+          'To enable global reminders, please allow notifications for DueVault in your device settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
-          ],
-        ),
-      );
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+              Navigator.pop(ctx);
+              await AppSettings.openAppSettings(type: AppSettingsType.notification);
+              
+              if (isAndroid) {
+                final isBatteryOptimizationDisabled = 
+                    await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false;
+                if (!isBatteryOptimizationDisabled) {
+                  await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAction,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _attemptActivation({required bool targetState}) async {
+    if (!targetState) {
+      await ref.read(globalNotificationsProvider.notifier).toggle(false);
+      await _checkStatus();
+      return;
     }
 
-    // 3. Step 2: Battery Settings
-    await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
 
-    // Small delay to allow system to update before we re-check
-    await Future.delayed(const Duration(seconds: 1));
+    bool hasNotification = await Permission.notification.isGranted;
+    bool hasBattery = !isAndroid ||
+        (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+
+    // 1. If BOTH are already granted, just enable and return
+    if (hasNotification && hasBattery) {
+      await ref.read(globalNotificationsProvider.notifier).toggle(true);
+      await _checkStatus();
+      return;
+    }
+
+    // 2. Otherwise, direct the user to the missing settings one by one
+    // Step A: Notifications
+    if (!hasNotification) {
+      final requestStatus = await Permission.notification.request();
+      if (requestStatus.isPermanentlyDenied && mounted) {
+        await _showAppSettingsDialog(context);
+      }
+      hasNotification = await Permission.notification.isGranted;
+    }
+
+    // Step B: Battery optimization (Android only)
+    if (hasNotification && isAndroid && !hasBattery) {
+      await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+      await Future.delayed(const Duration(seconds: 1));
+      hasBattery = await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false;
+    }
+
+    // 3. Final Recheck after returning
     await _checkStatus();
 
-    // 4. Final Warning if not fully enabled
-    if (_isBatteryOptimizationDisabled != true ||
-        !_isNotificationPermissionGranted) {
-      if (mounted) {
-        VaultSnackBar.show(
-          message:
-              'Reminders may not work reliably without background permissions.',
-          backgroundColor: AppTheme.urgentRed.withValues(alpha: 0.8),
-          duration: const Duration(seconds: 5),
-        );
-      }
-    } else {
-      if (mounted) {
-        VaultSnackBar.show(
-          message: '✓ Notifications & Background tasks are now optimized!',
-          backgroundColor: AppTheme.safeGreen,
-        );
-      }
+    final finalNotification = await Permission.notification.isGranted;
+    final finalBattery = !isAndroid ||
+        (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+
+    if (finalNotification && finalBattery) {
+      await ref.read(globalNotificationsProvider.notifier).toggle(true);
+      await _checkStatus();
     }
   }
 
@@ -259,12 +303,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Switch(
                               value: globalEnabled,
                               onChanged: (v) async {
-                                await ref
-                                    .read(globalNotificationsProvider.notifier)
-                                    .toggle(v);
-                                if (v && context.mounted) {
-                                  await _runNotificationWizard();
-                                }
+                                await _attemptActivation(targetState: v);
                               },
                               activeThumbColor: AppTheme.primaryAction,
                             ),
@@ -389,13 +428,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap:
-                              (_isBatteryOptimizationDisabled == true &&
-                                  _isNotificationPermissionGranted)
-                              ? null
-                              : () async {
-                                  await _runNotificationWizard();
-                                },
+                          onTap: () async {
+                            final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+                            final hasNotification = await Permission.notification.isGranted;
+                            final hasBattery = !isAndroid || 
+                                (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+                            
+                            if (hasNotification && hasBattery) {
+                              return;
+                            }
+                            
+                            await _attemptActivation(targetState: true);
+                          },
                           behavior: HitTestBehavior.opaque,
                           child: Row(
                             children: [
@@ -511,6 +555,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       onTap: () async {
         final messenger = ScaffoldMessenger.of(context);
         try {
+          ref.read(isProcessingAuthSyncProvider.notifier).state = true;
           final result = await ref.read(authServiceProvider).signInWithGoogle();
           if (result != null) {
             final uid = result.user!.uid;
@@ -633,6 +678,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               backgroundColor: AppTheme.urgentRed,
             ),
           );
+        } finally {
+          ref.read(isProcessingAuthSyncProvider.notifier).state = false;
         }
       },
       child: Container(
