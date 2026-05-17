@@ -4,6 +4,7 @@ import '../providers/vault_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
 import '../widgets/global_components.dart';
+import '../widgets/duevault_logo.dart';
 import '../theme/app_theme.dart';
 import 'settings_screen.dart';
 import '../constants/app_categories.dart';
@@ -200,19 +201,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/images/app_icon.png',
-                width: 28,
-                height: 28,
-                fit: BoxFit.cover,
-              ),
+            DueVaultLogo(
+              size: 28,
+              showGlow: false,
             ),
-            const SizedBox(width: 12),
-            const Text('Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(width: 12),
+            Text('Vault', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [

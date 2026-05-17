@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
+import '../widgets/duevault_logo.dart';
 import '../services/auto_sync_service.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
@@ -49,13 +50,34 @@ class LoginScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              // App Full Logo
-              Center(
-                child: Image.asset(
-                  'assets/images/full_logo.png',
-                  height: 120,
-                  fit: BoxFit.contain,
-                ),
+              // App Full Logo (Replaced with Custom Vector Logo)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const DueVaultLogo(size: 110),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Due',
+                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              color: Colors.white,
+                            ),
+                      ),
+                      Text(
+                        'Vault',
+                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              color: AppTheme.safeGreen,
+                            ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               // Subtitle

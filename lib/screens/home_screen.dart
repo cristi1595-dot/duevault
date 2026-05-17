@@ -4,6 +4,7 @@ import '../providers/vault_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
 import '../widgets/global_components.dart';
+import '../widgets/duevault_logo.dart';
 import '../theme/app_theme.dart';
 import 'item_detail_screen.dart';
 import 'settings_screen.dart';
@@ -234,28 +235,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryAction.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppTheme.primaryAction.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  'assets/images/app_icon.png',
-                                  width: 28,
-                                  height: 28,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
+                            const DueVaultLogo(
+                              size: 44,
+                              showGlow: false,
                             ),
                             const SizedBox(width: 12),
                             Column(
