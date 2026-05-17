@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
+import '../widgets/duevault_logo.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
 import '../services/auto_sync_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
-
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -236,186 +236,379 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  Widget _buildNotificationScreen() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // App Logo with rounded corners for premium look
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset(
-              'assets/images/full_logo.png',
-              height: 120,
-              fit: BoxFit.contain,
-            ),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.accentPurple.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.notifications_active_outlined,
-              size: 48,
-              color: AppTheme.accentPurple,
-            ),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            'Never Miss a Due Date',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Enable notifications to receive timely alerts for your bills and important document renewals.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textSecondary,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 64),
-          PrimaryButton(
-            label: 'Enable Notifications',
-            icon: Icons.notifications_active,
-            onPressed: _requestNotificationPermission,
-          ),
-          const SizedBox(height: 20),
-          TextButton(
-            onPressed: () => _pageController.nextPage(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-            ),
-            child: Text(
-              'Decide later',
-              style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
+  // --- REUSABLE PREMIUM UI COMPONENTS ---
+
+  Widget _buildBackgroundGlow(Color color) {
+    return Container(
+      width: 240,
+      height: 240,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.12),
+            color.withValues(alpha: 0.04),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.6, 1.0],
+        ),
       ),
     );
   }
+
+  // Premium header utilizing the winning brand identity
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        const DueVaultLogo(size: 96),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Due',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: Colors.white,
+                  ),
+            ),
+            Text(
+              'Vault',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: AppTheme.safeGreen,
+                  ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // --- SCREEN 1: NOTIFICATIONS ---
+
+  Widget _buildNotificationScreen() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 40),
+            // Glowing, pulsing-style concentric ripples around a large active bell
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                _buildBackgroundGlow(AppTheme.accentPurple),
+                // Outer Ripple Ring
+                Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.accentPurple.withValues(alpha: 0.15),
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                // Inner Ripple Ring
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.accentPurple.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                // Core Icon Cap
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1F26), // AppTheme.darkSurface
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.accentPurple.withValues(alpha: 0.4),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.accentPurple.withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    size: 48,
+                    color: AppTheme.accentPurple,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
+            Text(
+              'Never miss a due date',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Get smart, timely alerts right on your screen before your bills or important documents expire. No penalties, no stress.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.textSecondary,
+                    height: 1.6,
+                  ),
+            ),
+            const SizedBox(height: 40),
+            PrimaryButton(
+              label: 'Enable Notifications',
+              icon: Icons.notifications_active,
+              onPressed: _requestNotificationPermission,
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => _pageController.nextPage(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              ),
+              child: Text(
+                'Decide later',
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- SCREEN 2: BATTERY OPTIMIZATION ---
 
   Widget _buildBatteryScreen() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppTheme.safeGreen.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 40),
+            // Glowing energy ripples around charging battery shield
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                _buildBackgroundGlow(AppTheme.safeGreen),
+                // Outer Ripple Ring
+                Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.safeGreen.withValues(alpha: 0.15),
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                // Inner Ripple Ring
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.safeGreen.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                // Core Icon Cap
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1F26), // AppTheme.darkSurface
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.safeGreen.withValues(alpha: 0.4),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.safeGreen.withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.battery_charging_full_rounded, // Upgraded to modern battery with bolt icon
+                    size: 48,
+                    color: AppTheme.safeGreen,
+                  ),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.battery_charging_full_outlined,
-              size: 80,
-              color: AppTheme.safeGreen,
+            const SizedBox(height: 40),
+            Text(
+              'Reliable background alerts',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
             ),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            'Reliable Background Sync',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
+            const SizedBox(height: 16),
+            Text(
+              "Your phone's system often puts inactive apps to sleep. Grant permission to run discreetly in the background so you always receive alerts on time.",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.textSecondary,
+                    height: 1.6,
+                  ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'To ensure alerts work every time, DueVault needs to run in the background without being restricted by system battery savers.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textSecondary,
-              height: 1.6,
+            const SizedBox(height: 40),
+            PrimaryButton(
+              label: 'Guarantee Alerts',
+              icon: Icons.bolt,
+              onPressed: _requestBatteryOptimization,
             ),
-          ),
-          const SizedBox(height: 64),
-          PrimaryButton(
-            label: 'Optimize Performance',
-            icon: Icons.bolt,
-            onPressed: _requestBatteryOptimization,
-          ),
-          const SizedBox(height: 20),
-          TextButton(
-            onPressed: () => _pageController.nextPage(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-            ),
-            child: Text(
-              'Skip for now',
-              style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => _pageController.nextPage(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              ),
+              child: Text(
+                'Skip for now',
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  // --- SCREEN 3: SECURE CLOUD BACKUP & AUTH ---
+
   Widget _buildLoginScreen() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryAction.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 40),
+            // Glowing sync rings around cloud indicator
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                _buildBackgroundGlow(AppTheme.primaryAction),
+                // Outer Ripple Ring
+                Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                // Inner Ripple Ring
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.primaryAction.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                // Core Icon Cap
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1F26), // AppTheme.darkSurface
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.primaryAction.withValues(alpha: 0.4),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.cloud_done_rounded,
+                    size: 48,
+                    color: AppTheme.primaryAction,
+                  ),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.cloud_sync_outlined,
-              size: 80,
-              color: AppTheme.primaryAction,
+            const SizedBox(height: 40),
+            Text(
+              'Secure Cloud Backup',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
             ),
-          ),
-          const SizedBox(height: 48),
-          Text(
-            'Secure Cloud Backup',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
+            const SizedBox(height: 16),
+            Text(
+              'Sync your vault with Google for automatic, secure backups and seamless access across all your devices.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.textSecondary,
+                    height: 1.6,
+                  ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Sync your vault with Google for extra security and seamless access across all your devices.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textSecondary,
-              height: 1.6,
+            const SizedBox(height: 40),
+            _buildGoogleSignInButton(),
+            const SizedBox(height: 16),
+            // Outlined elegant Guest Button
+            SecondaryButton(
+              label: 'Use Locally (Guest)',
+              icon: Icons.person_outline_rounded,
+              onPressed: () async {
+                await _completeOnboarding(isGuest: true);
+              },
             ),
-          ),
-          const SizedBox(height: 64),
-          _buildGoogleSignInButton(),
-          const SizedBox(height: 20),
-          SecondaryButton(
-            label: 'Use Locally (Guest)',
-            icon: Icons.no_accounts_outlined,
-            onPressed: () async {
-              await _completeOnboarding(isGuest: true);
-            },
-          ),
-          const SizedBox(height: 24),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -441,8 +634,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         Navigator.pop(context);
 
         if (userCredential != null) {
-          // No automatic migration here! Let the LoginScreen/Logic handle it if needed
-          // or we can add the check here too. But for now, just complete onboarding.
           await _completeOnboarding();
 
           messenger.showSnackBar(
@@ -480,18 +671,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           );
         } else {
           messenger.showSnackBar(
-            const SnackBar(content: Text('Sign in failed')),
+            const SnackBar(content: Text('Google Sign-in failed')),
           );
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).cardTheme.color,
-        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+        backgroundColor: const Color(0xFF1B1F26), // AppTheme.darkSurface
+        foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(30), // Pill style to align with PrimaryButton
+          side: const BorderSide(
+            color: Color(0xFF2D333D), // AppTheme.darkBorder
+            width: 1.5,
+          ),
         ),
         elevation: 0,
       ),
@@ -506,7 +700,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
           const SizedBox(width: 12),
           const Text(
-            'Sign in with Google',
+            'Sync with Google',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
