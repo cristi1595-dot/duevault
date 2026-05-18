@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
@@ -18,6 +19,7 @@ import '../services/auto_sync_service.dart';
 import '../providers/security_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/notification_provider.dart';
+import '../services/notification_service.dart';
 import '../providers/database_provider.dart';
 import '../main.dart';
 import '../utils/logger.dart';
@@ -33,6 +35,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
   bool? _isBatteryOptimizationDisabled;
   bool _isNotificationPermissionGranted = true;
+  bool _isExactAlarmGranted = true;
 
   @override
   void initState() {
@@ -59,12 +62,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     if (!mounted) return;
     
     // Auto-enable notifications toggle if both permissions are now granted
-    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+    final isAndroid = Platform.isAndroid;
     final hasNotification = await Permission.notification.isGranted;
     final hasBattery = !isAndroid ||
         (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+    final hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
         
-    if (hasNotification && hasBattery) {
+    if (hasNotification && hasBattery && hasExactAlarm) {
       final globalEnabled = ref.read(globalNotificationsProvider);
       if (!globalEnabled) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
@@ -74,14 +78,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _checkStatus() async {
+    final isAndroid = Platform.isAndroid;
     final bool? batteryDisabled =
         await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
     final bool notificationsGranted = await Permission.notification.isGranted;
+    final bool exactAlarmGranted = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
     if (mounted) {
       setState(() {
         _isBatteryOptimizationDisabled = batteryDisabled;
         _isNotificationPermissionGranted = notificationsGranted;
+        _isExactAlarmGranted = exactAlarmGranted;
       });
     }
   }
@@ -143,14 +150,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       return;
     }
 
-    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+    final isAndroid = Platform.isAndroid;
 
     bool hasNotification = await Permission.notification.isGranted;
     bool hasBattery = !isAndroid ||
         (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+    bool hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
-    // 1. If BOTH are already granted, just enable and return
-    if (hasNotification && hasBattery) {
+    // 1. If ALL are already granted, just enable and return
+    if (hasNotification && hasBattery && hasExactAlarm) {
       await ref.read(globalNotificationsProvider.notifier).toggle(true);
       await _checkStatus();
       return;
@@ -173,14 +181,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       hasBattery = await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false;
     }
 
+    // Step C: Exact Alarm permission (Android only)
+    if (hasNotification && hasBattery && isAndroid && !hasExactAlarm) {
+      await NotificationService.requestExactAlarmPermission();
+      await Future.delayed(const Duration(seconds: 1));
+      hasExactAlarm = await Permission.scheduleExactAlarm.isGranted;
+    }
+
     // 3. Final Recheck after returning
     await _checkStatus();
 
     final finalNotification = await Permission.notification.isGranted;
     final finalBattery = !isAndroid ||
         (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+    final finalExact = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
-    if (finalNotification && finalBattery) {
+    if (finalNotification && finalBattery && finalExact) {
       await ref.read(globalNotificationsProvider.notifier).toggle(true);
       await _checkStatus();
     }
@@ -301,141 +317,243 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            Switch(
-                              value: globalEnabled,
-                              onChanged: (v) async {
-                                await _attemptActivation(targetState: v);
-                              },
-                              activeThumbColor: AppTheme.primaryAction,
+                            Row(
+                              children: [
+                                if (globalEnabled)
+                                  TextButton.icon(
+                                    onPressed: () async {
+                                      final initialTime = ref.read(notificationTimeProvider);
+                                      final pickedTime = await showTimePicker(
+                                        context: context,
+                                        initialTime: initialTime,
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              timePickerTheme: const TimePickerThemeData(
+                                                backgroundColor: AppTheme.background,
+                                                hourMinuteTextColor: Colors.white,
+                                                dialBackgroundColor: AppTheme.surface,
+                                                dialTextColor: Colors.white,
+                                                dayPeriodTextColor: Colors.white,
+                                              ),
+                                              colorScheme: const ColorScheme.dark(
+                                                primary: AppTheme.primaryAction,
+                                                onPrimary: Colors.white,
+                                                surface: AppTheme.background,
+                                                onSurface: Colors.white,
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
+                                      );
+                                      if (pickedTime != null) {
+                                        await ref.read(notificationTimeProvider.notifier).setTime(pickedTime);
+                                        await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                      }
+                                    },
+                                    icon: const Icon(Icons.access_time, size: 18),
+                                    label: Consumer(
+                                      builder: (context, ref, _) {
+                                        final time = ref.watch(notificationTimeProvider);
+                                        // Pad minute with 0 to prevent 9:0 becoming 9:00 etc (Wait, TimeOfDay.format(context) handles this!)
+                                        return Text(
+                                          time.format(context),
+                                          style: const TextStyle(fontWeight: FontWeight.w600),
+                                        );
+                                      },
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: AppTheme.primaryAction,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                      minimumSize: const Size(0, 30),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                Switch(
+                                  value: globalEnabled,
+                                  onChanged: (v) async {
+                                    await _attemptActivation(targetState: v);
+                                    await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                  },
+                                  activeThumbColor: AppTheme.primaryAction,
+                                ),
+                              ],
                             ),
                           ],
                         ),
 
                         if (globalEnabled) ...[
-                          // 1. Fixed 3-Day Alert Row
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Early 3-Day Alert',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Fixed early reminder for bills',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Consumer(
-                                builder: (context, ref, _) {
-                                  final threeDayEnabled = ref.watch(
-                                    threeDayAlertEnabledProvider,
-                                  );
-                                  return Tooltip(
-                                    message:
-                                        'Get a fixed reminder exactly 3 days before the due date.',
-                                    child: Checkbox(
-                                      value: threeDayEnabled,
-                                      activeColor: AppTheme.primaryAction,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      onChanged: (val) {
-                                        ref
-                                            .read(
-                                              threeDayAlertEnabledProvider
-                                                  .notifier,
-                                            )
-                                            .toggle(val ?? false);
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // 2. Variable Slider Alert Row
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+
+                          
+                          // --- 1. First Reminder (Avertizare Timpurie) ---
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final firstReminderEnabled = ref.watch(threeDayAlertEnabledProvider);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Tooltip(
-                                    message:
-                                        'Adjust how many days in advance you want to be notified.',
-                                    child: Text(
-                                      'Custom Reminder',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'First Reminder',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                            ),
+                                            Text(
+                                              firstReminderEnabled 
+                                                ? 'Early warning • $alertDays ${alertDays == 1 ? "day" : "days"} before'
+                                                : 'Early warning for upcoming bills',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: firstReminderEnabled ? AppTheme.primaryAction : Colors.grey,
+                                                fontWeight: firstReminderEnabled ? FontWeight.w500 : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 30,
+                                        child: Switch(
+                                          value: firstReminderEnabled,
+                                          onChanged: (val) async {
+                                            await ref.read(threeDayAlertEnabledProvider.notifier).toggle(val);
+                                            await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                          },
+                                          activeThumbColor: AppTheme.primaryAction,
+                                          activeTrackColor: AppTheme.primaryAction.withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (firstReminderEnabled)
+                                    SizedBox(
+                                      height: 36,
+                                      child: SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 2,
+                                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                          valueIndicatorTextStyle: const TextStyle(color: Colors.white),
+                                          valueIndicatorColor: AppTheme.primaryAction,
+                                        ),
+                                        child: Slider(
+                                          value: alertDays.toDouble().clamp(3, 14),
+                                          min: 3,
+                                          max: 14,
+                                          divisions: 11,
+                                          label: '$alertDays Days',
+                                          activeColor: AppTheme.primaryAction,
+                                          inactiveColor: AppTheme.primaryAction.withValues(alpha: 0.1),
+                                          onChanged: (val) {
+                                            ref.read(alertDaysProvider.notifier).setAlertDays(val.toInt());
+                                          },
+                                          onChangeEnd: (val) async {
+                                            await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                          },
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Text(
-                                    '$alertDays ${alertDays == 1 ? "Day" : "Days"} before',
-                                    style: const TextStyle(
-                                      color: AppTheme.primaryAction,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
                                 ],
-                              ),
-                              SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 4,
-                                  thumbShape: const RoundSliderThumbShape(
-                                    enabledThumbRadius: 8,
+                              );
+                            },
+                          ),
+                          // --- 2. Final Reminder (Avertizare de Ultim Moment) ---
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final finalEnabled = ref.watch(finalReminderEnabledProvider);
+                              final finalDays = ref.watch(finalReminderDaysProvider);
+                              final finalDaysText = finalDays == 0 ? 'Day of' : '$finalDays ${finalDays == 1 ? "day" : "days"} before';
+                              
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Final Reminder',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                            ),
+                                            Text(
+                                              finalEnabled 
+                                                ? 'Urgent alert • $finalDaysText'
+                                                : 'Urgent alert right before due date',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: finalEnabled ? AppTheme.urgentRed : Colors.grey,
+                                                fontWeight: finalEnabled ? FontWeight.w500 : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 30,
+                                        child: Switch(
+                                          value: finalEnabled,
+                                          onChanged: (val) async {
+                                            await ref.read(finalReminderEnabledProvider.notifier).toggle(val);
+                                            await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                          },
+                                          activeThumbColor: AppTheme.urgentRed,
+                                          activeTrackColor: AppTheme.urgentRed.withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  overlayShape: const RoundSliderOverlayShape(
-                                    overlayRadius: 16,
-                                  ),
-                                  valueIndicatorTextStyle: const TextStyle(
-                                    color: Colors.white,
-                                  ),
-                                  valueIndicatorColor: AppTheme.primaryAction,
-                                ),
-                                child: Slider(
-                                  value: alertDays.toDouble(),
-                                  min: 1,
-                                  max: 7,
-                                  divisions: 6,
-                                  label: '$alertDays Days',
-                                  activeColor: AppTheme.primaryAction,
-                                  inactiveColor: AppTheme.primaryAction
-                                      .withValues(alpha: 0.1),
-                                  onChanged: (val) {
-                                    ref
-                                        .read(alertDaysProvider.notifier)
-                                        .setAlertDays(val.toInt());
-                                  },
-                                ),
-                              ),
-                            ],
+                                  if (finalEnabled)
+                                    SizedBox(
+                                      height: 36,
+                                      child: SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          trackHeight: 2,
+                                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                          valueIndicatorTextStyle: const TextStyle(color: Colors.white),
+                                          valueIndicatorColor: AppTheme.urgentRed,
+                                        ),
+                                        child: Slider(
+                                          value: finalDays.toDouble().clamp(0, 2),
+                                          min: 0,
+                                          max: 2,
+                                          divisions: 2,
+                                          label: finalDays == 0 ? 'Day of' : '$finalDays Days',
+                                          activeColor: AppTheme.urgentRed,
+                                          inactiveColor: AppTheme.urgentRed.withValues(alpha: 0.1),
+                                          onChanged: (val) {
+                                            ref.read(finalReminderDaysProvider.notifier).setFinalReminderDays(val.toInt());
+                                          },
+                                          onChangeEnd: (val) async {
+                                            await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                         const SizedBox(height: 12),
                         GestureDetector(
                           onTap: () async {
-                            final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+                            final isAndroid = Platform.isAndroid;
                             final hasNotification = await Permission.notification.isGranted;
                             final hasBattery = !isAndroid || 
                                 (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
+                            final hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
                             
-                            if (hasNotification && hasBattery) {
+                            if (hasNotification && hasBattery && hasExactAlarm) {
                               return;
                             }
                             
@@ -478,7 +596,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   borderRadius: BorderRadius.circular(8),
                                   color:
                                       (_isBatteryOptimizationDisabled == true &&
-                                          _isNotificationPermissionGranted)
+                                          _isNotificationPermissionGranted &&
+                                          _isExactAlarmGranted)
                                       ? AppTheme.safeGreen.withValues(
                                           alpha: 0.1,
                                         )
@@ -489,7 +608,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                     color:
                                         (_isBatteryOptimizationDisabled ==
                                                 true &&
-                                            _isNotificationPermissionGranted)
+                                            _isNotificationPermissionGranted &&
+                                            _isExactAlarmGranted)
                                         ? AppTheme.safeGreen
                                         : AppTheme.urgentRed.withValues(
                                             alpha: 0.5,
@@ -501,7 +621,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   children: [
                                     if (_isBatteryOptimizationDisabled ==
                                             true &&
-                                        _isNotificationPermissionGranted)
+                                        _isNotificationPermissionGranted &&
+                                        _isExactAlarmGranted)
                                       const Icon(
                                         Icons.check_circle,
                                         color: AppTheme.safeGreen,
@@ -509,18 +630,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                       ),
                                     if (_isBatteryOptimizationDisabled ==
                                             true &&
-                                        _isNotificationPermissionGranted)
+                                        _isNotificationPermissionGranted &&
+                                        _isExactAlarmGranted)
                                       const SizedBox(width: 4),
                                     Text(
                                       (_isBatteryOptimizationDisabled == true &&
-                                              _isNotificationPermissionGranted)
+                                              _isNotificationPermissionGranted &&
+                                              _isExactAlarmGranted)
                                           ? 'Active'
                                           : 'Fix Now',
                                       style: TextStyle(
                                         color:
                                             (_isBatteryOptimizationDisabled ==
                                                     true &&
-                                                _isNotificationPermissionGranted)
+                                                _isNotificationPermissionGranted &&
+                                                _isExactAlarmGranted)
                                             ? AppTheme.safeGreen
                                             : AppTheme.urgentRed,
                                         fontWeight: FontWeight.bold,

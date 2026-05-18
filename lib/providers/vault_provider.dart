@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -176,6 +177,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     final threeDayAlert = ref.read(threeDayAlertEnabledProvider);
     final notificationsEnabled = ref.read(globalNotificationsProvider);
 
+    final finalReminderDays = ref.read(finalReminderDaysProvider);
+    final finalReminderEnabled = ref.read(finalReminderEnabledProvider);
+    
+    final notificationTime = ref.read(notificationTimeProvider);
+
     // 1. Delete samples if adding real data
     if (!item.isSample) {
       await _repository.deleteSamplesForUser(user?.uid ?? 'local_user');
@@ -195,6 +201,10 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       item,
       alertDays: alertDays,
       threeDayAlertEnabled: threeDayAlert,
+      finalReminderDays: finalReminderDays,
+      finalReminderEnabled: finalReminderEnabled,
+      notificationHour: notificationTime.hour,
+      notificationMinute: notificationTime.minute,
       notificationsEnabled: notificationsEnabled,
     );
 
@@ -239,6 +249,80 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       await _markAsDirty();
       _triggerSync();
     }
+  }
+
+  Future<void> rescheduleAllNotifications() async {
+    final alertDays = ref.read(alertDaysProvider);
+    final threeDayAlert = ref.read(threeDayAlertEnabledProvider);
+    final finalReminderDays = ref.read(finalReminderDaysProvider);
+    final finalReminderEnabled = ref.read(finalReminderEnabledProvider);
+    final notificationTime = ref.read(notificationTimeProvider);
+    final notificationsEnabled = ref.read(globalNotificationsProvider);
+
+    // ═══════ DIAGNOSTIC: Riverpod State + Isar Query ═══════
+    debugPrint('╔══════════════════════════════════════════════════════');
+    debugPrint('║ 🔄 rescheduleAllNotifications() CALLED');
+    debugPrint('║ Global Notifications Enabled: $notificationsEnabled');
+    debugPrint('║ First Reminder: ${threeDayAlert ? "ON" : "OFF"} ($alertDays days)');
+    debugPrint('║ Final Reminder: ${finalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days)');
+    debugPrint('║ Notification Time: ${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}');
+    debugPrint('║ Total items in Riverpod state: ${state.length}');
+    debugPrint('╠══════════════════════════════════════════════════════');
+
+    // Isar Query Debug: Check how many bills exist that SHOULD be scheduled
+    final isar = ref.read(isarProvider);
+    final isarBillCount = await isar
+        .collection<VaultItem>()
+        .filter()
+        .isPaidEqualTo(false)
+        .isArchivedEqualTo(false)
+        .isDeletedEqualTo(false)
+        .dueDateIsNotNull()
+        .group((q) => q.itemTypeEqualTo('Bill').or().itemTypeEqualTo('Document'))
+        .count();
+    debugPrint('║ 📊 Isar DB has $isarBillCount unpaid/unarchived bills with due dates');
+
+    if (state.isEmpty) {
+      debugPrint('║ ⚠️  STATE IS EMPTY! This is likely a race condition.');
+      debugPrint('║ rescheduleAllNotifications() was called before _loadItems() finished.');
+    }
+    debugPrint('╚══════════════════════════════════════════════════════');
+    // ═══════ END DIAGNOSTIC ═══════
+
+    int scheduledCount = 0;
+    int skippedCount = 0;
+
+    for (final item in state) {
+      if ((item.itemType == 'Bill' || item.itemType == 'Document') &&
+          item.dueDate != null &&
+          !item.isPaid && !item.isArchived) {
+        
+        if (notificationsEnabled) {
+          scheduledCount++;
+          await NotificationService.scheduleDualAlerts(
+            billId: item.id,
+            billTitle: item.title,
+            dueDate: item.dueDate!,
+            firstReminderDays: alertDays,
+            finalReminderDays: finalReminderDays,
+            isFirstReminderEnabled: threeDayAlert,
+            isFinalReminderEnabled: finalReminderEnabled,
+            notificationHour: notificationTime.hour,
+            notificationMinute: notificationTime.minute,
+            itemType: item.itemType ?? 'Document',
+            amount: item.amount,
+          );
+        } else {
+          await NotificationService.cancelBillNotifications(item.id);
+        }
+      } else {
+        skippedCount++;
+      }
+    }
+
+    // ═══════ DIAGNOSTIC: Summary ═══════
+    debugPrint('🏁 rescheduleAll DONE: $scheduledCount scheduled, $skippedCount skipped (paid/archived/no-date)');
+    // ═══════ END DIAGNOSTIC ═══════
   }
 
   Future<void> deleteItem(int id) async {
@@ -345,7 +429,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     // 1. Notifications cleanup
     final allItems = await isar.collection<VaultItem>().where().findAll();
     for (final item in allItems) {
-      await NotificationService.cancelNotification(item.id);
+      await NotificationService.cancelBillNotifications(item.id);
     }
 
     // 2. Local wipe

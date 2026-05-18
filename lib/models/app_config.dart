@@ -10,6 +10,10 @@ class AppConfig {
   String currencyCode = 'USD';
   int alertDays = 3;
   bool threeDayAlertEnabled = true;
+  int finalReminderDays = 0;
+  bool finalReminderEnabled = true;
+  int notificationHour = 9;
+  int notificationMinute = 0;
   bool isDarkMode = true;
   bool autoSync = true;
   bool syncOnWifiOnly = false;

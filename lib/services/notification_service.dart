@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -7,6 +8,9 @@ import 'package:permission_handler/permission_handler.dart';
 import '../utils/logger.dart';
 
 class NotificationService {
+  static const int _firstReminderOffset = 100000;
+  static const int _finalReminderOffset = 200000;
+
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -26,6 +30,21 @@ class NotificationService {
       settings: initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {},
     );
+
+    // Explicitly create the high-priority channel to ensure background alarms inherit the exact vibration pattern
+    final androidImplementation = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidImplementation != null) {
+      final channel = AndroidNotificationChannel(
+        'urgent_bill_reminders_v3',
+        'Urgent Bill Reminders',
+        description: 'High priority alerts for upcoming and overdue bills.',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
+      );
+      await androidImplementation.createNotificationChannel(channel);
+    }
 
     // 1. Initialize Timezone Database
     tz.initializeTimeZones();
@@ -102,42 +121,107 @@ class NotificationService {
     return status.isGranted;
   }
 
-  static Future<void> scheduleVaultReminder({
-    required int id,
-    required String title,
+  static Future<void> requestExactAlarmPermission() async {
+    final androidImplementation = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidImplementation != null) {
+      await androidImplementation.requestExactAlarmsPermission();
+    }
+  }
+
+
+  static Future<void> scheduleDualAlerts({
+    required int billId,
+    required String billTitle,
     required DateTime dueDate,
-    required int primaryDaysBefore,
-    bool threeDayAlertEnabled = false,
-    bool isDocument = false,
+    required int firstReminderDays,
+    required int finalReminderDays,
+    required bool isFirstReminderEnabled,
+    required bool isFinalReminderEnabled,
+    required int notificationHour,
+    required int notificationMinute,
+    required String itemType,
+    double? amount,
   }) async {
-    final typeLabel = isDocument ? 'Document' : 'Bill';
+    // ═══════ DIAGNOSTIC: Scheduling Input ═══════
+    debugPrint('┌── scheduleDualAlerts() called for: "$billTitle" (ID: $billId)');
+    debugPrint('│  Due Date: $dueDate');
+    debugPrint('│  First Reminder: ${isFirstReminderEnabled ? "ON" : "OFF"} ($firstReminderDays days before)');
+    debugPrint('│  Final Reminder: ${isFinalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days before)');
+    debugPrint('│  Notification Time: $notificationHour:${notificationMinute.toString().padLeft(2, '0')}');
+    debugPrint('│  Now: ${DateTime.now()}');
+    // ═══════ END DIAGNOSTIC ═══════
 
-    // 1. Primary Notification (from Slider)
-    await _scheduleSingle(
-      id: id,
-      title: '$typeLabel Due Soon: $title',
-      body: 'This $typeLabel is due in $primaryDaysBefore days!',
-      date: dueDate.subtract(Duration(days: primaryDaysBefore)),
-    );
+    // 1. Curățăm notificările vechi în caz că factura a fost editată
+    await cancelBillNotifications(billId);
 
-    // 2. Fixed 3-Day Alert (if enabled and different from primary)
-    if (threeDayAlertEnabled && primaryDaysBefore != 3) {
-      await _scheduleSingle(
-        id: id + 10000, // Offset ID to avoid collision
-        title: 'Early Reminder: $title',
-        body: 'Upcoming $typeLabel due in 3 days.',
-        date: dueDate.subtract(const Duration(days: 3)),
+    // 2. Programăm Avertizarea Timpurie (First Reminder)
+    if (isFirstReminderEnabled) {
+      final firstReminderDate = dueDate.subtract(Duration(days: firstReminderDays));
+      final scheduledDate = DateTime(
+        firstReminderDate.year,
+        firstReminderDate.month,
+        firstReminderDate.day,
+        notificationHour, notificationMinute,
       );
+
+      // ═══════ DIAGNOSTIC: First Reminder Calculation ═══════
+      debugPrint('│  🔵 Scheduling Bill "$billTitle": Alarm 1 (First) at $scheduledDate with ID ${billId + _firstReminderOffset}');
+      debugPrint('│     isAfterNow: ${scheduledDate.isAfter(DateTime.now())}');
+      // ═══════ END DIAGNOSTIC ═══════
+
+      final now = DateTime.now();
+      if (scheduledDate.isAfter(now)) {
+        final amountText = amount != null ? ' ($amount)' : '';
+        await _scheduleSingle(
+          id: billId + _firstReminderOffset,
+          title: 'Upcoming $itemType: $billTitle$amountText',
+          body: 'Your $itemType is due in $firstReminderDays days.',
+          date: scheduledDate,
+        );
+        logger.i('Scheduled First Reminder pt ID: ${billId + _firstReminderOffset}');
+      } else {
+        debugPrint('│     ❌ SKIPPED — date/time is in the past!');
+      }
     }
 
-    // 3. MANDATORY Due-Day Alert (Day 0)
-    await _scheduleSingle(
-      id: id + 20000, // New Offset
-      title: '$typeLabel Due Today: $title',
-      body: 'Important: Your $typeLabel is due today!',
-      date: dueDate,
-    );
+    // 3. Programăm Avertizarea Finală (Final Reminder)
+    if (isFinalReminderEnabled) {
+      final finalReminderDate = dueDate.subtract(Duration(days: finalReminderDays));
+      final scheduledDate = DateTime(
+        finalReminderDate.year,
+        finalReminderDate.month,
+        finalReminderDate.day,
+        notificationHour, notificationMinute,
+      );
+
+      // ═══════ DIAGNOSTIC: Final Reminder Calculation ═══════
+      debugPrint('│  🔴 Scheduling Bill "$billTitle": Alarm 2 (Final) at $scheduledDate with ID ${billId + _finalReminderOffset}');
+      debugPrint('│     isAfterNow: ${scheduledDate.isAfter(DateTime.now())}');
+      // ═══════ END DIAGNOSTIC ═══════
+
+      final now = DateTime.now();
+      if (scheduledDate.isAfter(now)) {
+        final amountText = amount != null ? ' ($amount)' : '';
+        await _scheduleSingle(
+          id: billId + _finalReminderOffset,
+          title: 'URGENT: $itemType Due!$amountText',
+          body: finalReminderDays == 0 
+              ? 'Your $itemType "$billTitle" is due TODAY!' 
+              : 'Your $itemType "$billTitle" is due in $finalReminderDays day(s)!',
+          date: scheduledDate,
+        );
+        logger.i('Scheduled Final Reminder pt ID: ${billId + _finalReminderOffset}');
+      } else {
+        debugPrint('│     ❌ SKIPPED — date/time is in the past!');
+      }
+    }
+    debugPrint('└── scheduleDualAlerts() finished for: "$billTitle"');
   }
+
+
 
   static Future<void> _scheduleSingle({
     required int id,
@@ -145,34 +229,43 @@ class NotificationService {
     required String body,
     required DateTime date,
   }) async {
-    // Set reminder time to 09:00 AM
-    final scheduleDate = DateTime(date.year, date.month, date.day, 9, 0);
+    // We already calculated the exact hour and minute, so we just use 'date'.
+    final scheduleDate = date;
 
     if (scheduleDate.isBefore(DateTime.now())) return;
 
-    await _notificationsPlugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: tz.TZDateTime.from(scheduleDate, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'bill_reminders',
-          'Bill Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-          fullScreenIntent: true,
-          category: AndroidNotificationCategory.reminder,
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.from(scheduleDate, tz.local),
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            'urgent_bill_reminders_v3', // Upgraded channel to bypass old muted or corrupted configurations
+            'Urgent Bill Reminders',
+            channelDescription: 'High priority alerts for upcoming and overdue bills.',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]), // SOS-like vibration
+            category: AndroidNotificationCategory.reminder,
+            visibility: NotificationVisibility.public,
+          ),
+          iOS: const DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      logger.i('Successfully scheduled notification ID $id for $scheduleDate');
+    } catch (e, stack) {
+      logger.e('Failed to schedule notification ID $id. Make sure Exact Alarms permission is granted!', error: e, stackTrace: stack);
+    }
   }
 
-  static Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id: id);
-    await _notificationsPlugin.cancel(id: id + 10000);
-    await _notificationsPlugin.cancel(id: id + 20000);
+  static Future<void> cancelBillNotifications(int billId) async {
+    await _notificationsPlugin.cancel(id: billId + _firstReminderOffset);
+    await _notificationsPlugin.cancel(id: billId + _finalReminderOffset);
+    logger.i('Cancelled all reminders for bill ID: $billId');
   }
 }

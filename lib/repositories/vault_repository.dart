@@ -48,7 +48,7 @@ class VaultRepository {
           await isar.collection<VaultItem>().put(item);
         });
 
-        await NotificationService.cancelNotification(id);
+        await NotificationService.cancelBillNotifications(id);
         logger.i('Item soft-deleted: $id');
       }
     } catch (e, stack) {
@@ -62,6 +62,10 @@ class VaultRepository {
     VaultItem item, {
     int? alertDays,
     bool? threeDayAlertEnabled,
+    int? finalReminderDays,
+    bool? finalReminderEnabled,
+    int? notificationHour,
+    int? notificationMinute,
     bool notificationsEnabled = false,
   }) async {
     try {
@@ -167,13 +171,18 @@ class VaultRepository {
           (item.itemType == 'Bill' || item.itemType == 'Document') &&
           item.dueDate != null &&
           !item.isPaid) {
-        await NotificationService.scheduleVaultReminder(
-          id: item.id,
-          title: item.title,
+        await NotificationService.scheduleDualAlerts(
+          billId: item.id,
+          billTitle: item.title,
           dueDate: item.dueDate!,
-          primaryDaysBefore: alertDays ?? 3,
-          threeDayAlertEnabled: threeDayAlertEnabled ?? true,
-          isDocument: item.itemType == 'Document',
+          firstReminderDays: alertDays ?? 3,
+          finalReminderDays: finalReminderDays ?? 0,
+          isFirstReminderEnabled: threeDayAlertEnabled ?? true,
+          isFinalReminderEnabled: finalReminderEnabled ?? true,
+          notificationHour: notificationHour ?? 9,
+          notificationMinute: notificationMinute ?? 0,
+          itemType: item.itemType ?? 'Document',
+          amount: item.amount,
         );
       }
 
@@ -223,7 +232,7 @@ class VaultRepository {
       });
 
       if (isPaid) {
-        await NotificationService.cancelNotification(id);
+        await NotificationService.cancelBillNotifications(id);
 
         // Generate next instance for recurring bills
         if (item.recurrence != 'None' &&
