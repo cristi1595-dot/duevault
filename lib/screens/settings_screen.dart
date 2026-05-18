@@ -1069,87 +1069,105 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               }
             },
           ),
-
-        // --- 5. Cloud Recovery (Manual Pull) ---
-        _buildSettingItem(
-          icon: Icons.cloud_download_outlined,
-          title: 'Sync from Cloud',
-          subtitle: 'Merge data from your Google Drive',
-          onTap: () async {
-            final scaffold = ScaffoldMessenger.of(context);
-            scaffold.showSnackBar(
-              const SnackBar(
-                content: Text('⏳ Checking cloud for updates...'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-
-            try {
-              final result = await ref
-                  .read(autoSyncServiceProvider)
-                  .syncAfterLogin();
-
-              String message;
-              Color? color;
-
-              if (result == 'restored') {
-                message = '✓ Vault updated with cloud data!';
-                color = AppTheme.safeGreen;
-              } else if (result == 'uploaded') {
-                message = '✓ Local data backed up to cloud!';
-                color = AppTheme.primaryAction;
-              } else if (result == 'empty') {
-                message = 'No backup found in cloud.';
-                color = AppTheme.warningYellow;
-              } else {
-                message = 'Your vault is already up to date.';
-                color = null;
-              }
-
-              scaffold.showSnackBar(
-                SnackBar(content: Text(message), backgroundColor: color),
-              );
-            } catch (e) {
-              scaffold.showSnackBar(
-                SnackBar(
-                  content: Text('Sync error: ${e.toString()}'),
-                  backgroundColor: AppTheme.urgentRed,
-                ),
-              );
-            }
-          },
-        ),
       ],
     );
   }
 
-  Widget _buildDataManagement(BuildContext context, WidgetRef ref) {
-    final isGuest = FirebaseAuth.instance.currentUser == null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('DATA MANAGEMENT'),
-        const SizedBox(height: 2),
-        BentoCard(
-          padding: EdgeInsets.zero,
+  void _showStorageResetBottomSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isGuest = FirebaseAuth.instance.currentUser == null;
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color ?? AppTheme.darkSurface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.only(
+            top: 10,
+            left: 20,
+            right: 20,
+            bottom: 32,
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildSettingItem(
-                icon: Icons.phonelink_erase,
-                title: 'Clear Local Data',
-                subtitle: isGuest
-                    ? 'Deletes all bills and documents from this phone.'
-                    : 'Deletes local items only. Cloud backup stays safe.',
+              // Top Pull Indicator
+              Container(
+                width: 48,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ?? Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.storage_rounded,
+                      color: AppTheme.primaryAction,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Storage & Reset',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Manage your database and cloud space',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 28),
+              
+              // Option 1: Clear Local Cache
+              GestureDetector(
                 onTap: () async {
+                  Navigator.pop(context); // Close bottom sheet
+                  
                   final confirm = await showDialog<bool>(
                     context: context,
-                    useRootNavigator: true,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: Theme.of(context).cardTheme.color,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: const Text('Clear Local Data'),
+                      title: const Text('Clear Local Cache'),
                       content: Text(
                         isGuest
                             ? 'This will permanently delete all bills and documents from this phone. This action cannot be undone.'
@@ -1158,7 +1176,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                            ),
+                          ),
                         ),
                         ElevatedButton(
                           onPressed: () => Navigator.pop(ctx, true),
@@ -1190,20 +1213,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           .read(vaultProvider.notifier)
                           .clearAllData(alsoDeleteCloud: false);
                       if (context.mounted) {
-                        Navigator.pop(context); // Close progress
+                        Navigator.pop(context); // Close progress dialog
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
                               isGuest
-                                  ? 'Local data cleared.'
-                                  : 'Local data cleared. Settings and Cloud backup preserved.',
+                                  ? 'Local cache cleared.'
+                                  : 'Local cache cleared. Settings and Cloud backup preserved.',
                             ),
                           ),
                         );
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        Navigator.pop(context); // Close progress
+                        Navigator.pop(context); // Close progress dialog
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Failed: $e'),
@@ -1214,110 +1237,237 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     }
                   }
                 },
-              ),
-            ],
-          ),
-        ),
-        if (FirebaseAuth.instance.currentUser != null) ...[
-          const SizedBox(height: 12),
-          BentoCard(
-            padding: EdgeInsets.zero,
-            color: AppTheme.urgentRed.withValues(alpha: 0.1),
-            borderColor: AppTheme.urgentRed.withValues(alpha: 0.5),
-            child: _buildSettingItem(
-              icon: Icons.delete_forever,
-              iconColor: AppTheme.urgentRed,
-              title: 'Erase All Data',
-              titleColor: AppTheme.urgentRed,
-              subtitle: 'WIPE EVERYTHING (cannot be undone)',
-              onTap: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: Theme.of(context).cardTheme.color,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
                     ),
-                    title: const Text('WIPE EVERYTHING'),
-                    content: const Text(
-                      'WARNING: This will permanently delete ALL local data AND your Google Drive backup. This cannot be undone.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.phonelink_erase_rounded,
+                          color: AppTheme.primaryAction,
+                          size: 20,
+                        ),
                       ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.urgentRed,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Clear Local Cache',
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Deletes local temporary items only. Cloud backup stays safe.',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'ERASE CLOUD & PHONE',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        size: 20,
                       ),
                     ],
                   ),
-                );
-
-                if (confirm == true) {
-                  if (!context.mounted) return;
-                  unawaited(
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (ctx) =>
-                          const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Option 2: Erase All Data
+              GestureDetector(
+                onTap: () async {
+                  Navigator.pop(context); // Close bottom sheet
+                  
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: Theme.of(context).cardTheme.color,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text('WIPE EVERYTHING'),
+                      content: const Text(
+                        'WARNING: This will permanently delete ALL local data AND your Google Drive backup. This cannot be undone.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.urgentRed,
+                          ),
+                          child: const Text(
+                            'ERASE CLOUD & PHONE',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   );
 
-                  try {
-                    await ref
-                        .read(vaultProvider.notifier)
-                        .clearAllData(alsoDeleteCloud: true);
+                  if (confirm == true) {
+                    if (!context.mounted) return;
+                    unawaited(
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (ctx) =>
+                            const Center(child: CircularProgressIndicator()),
+                      ),
+                    );
 
-                    if (context.mounted) {
-                      Navigator.pop(context); // Close progress
-                      final isUserLoggedIn =
-                          FirebaseAuth.instance.currentUser != null;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isUserLoggedIn
-                                ? 'All data has been wiped from device and cloud.'
-                                : 'All local data has been wiped.',
+                    try {
+                      await ref
+                          .read(vaultProvider.notifier)
+                          .clearAllData(alsoDeleteCloud: true);
+
+                      if (context.mounted) {
+                        Navigator.pop(context); // Close progress dialog
+                        final isUserLoggedIn =
+                            FirebaseAuth.instance.currentUser != null;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isUserLoggedIn
+                                  ? 'All data has been wiped from device and cloud.'
+                                  : 'All local data has been wiped.',
+                            ),
+                            backgroundColor: AppTheme.urgentRed,
                           ),
-                          backgroundColor: AppTheme.urgentRed,
-                        ),
-                      );
-                      // Force navigation back to start
-                      unawaited(
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const MainNavigation(),
+                        );
+                        // Force navigation back to start
+                        unawaited(
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MainNavigation(),
+                            ),
+                            (route) => false,
                           ),
-                          (route) => false,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      Navigator.pop(context); // Close progress
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Wipe failed: $e'),
-                          backgroundColor: AppTheme.urgentRed,
-                        ),
-                      );
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.pop(context); // Close progress dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Wipe failed: $e'),
+                            backgroundColor: AppTheme.urgentRed,
+                          ),
+                        );
+                      }
                     }
                   }
-                }
-              },
-            ),
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.urgentRed.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.urgentRed.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.urgentRed.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.delete_forever_rounded,
+                          color: AppTheme.urgentRed,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Erase All Data',
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppTheme.urgentRed,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'WIPE EVERYTHING. Cloud and local data will be permanently deleted.',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontSize: 12,
+                                color: Theme.of(context).textTheme.bodySmall?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppTheme.urgentRed,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDataManagement(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('DATA MANAGEMENT'),
+        const SizedBox(height: 2),
+        BentoCard(
+          padding: EdgeInsets.zero,
+          child: _buildSettingItem(
+            icon: Icons.storage_rounded,
+            title: 'Storage & Reset',
+            subtitle: 'Manage local database and cloud storage',
+            onTap: () => _showStorageResetBottomSheet(context, ref),
+          ),
+        ),
       ],
     );
   }
