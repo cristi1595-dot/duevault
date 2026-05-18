@@ -96,6 +96,44 @@ class AuthService {
     _cachedAccessToken = null;
   }
 
+  /// Wipe and delete the Firebase Authentication user account permanently.
+  /// Handles security reauthentication if the login session is stale.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await user.delete();
+      logger.i('Firebase user deleted successfully.');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        logger.w('Reauthentication required to delete account.');
+        // Trigger silent or explicit sign-in to get fresh credentials
+        GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
+        googleUser ??= await _googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          throw Exception('Reauthentication canceled by the user.');
+        }
+
+        final googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Reauthenticate the current user session
+        await user.reauthenticateWithCredential(credential);
+        
+        // Retry deletion
+        await user.delete();
+        logger.i('Firebase user deleted successfully after reauthentication.');
+      } else {
+        rethrow;
+      }
+    }
+  }
+
   // Get the cached access token for Drive API
   String? get currentAccessToken => _cachedAccessToken;
 }

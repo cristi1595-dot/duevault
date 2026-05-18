@@ -1466,6 +1466,162 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   ),
                 ),
               ),
+              if (!isGuest) ...[
+                const SizedBox(height: 16),
+                
+                // Option 3: Delete Account & Cloud Data
+                GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(context); // Close bottom sheet
+                    
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: Theme.of(context).cardTheme.color,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        title: const Text('DELETE ACCOUNT'),
+                        content: const Text(
+                          'WARNING: This is permanent and irreversible. This will delete all your local data, your Google Drive backup, your Firestore database records, and permanently close your account registration. You will be logged out completely.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: Theme.of(context).textTheme.bodyMedium?.color,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.urgentRed,
+                            ),
+                            child: const Text(
+                              'DELETE CONT & DATE',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      if (!context.mounted) return;
+                      unawaited(
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) =>
+                              const Center(child: CircularProgressIndicator()),
+                        ),
+                      );
+
+                      try {
+                        // 1. Wipe local and cloud database items
+                        await ref
+                            .read(vaultProvider.notifier)
+                            .clearAllData(alsoDeleteCloud: true);
+
+                        // 2. Delete actual authentication registration
+                        await ref.read(authServiceProvider).deleteAccount();
+
+                        // 3. Complete sign-out cleanly
+                        await ref.read(authServiceProvider).signOut();
+
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close progress dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Account and all data deleted successfully.'),
+                              backgroundColor: AppTheme.urgentRed,
+                            ),
+                          );
+                          // Force reset app navigation state
+                          unawaited(
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MainNavigation(),
+                              ),
+                              (route) => false,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close progress dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Account deletion failed: $e'),
+                              backgroundColor: AppTheme.urgentRed,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.urgentRed.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppTheme.urgentRed.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.urgentRed.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.no_accounts_rounded,
+                            color: AppTheme.urgentRed,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Delete Account & Data',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppTheme.urgentRed,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Wipes all local & cloud data and permanently deletes your account registration.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontSize: 12,
+                                  color: Theme.of(context).textTheme.bodySmall?.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: AppTheme.urgentRed,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
