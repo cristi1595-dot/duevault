@@ -154,17 +154,21 @@ class NotificationService {
     debugPrint('│  Now: ${DateTime.now()}');
     // ═══════ END DIAGNOSTIC ═══════
 
+    // Convert Isar's retrieved UTC dueDate to local device timezone before extracting components
+    final localDueDate = dueDate.toLocal();
+
     // 1. Curățăm notificările vechi în caz că factura a fost editată
     await cancelBillNotifications(billId);
 
     // 2. Programăm Avertizarea Timpurie (First Reminder)
     if (isFirstReminderEnabled) {
-      final firstReminderDate = dueDate.subtract(Duration(days: firstReminderDays));
+      final firstReminderDate = localDueDate.subtract(Duration(days: firstReminderDays));
       final scheduledDate = DateTime(
         firstReminderDate.year,
         firstReminderDate.month,
         firstReminderDate.day,
-        notificationHour, notificationMinute,
+        notificationHour,
+        notificationMinute,
       );
 
       // ═══════ DIAGNOSTIC: First Reminder Calculation ═══════
@@ -189,12 +193,13 @@ class NotificationService {
 
     // 3. Programăm Avertizarea Finală (Final Reminder)
     if (isFinalReminderEnabled) {
-      final finalReminderDate = dueDate.subtract(Duration(days: finalReminderDays));
+      final finalReminderDate = localDueDate.subtract(Duration(days: finalReminderDays));
       final scheduledDate = DateTime(
         finalReminderDate.year,
         finalReminderDate.month,
         finalReminderDate.day,
-        notificationHour, notificationMinute,
+        notificationHour,
+        notificationMinute,
       );
 
       // ═══════ DIAGNOSTIC: Final Reminder Calculation ═══════
@@ -232,14 +237,20 @@ class NotificationService {
     // We already calculated the exact hour and minute, so we just use 'date'.
     final scheduleDate = date;
 
-    if (scheduleDate.isBefore(DateTime.now())) return;
+    final scheduledTZ = tz.TZDateTime.from(scheduleDate, tz.local);
+    final nowTZ = tz.TZDateTime.now(tz.local);
+
+    if (scheduledTZ.isBefore(nowTZ)) {
+      debugPrint('│     ❌ SKIPPED (TZ-aware) — scheduled time $scheduledTZ is in the past relative to now $nowTZ!');
+      return;
+    }
 
     try {
       await _notificationsPlugin.zonedSchedule(
         id: id,
         title: title,
         body: body,
-        scheduledDate: tz.TZDateTime.from(scheduleDate, tz.local),
+        scheduledDate: scheduledTZ,
         notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'urgent_bill_reminders_v3', // Upgraded channel to bypass old muted or corrupted configurations
@@ -257,7 +268,7 @@ class NotificationService {
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      logger.i('Successfully scheduled notification ID $id for $scheduleDate');
+      logger.i('Successfully scheduled notification ID $id for $scheduledTZ');
     } catch (e, stack) {
       logger.e('Failed to schedule notification ID $id. Make sure Exact Alarms permission is granted!', error: e, stackTrace: stack);
     }

@@ -151,6 +151,9 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
       // Final fetch to ensure state is perfectly in sync with DB changes above
       state = await _repository.getItems(ownerId);
+
+      // Reschedule all notifications to guarantee system alarms are strictly synchronized with the database
+      unawaited(rescheduleAllNotifications());
     } catch (e) {
       logger.e('VaultNotifier: Error loading items', error: e);
     } finally {
@@ -259,7 +262,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     final notificationTime = ref.read(notificationTimeProvider);
     final notificationsEnabled = ref.read(globalNotificationsProvider);
 
-    // ═══════ DIAGNOSTIC: Riverpod State + Isar Query ═══════
+    // ═══════ DIAGNOSTIC: Riverpod State ═══════
     debugPrint('╔══════════════════════════════════════════════════════');
     debugPrint('║ 🔄 rescheduleAllNotifications() CALLED');
     debugPrint('║ Global Notifications Enabled: $notificationsEnabled');
@@ -267,25 +270,6 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     debugPrint('║ Final Reminder: ${finalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days)');
     debugPrint('║ Notification Time: ${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}');
     debugPrint('║ Total items in Riverpod state: ${state.length}');
-    debugPrint('╠══════════════════════════════════════════════════════');
-
-    // Isar Query Debug: Check how many bills exist that SHOULD be scheduled
-    final isar = ref.read(isarProvider);
-    final isarBillCount = await isar
-        .collection<VaultItem>()
-        .filter()
-        .isPaidEqualTo(false)
-        .isArchivedEqualTo(false)
-        .isDeletedEqualTo(false)
-        .dueDateIsNotNull()
-        .group((q) => q.itemTypeEqualTo('Bill').or().itemTypeEqualTo('Document'))
-        .count();
-    debugPrint('║ 📊 Isar DB has $isarBillCount unpaid/unarchived bills with due dates');
-
-    if (state.isEmpty) {
-      debugPrint('║ ⚠️  STATE IS EMPTY! This is likely a race condition.');
-      debugPrint('║ rescheduleAllNotifications() was called before _loadItems() finished.');
-    }
     debugPrint('╚══════════════════════════════════════════════════════');
     // ═══════ END DIAGNOSTIC ═══════
 

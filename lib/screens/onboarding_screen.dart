@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
 import '../services/auto_sync_service.dart';
+import '../providers/notification_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 
@@ -48,6 +49,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     if (_currentPage == 0) {
       final isGranted = await Permission.notification.isGranted;
       if (isGranted && mounted) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
         unawaited(
           _pageController.nextPage(
             duration: const Duration(milliseconds: 400),
@@ -162,6 +164,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     final status = await Permission.notification.status;
     
     if (status.isGranted) {
+      await ref.read(globalNotificationsProvider.notifier).toggle(true);
       if (mounted) {
         unawaited(
           _pageController.nextPage(
@@ -182,6 +185,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     final requestStatus = await Permission.notification.request();
     if (requestStatus.isGranted) {
+      await ref.read(globalNotificationsProvider.notifier).toggle(true);
       if (mounted) {
         unawaited(
           _pageController.nextPage(
