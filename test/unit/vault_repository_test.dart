@@ -50,7 +50,8 @@ void main() {
       final item = VaultItem()
         ..title = 'Test Bill'
         ..itemType = 'Bill'
-        ..amount = 100.0;
+        ..amount = 100.0
+        ..dueDate = DateTime.now();
 
       // Mock put
       when(() => mockCollection.put(any())).thenAnswer((_) async => 1);

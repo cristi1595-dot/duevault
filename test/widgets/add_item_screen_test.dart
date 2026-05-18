@@ -55,12 +55,16 @@ void main() {
   }
 
   testWidgets(
-    'AddItemScreen shows validation error when saving without amount',
+    'AddItemScreen shows validation error when saving without a date',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 2400);
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(createTestWidget());
+
+      // Fill in valid title and amount to pass Form validation
+      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
+      await tester.enterText(find.byType(TextFormField).at(1), '100.00');
 
       // Find the Save button
       final saveButton = find.text('Save Bill');
@@ -70,10 +74,33 @@ void main() {
       await tester.tap(saveButton);
       await tester.pumpAndSettle(); // Wait for snackbar
 
-      // Check for snackbar or validation error
-      // AddItemScreen calls _showValidationError which shows a SnackBar
+      // Check for snackbar validation error (from date selector)
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('Please select a Due Date'), findsOneWidget);
+      expect(find.text('Please select a date'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AddItemScreen shows validation error when saving without amount',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(createTestWidget());
+
+      // Fill in valid title but leave amount empty
+      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
+
+      // Find the Save button
+      final saveButton = find.text('Save Bill');
+      expect(saveButton, findsOneWidget);
+
+      await tester.ensureVisible(saveButton);
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Check for form validation error message on amount field
+      expect(find.text('Amount is required'), findsOneWidget);
     },
   );
 
