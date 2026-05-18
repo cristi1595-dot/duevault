@@ -67,6 +67,7 @@ dependencies:
   logger: ^2.7.0
   cloud_firestore: ^6.4.1
   firebase_crashlytics: ^5.2.2
+  firebase_analytics: ^12.4.1
 
 
 dev_dependencies:

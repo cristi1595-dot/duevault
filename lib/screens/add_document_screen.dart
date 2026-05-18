@@ -16,6 +16,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import '../utils/logger.dart';
 import '../utils/validation_helper.dart';
+import '../services/analytics_service.dart';
 
 import '../constants/app_categories.dart';
 
@@ -312,6 +313,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     setState(() => _isSaving = true);
     try {
       await ref.read(vaultProvider.notifier).addItem(item);
+      await ref.read(analyticsServiceProvider).logItemAdded('Document');
       if (mounted) {
         // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);

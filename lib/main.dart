@@ -45,10 +45,11 @@ void main() async {
     // Parallelize ONLY critical initializations
     await Firebase.initializeApp();
 
-    // Pass all uncaught "fatal" errors from the framework to Crashlytics
-    FlutterError.onError = (errorDetails) {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-    };
+    // Enable Crashlytics collection (explicitly enabled for both debug & release in beta phase)
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
+    // Pass all uncaught framework errors (UI or synchronous exceptions) to Crashlytics
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 
     // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
     PlatformDispatcher.instance.onError = (error, stack) {

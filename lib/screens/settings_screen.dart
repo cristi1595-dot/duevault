@@ -23,6 +23,8 @@ import '../services/notification_service.dart';
 import '../providers/database_provider.dart';
 import '../main.dart';
 import '../utils/logger.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import '../services/analytics_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -36,6 +38,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   bool? _isBatteryOptimizationDisabled;
   bool _isNotificationPermissionGranted = true;
   bool _isExactAlarmGranted = true;
+  int _devModeTaps = 0;
+  bool _isDevModeEnabled = false;
 
   @override
   void initState() {
@@ -292,6 +296,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         value: themeMode == ThemeMode.dark,
                         onChanged: (v) {
                           ref.read(themeProvider.notifier).toggleTheme();
+                          ref.read(analyticsServiceProvider).logSettingsChanged('theme_mode', themeMode == ThemeMode.dark ? 'light' : 'dark');
                         },
                         activeThumbColor: AppTheme.primaryAction,
                         activeTrackColor: AppTheme.primaryAction.withValues(
@@ -442,6 +447,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           onChanged: (val) async {
                                             await ref.read(threeDayAlertEnabledProvider.notifier).toggle(val);
                                             await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                            await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_enabled', val);
                                           },
                                           activeThumbColor: AppTheme.primaryAction,
                                           activeTrackColor: AppTheme.primaryAction.withValues(alpha: 0.3),
@@ -473,6 +479,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           },
                                           onChangeEnd: (val) async {
                                             await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                            await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_days', val.toInt());
                                           },
                                         ),
                                       ),
@@ -522,6 +529,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           onChanged: (val) async {
                                             await ref.read(finalReminderEnabledProvider.notifier).toggle(val);
                                             await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                            await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_enabled', val);
                                           },
                                           activeThumbColor: AppTheme.urgentRed,
                                           activeTrackColor: AppTheme.urgentRed.withValues(alpha: 0.3),
@@ -553,6 +561,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           },
                                           onChangeEnd: (val) async {
                                             await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                                            await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_days', val.toInt());
                                           },
                                         ),
                                       ),
@@ -684,7 +693,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 4),
 
             _buildDataManagement(context, ref),
-            const SizedBox(height: 6),
+            if (_isDevModeEnabled) ...[
+              const SizedBox(height: 4),
+              _buildBetaMonitoring(context, ref),
+            ],
+            const SizedBox(height: 16),
+            _buildVersionFooter(context),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -1653,6 +1668,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return authState.when(
       data: (user) {
         final isGuest = user == null;
+
+        // Log user type dynamically to Firebase Analytics
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(analyticsServiceProvider).logUserType(isGuest);
+        });
+
         return BentoCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
@@ -1940,6 +1961,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         onChanged: (Currency? newValue) {
           if (newValue != null) {
             ref.read(currencyProvider.notifier).setCurrency(newValue);
+            ref.read(analyticsServiceProvider).logSettingsChanged('primary_currency', newValue.code);
           }
         },
         items: availableCurrencies.map<DropdownMenuItem<Currency>>((
@@ -1987,8 +2009,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       return;
                     }
                     ref.read(securityProvider.notifier).toggleSecurity(true);
+                    ref.read(analyticsServiceProvider).logSettingsChanged('biometric_lock_enabled', true);
                   } else {
                     ref.read(securityProvider.notifier).toggleSecurity(false);
+                    ref.read(analyticsServiceProvider).logSettingsChanged('biometric_lock_enabled', false);
                   }
                 },
                 activeThumbColor: AppTheme.primaryAction,
@@ -2042,6 +2066,117 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBetaMonitoring(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('BETA MONITORING'),
+        const SizedBox(height: 2),
+        BentoCard(
+          padding: EdgeInsets.zero,
+          child: _buildSettingItem(
+            icon: Icons.bug_report_outlined,
+            iconColor: AppTheme.urgentRed,
+            title: 'Simulate Test Crash',
+            subtitle: 'Forces an immediate crash for Crashlytics test',
+            trailing: const Icon(
+              Icons.chevron_right,
+              size: 14,
+              color: AppTheme.urgentRed,
+            ),
+            onTap: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: Theme.of(context).cardTheme.color,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: const Text('Simulate Crash?'),
+                  content: const Text(
+                    'This will trigger an immediate hard crash of the application using FirebaseCrashlytics.instance.crash() to verify your integration online. Make sure you saved your changes.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.urgentRed,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('CRASH NOW'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                logger.i('Simulating app crash via Firebase Crashlytics...');
+                await Future.delayed(const Duration(milliseconds: 500));
+                FirebaseCrashlytics.instance.crash();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVersionFooter(BuildContext context) {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _devModeTaps++;
+            if (_devModeTaps >= 7) {
+              if (!_isDevModeEnabled) {
+                _isDevModeEnabled = true;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Developer Options enabled! 🛠️'),
+                    backgroundColor: AppTheme.safeGreen,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            } else if (_devModeTaps > 2) {
+              final remaining = 7 - _devModeTaps;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('You are now $remaining steps away from being a developer!'),
+                  duration: const Duration(milliseconds: 500),
+                ),
+              );
+            }
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          child: Text(
+            'Version 1.0.0 (Pre-Beta)',
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
       ),
     );
   }
