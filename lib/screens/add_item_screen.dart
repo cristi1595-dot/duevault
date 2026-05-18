@@ -14,7 +14,9 @@ import '../services/encryption_service.dart';
 import '../widgets/encrypted_image.dart';
 import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart';
 import '../utils/logger.dart';
+import '../utils/validation_helper.dart';
 
 import '../constants/app_categories.dart';
 
@@ -118,16 +120,23 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             _isProcessingOcr = false;
             if (result.probableAmount != null &&
                 _amountController.text.isEmpty) {
-              _amountController.text = result.probableAmount.toString();
+              final valStr = result.probableAmount.toString();
+              if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
+                _amountController.text = valStr;
+              }
             }
             if (result.probableDate != null && _dueDate == null) {
-              _dueDate = result.probableDate;
+              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+                _dueDate = result.probableDate;
+              }
             }
-            if (_titleController.text.isEmpty && result.probableDate != null) {
-              _titleController.text =
-                  'Scanned Bill - ${result.probableDate!.day}/${result.probableDate!.month}/${result.probableDate!.year}';
-            } else if (_titleController.text.isEmpty) {
-              _titleController.text = 'Scanned Bill';
+            if (_titleController.text.isEmpty) {
+              if (_dueDate != null) {
+                _titleController.text =
+                    'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
+              } else {
+                _titleController.text = 'Scanned Bill';
+              }
             }
             if (_attachedFiles.length < 5) {
               _attachedFiles.add(pickedFile.path);
@@ -227,7 +236,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       context: context,
       initialDate: _dueDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 50)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -256,22 +265,30 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
 
   Future<void> _submit() async {
     if (_isSaving) return;
+
+    // Force keyboard down globally before validating
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (!_formKey.currentState!.validate()) return;
 
-    if (_dueDate == null) {
-      _showValidationError('Please select a Due Date');
+    final dateError = ValidationHelper.validateDate(_dueDate, isRequired: true);
+    if (dateError != null) {
+      _showValidationError(dateError);
       return;
     }
 
     final amountStr = _amountController.text.trim();
-    if (amountStr.isEmpty) {
-      _showValidationError('Please enter an amount');
+    final amountError = ValidationHelper.validateAmount(amountStr, isRequired: true);
+    if (amountError != null) {
+      _showValidationError(amountError);
       return;
     }
+    final amount = double.parse(amountStr.replaceAll(',', '.'));
 
-    final amount = double.tryParse(amountStr.replaceAll(',', '.'));
-    if (amount == null) {
-      _showValidationError('Please enter a valid amount');
+    final notesStr = _notesController.text.trim();
+    final notesError = ValidationHelper.validateNotes(notesStr);
+    if (notesError != null) {
+      _showValidationError(notesError);
       return;
     }
 
@@ -287,16 +304,15 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
     item.recurrence = _recurrence;
     item.directDebit = _directDebit;
 
-    // If Direct Debit is ON, we treat it as paid automatically
-    if (_directDebit) {
+    // Fix the bug where item.isPaid = false unconditionally overwrites recurring and Direct Debit logic!
+    if (!_isEdit) {
+      item.isPaid = _directDebit;
+    } else if (_directDebit) {
       item.isPaid = true;
-    }
+    } // Otherwise, if it is edit and Direct Debit is off, keep the item's previous isPaid status!
 
-    item.notes = _notesController.text.trim().isEmpty
-        ? null
-        : _notesController.text.trim();
+    item.notes = notesStr.isEmpty ? null : notesStr;
     item.attachedFiles = _attachedFiles;
-    item.isPaid = false;
 
     setState(() => _isSaving = true);
     try {
@@ -387,7 +403,8 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     ),
                   ),
                   onChanged: (val) => setState(() {}),
-                  validator: null,
+                  inputFormatters: [LengthLimitingTextInputFormatter(40)],
+                  validator: (value) => ValidationHelper.validateTitle(value),
                 ),
               ),
               const SizedBox(height: 16),
@@ -408,6 +425,10 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                           fontSize: 17,
                         ),
+                        validator: (value) => ValidationHelper.validateAmount(value, isRequired: true),
+                        inputFormatters: [
+                          AmountInputFormatter(),
+                        ],
                         decoration: const InputDecoration(
                           hintText: '0.00',
                           border: InputBorder.none,
@@ -563,6 +584,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 child: TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,

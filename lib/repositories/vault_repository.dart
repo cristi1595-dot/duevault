@@ -68,6 +68,9 @@ class VaultRepository {
     int? notificationMinute,
     bool notificationsEnabled = false,
   }) async {
+    // 0. Bulletproof runtime validation barrier
+    item.validate();
+
     try {
       // 1. Normalize dates
       if (item.dueDate != null) {

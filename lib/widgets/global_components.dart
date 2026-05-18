@@ -434,34 +434,36 @@ class VaultItemTile extends ConsumerWidget {
                             height: 42, // Optimized height for 2 lines
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  () {
-                                    final rawTitle = item.title.isEmpty
-                                        ? item.category
-                                        : item.title;
-                                    return rawTitle.length > 40
-                                        ? '${rawTitle.substring(0, 37)}...'
-                                        : rawTitle;
-                                  }(),
-                                  maxLines: 2,
-                                  style: Theme.of(context).textTheme.bodyLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        height: 1.0, // Tighter line height
-                                        decoration: item.isPaid
-                                            ? TextDecoration.lineThrough
-                                            : null,
-                                        color: item.isPaid
-                                            ? Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium?.color
-                                            : Colors.white,
-                                      ),
-                                ),
+                              child: Text(
+                                () {
+                                  final rawTitle = item.title.isEmpty
+                                      ? item.category
+                                      : item.title;
+                                  return rawTitle.length > 40
+                                      ? '${rawTitle.substring(0, 37)}...'
+                                      : rawTitle;
+                                }(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: () {
+                                        final rawTitle = item.title.isEmpty
+                                            ? item.category
+                                            : item.title;
+                                        return rawTitle.length > 20 ? 13.5 : 15.5;
+                                      }(),
+                                      height: 1.1, // Tighter line height
+                                      decoration: item.isPaid
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      color: item.isPaid
+                                          ? Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.color
+                                          : Colors.white,
+                                    ),
                               ),
                             ),
                           ),

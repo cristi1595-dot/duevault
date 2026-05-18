@@ -13,7 +13,9 @@ import '../services/encryption_service.dart';
 import '../widgets/encrypted_image.dart';
 import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart';
 import '../utils/logger.dart';
+import '../utils/validation_helper.dart';
 
 import '../constants/app_categories.dart';
 
@@ -131,14 +133,18 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             _isProcessingOcr = false;
 
             // Auto-fill Title if empty
-            if (_titleController.text.isEmpty) {
-              _titleController.text =
-                  result.probableTitle ?? 'Scanned Document';
+            if (_titleController.text.isEmpty && result.probableTitle != null) {
+              final rawTitle = result.probableTitle!;
+              _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+            } else if (_titleController.text.isEmpty) {
+              _titleController.text = 'Scanned Document';
             }
 
             // Auto-fill Expiry Date if found and not set
             if (result.probableDate != null && _expiryDate == null) {
-              _expiryDate = result.probableDate;
+              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+                _expiryDate = result.probableDate;
+              }
             }
 
             if (_attachedFiles.length < 5) {
@@ -213,12 +219,16 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           );
           setState(() {
             _isProcessingOcr = false;
-            if (_titleController.text.isEmpty) {
-              _titleController.text =
-                  result.probableTitle ?? 'Scanned Document';
+            if (_titleController.text.isEmpty && result.probableTitle != null) {
+              final rawTitle = result.probableTitle!;
+              _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+            } else if (_titleController.text.isEmpty) {
+              _titleController.text = 'Scanned Document';
             }
             if (result.probableDate != null && _expiryDate == null) {
-              _expiryDate = result.probableDate;
+              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+                _expiryDate = result.probableDate;
+              }
             }
           });
         }
@@ -234,7 +244,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       context: context,
       initialDate: _expiryDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 20)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 50)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -263,18 +273,39 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
   Future<void> _submit() async {
     if (_isSaving) return;
+
+    // Force keyboard down globally before validating
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (!_formKey.currentState!.validate()) return;
+
+    final rawTitle = _titleController.text.trim();
+    final titleError = ValidationHelper.validateTitle(rawTitle.isEmpty ? _category : rawTitle);
+    if (titleError != null) {
+      _showValidationError(titleError);
+      return;
+    }
+
+    final dateError = ValidationHelper.validateDate(_expiryDate, isRequired: false);
+    if (dateError != null) {
+      _showValidationError(dateError);
+      return;
+    }
+
+    final notesStr = _notesController.text.trim();
+    final notesError = ValidationHelper.validateNotes(notesStr);
+    if (notesError != null) {
+      _showValidationError(notesError);
+      return;
+    }
 
     final item = _isEdit ? widget.item! : VaultItem();
 
     item.itemType = 'Document';
-    final rawTitle = _titleController.text.trim();
     item.title = rawTitle.isEmpty ? _category : rawTitle;
     item.category = _category;
     item.dueDate = _expiryDate;
-    item.notes = _notesController.text.trim().isEmpty
-        ? null
-        : _notesController.text.trim();
+    item.notes = notesStr.isEmpty ? null : notesStr;
     item.attachedFiles = _attachedFiles;
     item.isPaid = false;
 
@@ -424,6 +455,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 17,
                   ),
+                  validator: (value) => ValidationHelper.validateTitle(value),
+                  inputFormatters: [LengthLimitingTextInputFormatter(40)],
                   decoration: InputDecoration(
                     hintText: _getCategoryHint(),
                     border: InputBorder.none,
@@ -478,6 +511,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 child: TextFormField(
                   controller: _notesController,
                   maxLines: 2,
+                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,

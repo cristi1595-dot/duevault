@@ -238,23 +238,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             _buildCompactProfile(context, ref),
             const SizedBox(height: 6),
 
-            // 1.5 Biometric Lock (Security)
-            _buildSecuritySettings(context, ref),
-            const SizedBox(height: 4),
-
-            // 2. Sign In or Sync Options
+            // 1.1 Sign In Option (Only for Guests) - Directly under Guest User
             Consumer(
               builder: (context, ref, child) {
                 final authState = ref.watch(authStateProvider);
                 final user = authState.valueOrNull;
                 if (user == null) {
-                  return _buildGoogleSignInButton(context, ref);
-                } else {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: _buildGoogleSignInButton(context, ref),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+
+            // 1.5 Biometric Lock (Security)
+            _buildSecuritySettings(context, ref),
+            const SizedBox(height: 4),
+
+            // 2. Sync Options (Only for Authenticated Users)
+            Consumer(
+              builder: (context, ref, child) {
+                final authState = ref.watch(authStateProvider);
+                final user = authState.valueOrNull;
+                if (user != null) {
                   return BentoCard(
                     padding: EdgeInsets.zero,
                     child: _buildDriveSyncButtons(context, ref),
                   );
                 }
+                return const SizedBox.shrink();
               },
             ),
             const SizedBox(height: 4),
