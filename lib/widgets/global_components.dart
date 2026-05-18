@@ -186,43 +186,46 @@ class StatusBadge extends StatelessWidget {
     Color textColor;
 
     if (isPaid) {
-      textColor = AppTheme.safeGreen;
+      textColor = const Color(0xFF34D399); // Elegant Mint Sage
     } else if (isDocument) {
       if (label == 'EXPIRED') {
-        textColor = AppTheme.urgentRed;
+        textColor = const Color(0xFFE11D48); // Muted Crimson Coral
       } else if (label == 'ARCHIVED') {
-        textColor = AppTheme.primaryAction;
+        textColor = const Color(0xFF6366F1); // Sleek Royal Indigo
       } else {
-        textColor = AppTheme.safeGreen;
+        textColor = const Color(0xFF34D399);
       }
     } else if (daysLeft != null) {
       if (daysLeft! <= 3) {
-        textColor = AppTheme.urgentRed;
+        textColor = const Color(0xFFE11D48); // Crimson Coral
       } else if (daysLeft! <= 7) {
-        textColor = AppTheme.warningYellow;
-      } else if (daysLeft! <= 30) {
-        textColor = AppTheme.safeGreen;
+        textColor = const Color(0xFFF59E0B); // Warm Amber
       } else {
-        textColor = Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
+        textColor = const Color(0xFF94A3B8); // Muted Slate
       }
     } else {
-      textColor = Theme.of(context).textTheme.bodyMedium!.color!;
+      textColor = const Color(0xFF94A3B8);
     }
 
-    // "low-opacity version of the semantic color"
-    final Color bgColor = textColor.withValues(alpha: 0.15);
+    final Color bgColor = textColor.withValues(alpha: 0.08);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: textColor.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
       ),
       child: Text(
         label.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        style: TextStyle(
           color: textColor,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -249,23 +252,16 @@ class VaultItemTile extends ConsumerWidget {
     final isOverdue = item.isOverdue;
     final bool isExpired = item.isExpired;
     final bool isBill = item.itemType == 'Bill';
-    final bool isDoc = item.itemType == 'Document';
 
-    // Red Box logic:
-    // - Bills: Unpaid AND (Overdue OR due in <= 3 days)
-    // - Documents: Not Renewed AND Expired
-    final bool showRed =
-        !item.isPaid &&
-        ((isBill && (isOverdue || (daysLeft >= 0 && daysLeft <= 3))) ||
-            (isDoc && isExpired));
+
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
-    final itemColor = isBill ? AppTheme.primaryAction : AppTheme.safeGreen;
+    final itemColor = isBill ? const Color(0xFF6366F1) : const Color(0xFF34D399);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         child: Dismissible(
           key: ValueKey(item.id),
           direction: DismissDirection.horizontal,
@@ -287,7 +283,7 @@ class VaultItemTile extends ConsumerWidget {
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.urgentRed,
+                        foregroundColor: const Color(0xFFE11D48),
                       ),
                       child: const Text('DELETE'),
                     ),
@@ -313,7 +309,7 @@ class VaultItemTile extends ConsumerWidget {
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
-                  backgroundColor: AppTheme.primaryAction,
+                  backgroundColor: const Color(0xFF6366F1),
                   onAction: () {
                     if (item.isArchived) {
                       notifier.toggleArchiveStatus(item.id, true);
@@ -329,7 +325,7 @@ class VaultItemTile extends ConsumerWidget {
                 VaultSnackBar.show(
                   message: 'Moved to History',
                   actionLabel: 'UNDO',
-                  backgroundColor: AppTheme.safeGreen,
+                  backgroundColor: const Color(0xFF34D399),
                   onAction: () => notifier.toggleArchiveStatus(item.id, false),
                 );
               }
@@ -340,13 +336,13 @@ class VaultItemTile extends ConsumerWidget {
               VaultSnackBar.show(
                 message: 'Item deleted',
                 actionLabel: 'UNDO',
-                backgroundColor: AppTheme.urgentRed,
+                backgroundColor: const Color(0xFFE11D48),
                 onAction: () => notifier.addItem(deletedItem),
               );
             }
           },
           background: Container(
-            color: isInHistory ? AppTheme.primaryAction : AppTheme.safeGreen,
+            color: isInHistory ? const Color(0xFF6366F1) : const Color(0xFF34D399),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -369,7 +365,7 @@ class VaultItemTile extends ConsumerWidget {
             ),
           ),
           secondaryBackground: Container(
-            color: AppTheme.urgentRed,
+            color: const Color(0xFFE11D48),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: const Row(
@@ -403,81 +399,32 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                   );
                 },
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: showRed
-                    ? AppTheme.urgentRed.withValues(alpha: 0.12)
-                    : Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: showRed
-                      ? AppTheme.urgentRed.withValues(alpha: 0.5)
-                      : Theme.of(context).dividerColor,
-                  width: showRed ? 2.5 : 1,
-                ),
+                color: const Color(0xFF161A22), // Solid premium elevation
+                borderRadius: BorderRadius.circular(16),
               ),
               child: IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Container(
-                      width: 60,
+                      width: 48,
                       decoration: BoxDecoration(
-                        color: itemColor.withValues(alpha: 0.1),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(22),
-                          bottomLeft: Radius.circular(22),
-                          topRight: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                        border: Border.all(
-                          color: showRed
-                              ? AppTheme.urgentRed.withValues(alpha: 0.5)
-                              : itemColor.withValues(alpha: 0.2),
-                          width: 1.5,
-                        ),
+                        color: itemColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Center(
-                            child: Icon(
-                              CategoryUtils.getIcon(item.category),
-                              color: itemColor,
-                              size: 34,
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: itemColor,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  bottomRight: Radius.circular(18),
-                                ),
-                              ),
-                              child: Text(
-                                item.itemType == 'Bill' ? 'B' : 'D',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: Center(
+                        child: Icon(
+                          CategoryUtils.getIcon(item.category),
+                          color: itemColor,
+                          size: 24,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -503,7 +450,7 @@ class VaultItemTile extends ConsumerWidget {
                                   style: Theme.of(context).textTheme.bodyLarge
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 18,
+                                        fontSize: 16,
                                         height: 1.0, // Tighter line height
                                         decoration: item.isPaid
                                             ? TextDecoration.lineThrough
@@ -512,7 +459,7 @@ class VaultItemTile extends ConsumerWidget {
                                             ? Theme.of(
                                                 context,
                                               ).textTheme.bodyMedium?.color
-                                            : null,
+                                            : Colors.white,
                                       ),
                                 ),
                               ),
@@ -525,35 +472,35 @@ class VaultItemTile extends ConsumerWidget {
                                 : 'No due date',
                             style: Theme.of(
                               context,
-                            ).textTheme.bodyMedium?.copyWith(fontSize: 15),
+                            ).textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     SizedBox(
-                      width: 110,
+                      width: 100,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           if (item.itemType != 'Document') ...[
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
                                 currency.formatAmount(item.amount ?? 0.0),
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: showRed
-                                          ? AppTheme.urgentRed
-                                          : null,
-                                    ),
-                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.right,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 5),
                           ],
                           StatusBadge(
                             label: item.isPaid
@@ -573,27 +520,19 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                     if (!item.isPaid && onCheckPressed != null) ...[
                       const SizedBox(width: 12),
-                      InkWell(
+                      GestureDetector(
                         onTap: onCheckPressed,
-                        borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          width: 56,
+                          width: 36,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryAction.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppTheme.primaryAction.withValues(
-                                alpha: 0.2,
-                              ),
-                            ),
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Center(
                             child: Icon(
                               Icons.check_rounded,
-                              color: AppTheme.primaryAction,
-                              size: 28,
+                              color: Color(0xFF6366F1),
+                              size: 20,
                             ),
                           ),
                         ),

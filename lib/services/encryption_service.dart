@@ -76,8 +76,18 @@ class EncryptionService {
   static Future<String?> decryptText(String? base64Text) async {
     if (base64Text == null || base64Text.isEmpty) return base64Text;
 
+    // Check if the text actually has the encryption prefix
+    String cleanText = base64Text;
+    if (cleanText.startsWith('encrypted:')) {
+      cleanText = cleanText.substring('encrypted:'.length);
+    } else {
+      // If it doesn't start with 'encrypted:', it's either plain text (legacy)
+      // or already decrypted. Return as-is.
+      return base64Text;
+    }
+
     try {
-      final combined = base64.decode(base64Text);
+      final combined = base64.decode(cleanText);
       if (combined.length <= 16) {
         return base64Text; // Likely legacy or wrong format
       }

@@ -114,20 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .toList()
           ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
 
-    final next3Days = today.add(const Duration(days: 3));
 
-    final items3Days = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.dueDate == null) {
-        return false;
-      }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      return (due.isBefore(next3Days) || due.isAtSameMomentAs(next3Days)) &&
-          (due.isAfter(today) || due.isAtSameMomentAs(today));
-    }).toList();
 
     // Calculate Document Urgency (excluding already renewed/paid ones)
     final expiredDocs7Days = vaultItems.where((item) {
@@ -146,6 +133,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (due.isAfter(today) || due.isAtSameMomentAs(today));
     }).toList();
 
+    final next3Days = today.add(const Duration(days: 3));
+
     final expiredDocs3Days = vaultItems.where((item) {
       if (item.itemType != 'Document' ||
           item.isArchived ||
@@ -162,45 +151,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (due.isAfter(today) || due.isAtSameMomentAs(today));
     }).toList();
 
-    final expiredDocs30Days = vaultItems.where((item) {
-      if (item.itemType != 'Document' ||
-          item.isArchived ||
-          item.isPaid ||
-          item.dueDate == null) {
-        return false;
-      }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      return (due.isBefore(next30Days) || due.isAtSameMomentAs(next30Days)) &&
-          (due.isAfter(today) || due.isAtSameMomentAs(today));
-    }).toList();
-
-    // Determine card color based on COMBINED urgency
-    late Color cardColor;
-    late Color amountColor;
-
-    final billCritical = overdueBills.isNotEmpty || items3Days.isNotEmpty;
-    final billWarning = upcomingBills.isNotEmpty;
-    final billSafe = items30Days.isNotEmpty;
-
-    if (billCritical) {
-      cardColor = AppTheme.urgentRed.withValues(
-        alpha: 0.12,
-      ); // Slightly more prominent red
-      amountColor = AppTheme.urgentRed;
-    } else if (billWarning) {
-      cardColor = AppTheme.warningYellow.withValues(alpha: 0.08);
-      amountColor = AppTheme.warningYellow;
-    } else if (billSafe) {
-      cardColor = AppTheme.safeGreen.withValues(alpha: 0.08);
-      amountColor = AppTheme.safeGreen;
-    } else {
-      cardColor = AppTheme.safeGreen.withValues(alpha: 0.04);
-      amountColor = AppTheme.safeGreen.withValues(alpha: 0.4);
-    }
 
     // Independent Document Box Color
     late Color docBoxColor;
@@ -366,8 +316,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Financial Bento Card
                   BentoCard(
-                    color: cardColor,
-                    padding: const EdgeInsets.all(2.0),
+                    color: const Color(0xFF161A22), // Beautiful uniform premium obsidian surface
+                    padding: const EdgeInsets.all(20.0),
+                    borderRadius: 16.0,
                     child: SizedBox(
                       width: double.infinity,
                       child: Row(
@@ -378,104 +329,88 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 Text(
                                   'TOTAL DUE • NEXT 7 DAYS',
-                                  style: AppTheme.labelCapsStyle(
-                                    context,
-                                  ).copyWith(fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 8),
                                 Text(
                                   currency.formatAmount(totalDue7Days),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .displayLarge
-                                      ?.copyWith(
-                                        color: amountColor,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 40,
-                                      ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 38,
+                                    letterSpacing: -0.5,
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '30-day total: ${currency.formatAmount(totalDue30Days)}',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall?.color,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(2.0),
-                            decoration: BoxDecoration(
-                              color: docBoxColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Stack(
-                                  clipBehavior: Clip.none,
+                                const SizedBox(height: 10),
+                                Row(
                                   children: [
-                                    Icon(
-                                      Icons.description_outlined,
-                                      color: docBoxColor.withValues(alpha: 0.8),
-                                      size: 32,
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF6366F1), // Royal Indigo Indicator
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
-                                    Positioned(
-                                      right: -8,
-                                      bottom: -4,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(5),
-                                        decoration: BoxDecoration(
-                                          color: docBoxColor,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: AppTheme.surface,
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'D',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '30-day total: ${currency.formatAmount(totalDue30Days)}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade400,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Beautiful Minimalist Document Indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: docBoxColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: docBoxColor.withValues(alpha: 0.15),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.description_rounded,
+                                  color: docBoxColor,
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
                                 Text(
                                   '${expiredDocs.length + expiredDocs7Days.length}',
                                   style: TextStyle(
                                     color: docBoxColor,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
                                     height: 1.0,
                                   ),
                                 ),
-                                if (expiredDocs30Days.isNotEmpty ||
-                                    expiredDocs.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6.0),
-                                    child: Text(
-                                      '${expiredDocs.length + expiredDocs30Days.length}',
-                                      style: TextStyle(
-                                        color: docBoxColor.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'EXPIRED',
+                                  style: TextStyle(
+                                    color: docBoxColor.withValues(alpha: 0.7),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
                                   ),
+                                ),
                               ],
                             ),
                           ),

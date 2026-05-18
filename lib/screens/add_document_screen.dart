@@ -9,6 +9,7 @@ import '../widgets/global_components.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/ocr_service.dart';
+import '../services/encryption_service.dart';
 import '../widgets/encrypted_image.dart';
 import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
@@ -46,8 +47,21 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       _category = widget.item!.category;
       _expiryDate = widget.item!.dueDate;
       _titleController.text = widget.item!.title;
-      _notesController.text = widget.item!.notes ?? '';
       _attachedFiles = List.from(widget.item!.attachedFiles);
+
+      // Decrypt notes asynchronously to keep the UI perfectly responsive
+      if (widget.item!.notes != null && widget.item!.notes!.isNotEmpty) {
+        _notesController.text = 'Loading notes...';
+        EncryptionService.decryptText(widget.item!.notes).then((decrypted) {
+          if (mounted) {
+            setState(() {
+              _notesController.text = decrypted ?? '';
+            });
+          }
+        });
+      } else {
+        _notesController.text = '';
+      }
     }
   }
 

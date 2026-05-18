@@ -238,6 +238,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             _buildCompactProfile(context, ref),
             const SizedBox(height: 6),
 
+            // 1.5 Biometric Lock (Security)
+            _buildSecuritySettings(context, ref),
+            const SizedBox(height: 4),
+
             // 2. Sign In or Sync Options
             Consumer(
               builder: (context, ref, child) {
@@ -256,7 +260,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 4),
 
             // 3. Preferences Section
-            _buildSectionHeader('PREFERENCES'),
+            _buildSectionHeader('INTERFACE CUSTOMIZATION'),
             const SizedBox(height: 2),
             BentoCard(
               padding: EdgeInsets.zero,
@@ -267,7 +271,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     icon: themeMode == ThemeMode.dark
                         ? Icons.dark_mode_outlined
                         : Icons.light_mode_outlined,
-                    title: 'Dark / Light Mode',
+                    title: 'Light & Dark Mode',
                     trailing: SizedBox(
                       height: 24,
                       child: Switch(
@@ -288,7 +292,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 4),
 
             // 4. Alerts & Notifications Section
-            _buildSectionHeader('ALERTS & NOTIFICATIONS'),
+            _buildSectionHeader('SMART ALERTS'),
             const SizedBox(height: 2),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -311,7 +315,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Enable Global Reminders',
+                              'Smart Reminder Service',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
@@ -401,7 +405,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             const Text(
-                                              'First Reminder',
+                                              'Early Alert',
                                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                             ),
                                             Text(
@@ -481,7 +485,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             const Text(
-                                              'Final Reminder',
+                                              'SOS Urgent Alert',
                                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                             ),
                                             Text(
@@ -665,8 +669,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
             const SizedBox(height: 4),
 
-            _buildSecuritySettings(context, ref),
-            const SizedBox(height: 4),
             _buildDataManagement(context, ref),
             const SizedBox(height: 6),
           ],
@@ -809,22 +811,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.network(
               'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
-              height: 20,
+              height: 18,
               errorBuilder: (ctx, err, st) => const Icon(
                 Icons.account_circle_outlined,
                 color: Colors.white,
-                size: 20,
+                size: 18,
               ),
             ),
             const SizedBox(width: 12),
@@ -832,8 +837,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               'Sign in with Google',
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
             ),
           ],
@@ -863,7 +869,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         // --- 1. Auto Sync Toggle ---
         _buildSettingItem(
           icon: Icons.sync,
-          title: 'Auto-Sync Changes',
+          title: 'Automated Vault Backup',
           subtitle: autoSync
               ? 'Last sync: $lastSyncText'
               : 'Backup after changes',
@@ -891,7 +897,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         if (autoSync)
           _buildSettingItem(
             icon: Icons.wifi_outlined,
-            title: 'WiFi Only',
+            title: 'Optimize Mobile Data',
             subtitle: 'Save mobile data',
             trailing: SizedBox(
               height: 24,
@@ -1457,13 +1463,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('DATA MANAGEMENT'),
+        _buildSectionHeader('STORAGE INTEGRITY'),
         const SizedBox(height: 2),
         BentoCard(
           padding: EdgeInsets.zero,
           child: _buildSettingItem(
             icon: Icons.storage_rounded,
-            title: 'Storage & Reset',
+            title: 'Storage Integrity',
             subtitle: 'Manage local database and cloud storage',
             onTap: () => _showStorageResetBottomSheet(context, ref),
           ),
@@ -1471,7 +1477,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       ],
     );
   }
-
   Widget _buildCompactProfile(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
 
@@ -1479,35 +1484,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       data: (user) {
         final isGuest = user == null;
         return BentoCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                padding: const EdgeInsets.all(2), // Gradient ring gap
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
-                    width: 1.5,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryAction.withValues(alpha: 0.8),
+                      AppTheme.primaryAction.withValues(alpha: 0.2),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  image: user?.photoURL != null
-                      ? DecorationImage(
-                          image: NetworkImage(user!.photoURL!),
-                          fit: BoxFit.cover,
+                ),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    shape: BoxShape.circle,
+                    image: user?.photoURL != null
+                        ? DecorationImage(
+                            image: NetworkImage(user!.photoURL!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: user?.photoURL == null
+                      ? Icon(
+                          Icons.person_outline_rounded,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.color
+                              ?.withValues(alpha: 0.7),
+                          size: 22,
                         )
                       : null,
                 ),
-                child: user?.photoURL == null
-                    ? Icon(
-                        Icons.person,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                        size: 24,
-                      )
-                    : null,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1518,30 +1537,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           : (user?.email?.split('@').first ?? 'Guest User'),
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyLarge?.color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       isGuest ? 'Local mode active' : (user.email ?? ''),
                       style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                        fontSize: 13,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
               if (!isGuest)
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.urgentRed,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                  ),
-                  onPressed: () async {
+                GestureDetector(
+                  onTap: () async {
                     final confirm = await showDialog<bool>(
                       context: context,
                       useRootNavigator: true,
@@ -1560,9 +1575,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.color,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color,
                               ),
                             ),
                           ),
@@ -1623,19 +1639,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       }
                     }
                   },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Sign Out',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.urgentRed.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppTheme.urgentRed.withValues(alpha: 0.2),
+                        width: 1,
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.logout, size: 20),
-                    ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Sign Out',
+                          style: TextStyle(
+                            color: AppTheme.urgentRed,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.logout_rounded,
+                          color: AppTheme.urgentRed,
+                          size: 13,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],
@@ -1675,12 +1711,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       dense: true,
       visualDensity: VisualDensity.compact,
       leading: Container(
-        padding: const EdgeInsets.all(6),
+        width: 36,
+        height: 36,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 16),
+        child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
       ),
       title: Text(
         title,
@@ -1706,7 +1744,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             color: Theme.of(context).textTheme.bodySmall?.color,
             size: 14,
           ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 
@@ -1715,46 +1753,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     WidgetRef ref,
     Currency current,
   ) {
-    return ListTile(
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.currency_exchange,
-          color: AppTheme.primaryAction,
-          size: 18,
-        ),
-      ),
-      title: Text(
-        'Currency',
-        style: TextStyle(
-          color: Theme.of(context).textTheme.bodyLarge?.color,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        current.code == 'RON'
-            ? current.code
-            : '${current.code} (${current.symbol})',
-        style: TextStyle(
-          color: Theme.of(context).textTheme.bodyMedium?.color,
-          fontSize: 13,
-        ),
-      ),
+    return _buildSettingItem(
+      icon: Icons.currency_exchange_rounded,
+      title: 'Primary Currency',
+      subtitle: current.code == 'RON'
+          ? current.code
+          : '${current.code} (${current.symbol})',
       trailing: DropdownButton<Currency>(
         value: current,
         underline: const SizedBox(),
         icon: Icon(
-          Icons.keyboard_arrow_down,
-          color: Theme.of(context).textTheme.bodyMedium?.color,
-          size: 18,
+          Icons.keyboard_arrow_down_rounded,
+          color: Theme.of(context).textTheme.bodySmall?.color,
+          size: 16,
         ),
         onChanged: (Currency? newValue) {
           if (newValue != null) {
@@ -1770,7 +1781,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               value.code,
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 15,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
             ),
           );
@@ -1786,63 +1798,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('SECURITY'),
+        _buildSectionHeader('BIOMETRIC LOCK'),
         const SizedBox(height: 2),
-        Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-            ),
-          ),
-          child: Column(
-            children: [
-              ListTile(
-                dense: true,
-                visualDensity: VisualDensity.compact,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 0,
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.fingerprint,
-                    color: AppTheme.primaryAction,
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'FaceID / Fingerprint / PIN',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                ),
-                trailing: Switch(
-                  value: security.isEnabled,
-                  onChanged: (value) {
-                    if (value) {
-                      if (!security.canAuthenticate) {
-                        _showNoSecurityDialog(context);
-                        return;
-                      }
-                      ref.read(securityProvider.notifier).toggleSecurity(true);
-                    } else {
-                      ref.read(securityProvider.notifier).toggleSecurity(false);
+        BentoCard(
+          padding: EdgeInsets.zero,
+          child: _buildSettingItem(
+            icon: Icons.fingerprint_rounded,
+            title: 'Biometric Lock',
+            subtitle: 'Secure entry with FaceID or Fingerprint',
+            trailing: SizedBox(
+              height: 24,
+              child: Switch(
+                value: security.isEnabled,
+                onChanged: (value) {
+                  if (value) {
+                    if (!security.canAuthenticate) {
+                      _showNoSecurityDialog(context);
+                      return;
                     }
-                  },
-                  activeThumbColor: AppTheme.primaryAction,
-                  activeTrackColor: AppTheme.primaryAction.withValues(
-                    alpha: 0.3,
-                  ),
+                    ref.read(securityProvider.notifier).toggleSecurity(true);
+                  } else {
+                    ref.read(securityProvider.notifier).toggleSecurity(false);
+                  }
+                },
+                activeThumbColor: AppTheme.primaryAction,
+                activeTrackColor: AppTheme.primaryAction.withValues(
+                  alpha: 0.3,
                 ),
               ),
-              // Senior Fix: Removed "Lock when minimized" setting per user request.
-              // App now only locks on cold start if security is enabled.
-            ],
+            ),
           ),
         ),
       ],
