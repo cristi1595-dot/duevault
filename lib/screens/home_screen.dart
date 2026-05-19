@@ -114,9 +114,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .toList()
           ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
 
-
-
-    // Calculate Document Urgency (excluding already renewed/paid ones)
+    // Calculate Document Expirations
     final expiredDocs7Days = vaultItems.where((item) {
       if (item.itemType != 'Document' ||
           item.isArchived ||
@@ -133,9 +131,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (due.isAfter(today) || due.isAtSameMomentAs(today));
     }).toList();
 
-    final next3Days = today.add(const Duration(days: 3));
-
-    final expiredDocs3Days = vaultItems.where((item) {
+    final expiredDocs30Days = vaultItems.where((item) {
       if (item.itemType != 'Document' ||
           item.isArchived ||
           item.isPaid ||
@@ -147,24 +143,81 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         item.dueDate!.month,
         item.dueDate!.day,
       );
-      return (due.isBefore(next3Days) || due.isAtSameMomentAs(next3Days)) &&
+      return (due.isBefore(next30Days) || due.isAtSameMomentAs(next30Days)) &&
           (due.isAfter(today) || due.isAtSameMomentAs(today));
     }).toList();
 
+    // Check urgency states
+    final totalDocs7Days = expiredDocs.length + expiredDocs7Days.length;
+    final totalDocs30Days = expiredDocs.length + expiredDocs30Days.length;
 
-    // Independent Document Box Color
-    late Color docBoxColor;
-    final bool docCritical =
-        expiredDocs.isNotEmpty || expiredDocs3Days.isNotEmpty;
-    final bool docWarning = expiredDocs7Days.isNotEmpty;
+    final has7DaysIssues = totalDue7Days > 0 || totalDocs7Days > 0;
+    final has30DaysIssues = totalDue30Days > 0 || totalDocs30Days > 0;
 
-    if (docCritical) {
-      docBoxColor = AppTheme.urgentRed;
-    } else if (docWarning) {
-      docBoxColor = AppTheme.warningYellow;
+    final Color bentoBgColor;
+    final Color bentoBorderColor;
+
+    if (has7DaysIssues) {
+      bentoBgColor = AppTheme.urgentRed.withValues(alpha: 0.04);
+      bentoBorderColor = AppTheme.urgentRed.withValues(alpha: 0.35);
+    } else if (has30DaysIssues) {
+      bentoBgColor = AppTheme.warningYellow.withValues(alpha: 0.04);
+      bentoBorderColor = AppTheme.warningYellow.withValues(alpha: 0.35);
     } else {
-      // Darker/More saturated green for 0 docs as requested
-      docBoxColor = const Color(0xFF059669);
+      bentoBgColor = AppTheme.safeGreen.withValues(alpha: 0.04);
+      bentoBorderColor = AppTheme.safeGreen.withValues(alpha: 0.35);
+    }
+
+    int getDaysLeft(DateTime dueDate) {
+      final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+      return due.difference(today).inDays;
+    }
+
+    final upcoming7Days = allUpcoming.where((item) => getDaysLeft(item.dueDate!) <= 7).toList();
+    final upcoming30Days = allUpcoming.where((item) {
+      final days = getDaysLeft(item.dueDate!);
+      return days > 7 && days <= 30;
+    }).toList();
+    final upcomingLater = allUpcoming.where((item) => getDaysLeft(item.dueDate!) > 30).toList();
+
+    Widget buildGroupHeader(String title, int count, Color color) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title.toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade500,
+                letterSpacing: 1.2,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '$count ${count == 1 ? "item" : "items"}',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return Scaffold(
@@ -316,103 +369,147 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Financial Bento Card
                   BentoCard(
-                    color: const Color(0xFF161A22), // Beautiful uniform premium obsidian surface
-                    padding: const EdgeInsets.all(20.0),
+                    color: bentoBgColor,
+                    borderColor: bentoBorderColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                     borderRadius: 16.0,
                     child: SizedBox(
                       width: double.infinity,
-                      child: Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'TOTAL DUE • NEXT 7 DAYS',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  currency.formatAmount(totalDue7Days),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 38,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
+                          // ROW 1: 7 DAYS
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF6366F1), // Royal Indigo Indicator
-                                        shape: BoxShape.circle,
+                                    Text(
+                                      'BILLS • NEXT 7 DAYS',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(height: 4),
                                     Text(
-                                      '30-day total: ${currency.formatAmount(totalDue30Days)}',
+                                      currency.formatAmount(totalDue7Days),
                                       style: TextStyle(
-                                        color: Colors.grey.shade400,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 13,
+                                        color: totalDue7Days > 0 ? AppTheme.urgentRed : AppTheme.safeGreen,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 26,
+                                        letterSpacing: -0.5,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
+                              Container(
+                                width: 1,
+                                height: 36,
+                                color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'DOCS • NEXT 7 DAYS',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$totalDocs7Days',
+                                      style: TextStyle(
+                                        color: totalDocs7Days > 0 ? AppTheme.urgentRed : AppTheme.safeGreen,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 26,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10.0),
+                            child: Divider(
+                              color: Theme.of(context).dividerColor.withValues(alpha: 0.12),
+                              height: 1,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          // Beautiful Minimalist Document Indicator
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: docBoxColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: docBoxColor.withValues(alpha: 0.15),
-                                width: 1.0,
+                          // ROW 2: 30 DAYS
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'BILLS • NEXT 30 DAYS',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      currency.formatAmount(totalDue30Days),
+                                      style: TextStyle(
+                                        color: totalDue30Days > 0 ? AppTheme.warningYellow : AppTheme.safeGreen,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 22,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.description_rounded,
-                                  color: docBoxColor,
-                                  size: 20,
+                              Container(
+                                width: 1,
+                                height: 36,
+                                color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'DOCS • NEXT 30 DAYS',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$totalDocs30Days',
+                                      style: TextStyle(
+                                        color: totalDocs30Days > 0 ? AppTheme.warningYellow : AppTheme.safeGreen,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 22,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${expiredDocs.length + expiredDocs7Days.length}',
-                                  style: TextStyle(
-                                    color: docBoxColor,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.0,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'EXPIRED',
-                                  style: TextStyle(
-                                    color: docBoxColor.withValues(alpha: 0.7),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -445,51 +542,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                     )
-                  else
-                    ...allUpcoming
-                        .take(10)
-                        .map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: VaultItemTile(
-                              item: item,
-                              currency: currency,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        ItemDetailScreen(item: item),
-                                  ),
-                                );
-                              },
-                              onCheckPressed: () {
-                                final notifier = ref.read(
-                                  vaultProvider.notifier,
-                                );
-                                notifier.updatePaidStatus(item.id, true);
-
-                                final isExpired =
-                                    item.dueDate != null &&
-                                    item.dueDate!.isBefore(today);
-
-                                final destination = isExpired
-                                    ? 'Archive'
-                                    : 'Vault';
-                                final name = item.title.isEmpty
-                                    ? item.category
-                                    : item.title;
-                                VaultSnackBar.show(
-                                  message: '$name sent to $destination',
-                                  actionLabel: 'UNDO',
-                                  backgroundColor: AppTheme.safeGreen,
-                                  onAction: () =>
-                                      notifier.updatePaidStatus(item.id, false),
-                                );
-                              },
-                            ),
+                  else ...[
+                    if (upcoming7Days.isNotEmpty) ...[
+                      buildGroupHeader('Next 7 Days', upcoming7Days.length, AppTheme.urgentRed),
+                      ...upcoming7Days.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: VaultItemTile(
+                            item: item,
+                            currency: currency,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ItemDetailScreen(item: item),
+                                ),
+                              );
+                            },
+                            onCheckPressed: () {
+                              final notifier = ref.read(vaultProvider.notifier);
+                              notifier.updatePaidStatus(item.id, true);
+                              final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
+                              final destination = isExpired ? 'Archive' : 'Vault';
+                              final name = item.title.isEmpty ? item.category : item.title;
+                              VaultSnackBar.show(
+                                message: '$name sent to $destination',
+                                actionLabel: 'UNDO',
+                                backgroundColor: AppTheme.safeGreen,
+                                onAction: () => notifier.updatePaidStatus(item.id, false),
+                              );
+                            },
                           ),
                         ),
+                      ),
+                    ],
+                    if (upcoming30Days.isNotEmpty) ...[
+                      buildGroupHeader('Next 30 Days', upcoming30Days.length, AppTheme.warningYellow),
+                      ...upcoming30Days.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: VaultItemTile(
+                            item: item,
+                            currency: currency,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ItemDetailScreen(item: item),
+                                ),
+                              );
+                            },
+                            onCheckPressed: () {
+                              final notifier = ref.read(vaultProvider.notifier);
+                              notifier.updatePaidStatus(item.id, true);
+                              final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
+                              final destination = isExpired ? 'Archive' : 'Vault';
+                              final name = item.title.isEmpty ? item.category : item.title;
+                              VaultSnackBar.show(
+                                message: '$name sent to $destination',
+                                actionLabel: 'UNDO',
+                                backgroundColor: AppTheme.safeGreen,
+                                onAction: () => notifier.updatePaidStatus(item.id, false),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (upcomingLater.isNotEmpty) ...[
+                      buildGroupHeader('Later', upcomingLater.length, Colors.grey.shade500),
+                      ...upcomingLater.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: VaultItemTile(
+                            item: item,
+                            currency: currency,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ItemDetailScreen(item: item),
+                                ),
+                              );
+                            },
+                            onCheckPressed: () {
+                              final notifier = ref.read(vaultProvider.notifier);
+                              notifier.updatePaidStatus(item.id, true);
+                              final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
+                              final destination = isExpired ? 'Archive' : 'Vault';
+                              final name = item.title.isEmpty ? item.category : item.title;
+                              VaultSnackBar.show(
+                                message: '$name sent to $destination',
+                                actionLabel: 'UNDO',
+                                backgroundColor: AppTheme.safeGreen,
+                                onAction: () => notifier.updatePaidStatus(item.id, false),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ]
                 ],
               ),
             ),
