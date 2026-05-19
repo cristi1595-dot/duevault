@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -31,8 +29,6 @@ class NotificationService {
       settings: initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {},
     );
-
-
 
     // 1. Initialize Timezone Database
     tz.initializeTimeZones();
@@ -119,7 +115,6 @@ class NotificationService {
     }
   }
 
-
   static Future<void> scheduleDualAlerts({
     required int billId,
     required String billTitle,
@@ -133,8 +128,6 @@ class NotificationService {
     required String itemType,
     double? amount,
   }) async {
-
-
     // Convert Isar's retrieved UTC dueDate to local device timezone before extracting components
     final localDueDate = dueDate.toLocal();
 
@@ -143,7 +136,9 @@ class NotificationService {
 
     // 2. Programăm Avertizarea Timpurie (First Reminder)
     if (isFirstReminderEnabled) {
-      final firstReminderDate = localDueDate.subtract(Duration(days: firstReminderDays));
+      final firstReminderDate = localDueDate.subtract(
+        Duration(days: firstReminderDays),
+      );
       final scheduledDate = DateTime(
         firstReminderDate.year,
         firstReminderDate.month,
@@ -151,8 +146,6 @@ class NotificationService {
         notificationHour,
         notificationMinute,
       );
-
-
 
       final now = DateTime.now();
       if (scheduledDate.isAfter(now)) {
@@ -163,13 +156,17 @@ class NotificationService {
           body: 'Your $itemType is due in $firstReminderDays days.',
           date: scheduledDate,
         );
-        logger.i('Scheduled First Reminder pt ID: ${billId + _firstReminderOffset}');
+        logger.i(
+          'Scheduled First Reminder pt ID: ${billId + _firstReminderOffset}',
+        );
       }
     }
 
     // 3. Programăm Avertizarea Finală (Final Reminder)
     if (isFinalReminderEnabled) {
-      final finalReminderDate = localDueDate.subtract(Duration(days: finalReminderDays));
+      final finalReminderDate = localDueDate.subtract(
+        Duration(days: finalReminderDays),
+      );
       final scheduledDate = DateTime(
         finalReminderDate.year,
         finalReminderDate.month,
@@ -178,26 +175,23 @@ class NotificationService {
         notificationMinute,
       );
 
-
-
       final now = DateTime.now();
       if (scheduledDate.isAfter(now)) {
         final amountText = amount != null ? ' ($amount)' : '';
         await _scheduleSingle(
           id: billId + _finalReminderOffset,
           title: 'URGENT: $itemType Due!$amountText',
-          body: finalReminderDays == 0 
-              ? 'Your $itemType "$billTitle" is due TODAY!' 
+          body: finalReminderDays == 0
+              ? 'Your $itemType "$billTitle" is due TODAY!'
               : 'Your $itemType "$billTitle" is due in $finalReminderDays day(s)!',
           date: scheduledDate,
         );
-        logger.i('Scheduled Final Reminder pt ID: ${billId + _finalReminderOffset}');
+        logger.i(
+          'Scheduled Final Reminder pt ID: ${billId + _finalReminderOffset}',
+        );
       }
     }
-
   }
-
-
 
   static Future<void> _scheduleSingle({
     required int id,
@@ -234,7 +228,11 @@ class NotificationService {
       );
       logger.i('Successfully scheduled notification ID $id for $scheduledTZ');
     } catch (e, stack) {
-      logger.e('Failed to schedule notification ID $id', error: e, stackTrace: stack);
+      logger.e(
+        'Failed to schedule notification ID $id',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
