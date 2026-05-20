@@ -661,65 +661,70 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 ]
               : null,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_isProcessingOcr)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                ),
-              )
-            else
-              Icon(
-                Icons.auto_awesome,
-                color: _useOcr
-                    ? AppTheme.primaryAction
-                    : AppTheme.lightTextSecondary,
-                size: 32,
-              ),
-
-            const SizedBox(height: 6),
-            Text(
-              _isProcessingOcr ? 'Scanning...' : 'Smart Scan',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-
-            const SizedBox(height: 4),
-            Row(
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                if (_isProcessingOcr)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.auto_awesome,
                     color: _useOcr
                         ? AppTheme.primaryAction
-                        : Theme.of(context).textTheme.bodySmall?.color,
+                        : AppTheme.lightTextSecondary,
+                    size: 32,
+                  ),
+
+                const SizedBox(height: 6),
+                Text(
+                  _isProcessingOcr ? 'Scanning...' : 'Smart Scan',
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(width: 4),
-                SizedBox(
-                  height: 20,
-                  width: 32,
-                  child: Switch(
-                    value: _useOcr,
-                    onChanged: (val) => setState(() => _useOcr = val),
-                    activeThumbColor: AppTheme.primaryAction,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _useOcr
+                            ? AppTheme.primaryAction
+                            : Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      height: 20,
+                      width: 32,
+                      child: Switch(
+                        value: _useOcr,
+                        onChanged: (val) => setState(() => _useOcr = val),
+                        activeThumbColor: AppTheme.primaryAction,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -741,31 +746,36 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Theme.of(context).dividerColor),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: AppTheme.primaryAction, size: 32),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: AppTheme.primaryAction, size: 32),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color:
+                        Theme.of(context).textTheme.bodySmall?.color ??
+                        AppTheme.lightTextSecondary,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color:
-                    Theme.of(context).textTheme.bodySmall?.color ??
-                    AppTheme.lightTextSecondary,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
     );
