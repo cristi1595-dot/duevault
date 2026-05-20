@@ -200,10 +200,10 @@ class StatusBadge extends StatelessWidget {
     final Color bgColor = textColor.withValues(alpha: 0.08);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: textColor.withValues(alpha: 0.15),
           width: 1.0,
@@ -213,9 +213,9 @@ class StatusBadge extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: textColor,
-          fontSize: isDocument ? 12 : 10,
+          fontSize: isDocument ? 10 : 9,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.8,
+          letterSpacing: 0.6,
         ),
       ),
     );
@@ -401,7 +401,7 @@ class VaultItemTile extends ConsumerWidget {
                   children: [
                     // Left Icon Box: occupies full height
                     Container(
-                      width: 64,
+                      width: 52,
                       decoration: BoxDecoration(
                         color: itemColor.withValues(alpha: 0.08),
                         borderRadius: const BorderRadius.only(
@@ -415,20 +415,20 @@ class VaultItemTile extends ConsumerWidget {
                             child: Icon(
                               CategoryUtils.getIcon(item.category),
                               color: itemColor,
-                              size: 40,
+                              size: 28,
                             ),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
                             child: Container(
-                              width: 24,
-                              height: 24,
+                              width: 18,
+                              height: 18,
                               decoration: BoxDecoration(
                                 color: itemColor,
                                 borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(6),
-                                  bottomLeft: Radius.circular(6),
+                                  topLeft: Radius.circular(5),
+                                  bottomLeft: Radius.circular(5),
                                 ),
                               ),
                               child: Center(
@@ -436,7 +436,7 @@ class VaultItemTile extends ConsumerWidget {
                                   isBill ? 'B' : 'D',
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w900,
                                     height: 1.0,
                                   ),
@@ -450,10 +450,10 @@ class VaultItemTile extends ConsumerWidget {
                     Expanded(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
-                          14,
-                          6,
-                          (!item.isPaid && onCheckPressed != null) ? 8 : 16,
-                          6,
+                          12,
+                          4,
+                          (!item.isPaid && onCheckPressed != null) ? 6 : 12,
+                          4,
                         ),
                         child: Row(
                           children: [
@@ -462,43 +462,38 @@ class VaultItemTile extends ConsumerWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox(
-                                    height: 40, // Height adjusted for larger fonts
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        () {
-                                          final rawTitle = item.title.isEmpty
-                                              ? item.category
-                                              : item.title;
-                                          return rawTitle.length > 40
-                                              ? '${rawTitle.substring(0, 37)}...'
-                                              : rawTitle;
-                                        }(),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context).textTheme.bodyLarge
-                                            ?.copyWith(
-                                              fontSize: () {
-                                                final rawTitle = item.title.isEmpty
-                                                    ? item.category
-                                                    : item.title;
-                                                return rawTitle.length > 20 ? 17.0 : 20.0;
-                                              }(),
-                                              height: 1.1, // Tighter line height
-                                              decoration: item.isPaid
-                                                  ? TextDecoration.lineThrough
-                                                  : null,
-                                              color: item.isPaid
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).textTheme.bodyMedium?.color
-                                                  : Colors.white,
-                                            ),
-                                      ),
-                                    ),
+                                  Text(
+                                    () {
+                                      final rawTitle = item.title.isEmpty
+                                          ? item.category
+                                          : item.title;
+                                      return rawTitle.length > 40
+                                          ? '${rawTitle.substring(0, 37)}...'
+                                          : rawTitle;
+                                    }(),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          fontSize: () {
+                                            final rawTitle = item.title.isEmpty
+                                                ? item.category
+                                                : item.title;
+                                            return rawTitle.length > 20 ? 13.0 : 16.0;
+                                          }(),
+                                          height: 1.1,
+                                          decoration: item.isPaid
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          color: item.isPaid
+                                              ? Theme.of(
+                                                  context,
+                                                ).textTheme.bodyMedium?.color
+                                              : Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 1),
                                   Text(
                                     item.dueDate != null
                                         ? '${isBill ? "Due" : "Expires"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
@@ -506,7 +501,7 @@ class VaultItemTile extends ConsumerWidget {
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodyMedium?.copyWith(
-                                      fontSize: 15,
+                                      fontSize: 12,
                                       color: Colors.grey.shade500,
                                     ),
                                   ),
@@ -527,13 +522,13 @@ class VaultItemTile extends ConsumerWidget {
                                         currency.formatAmount(item.amount ?? 0.0),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 20,
+                                          fontSize: 17,
                                           color: Colors.white,
                                         ),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
-                                    const SizedBox(height: 5),
+                                    const SizedBox(height: 2),
                                   ],
                                   StatusBadge(
                                     isDocument: !isBill,
@@ -561,7 +556,7 @@ class VaultItemTile extends ConsumerWidget {
                       GestureDetector(
                         onTap: onCheckPressed,
                         child: Container(
-                          width: 36,
+                          width: 32,
                           decoration: BoxDecoration(
                             color: const Color(0xFF6366F1).withValues(alpha: 0.08),
                             borderRadius: const BorderRadius.only(
@@ -579,7 +574,7 @@ class VaultItemTile extends ConsumerWidget {
                             child: Icon(
                               Icons.check_rounded,
                               color: Color(0xFF6366F1),
-                              size: 24,
+                              size: 20,
                             ),
                           ),
                         ),
