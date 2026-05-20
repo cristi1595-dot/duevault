@@ -1113,18 +1113,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
+      builder: (sheetContext) {
         final isGuest = FirebaseAuth.instance.currentUser == null;
         
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color ?? AppTheme.darkSurface,
+            color: Theme.of(sheetContext).cardTheme.color ?? AppTheme.darkSurface,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
             ),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              color: Theme.of(sheetContext).dividerColor.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
@@ -1142,7 +1142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 width: 48,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ?? Colors.white24,
+                  color: Theme.of(sheetContext).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ?? Colors.white24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1170,7 +1170,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       children: [
                         Text(
                           'Storage & Reset',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(sheetContext).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
                           ),
@@ -1178,7 +1178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         const SizedBox(height: 2),
                         Text(
                           'Manage your database and cloud space',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
                           ),
                         ),
@@ -1193,12 +1193,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               // Option 1: Clear Local Cache
               GestureDetector(
                 onTap: () async {
-                  Navigator.pop(context); // Close bottom sheet
+                  Navigator.pop(sheetContext); // Close bottom sheet
                   
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: Theme.of(context).cardTheme.color,
+                      backgroundColor: Theme.of(ctx).cardTheme.color,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1214,7 +1214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           child: Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                              color: Theme.of(ctx).textTheme.bodyMedium?.color,
                             ),
                           ),
                         ),
@@ -1276,10 +1276,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
+                    color: Theme.of(sheetContext).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                      color: Theme.of(sheetContext).dividerColor.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Row(
@@ -1303,7 +1303,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           children: [
                             Text(
                               'Clear Local Cache',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(sheetContext).textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -1311,7 +1311,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             const SizedBox(height: 4),
                             Text(
                               'Deletes local temporary items only. Cloud backup stays safe.',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                                 fontSize: 12,
                               ),
                             ),
@@ -1320,7 +1320,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ),
                       Icon(
                         Icons.chevron_right,
-                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        color: Theme.of(sheetContext).textTheme.bodySmall?.color,
                         size: 20,
                       ),
                     ],
@@ -1333,12 +1333,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               // Option 2: Erase All Data
               GestureDetector(
                 onTap: () async {
-                  Navigator.pop(context); // Close bottom sheet
+                  Navigator.pop(sheetContext); // Close bottom sheet
                   
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: Theme.of(context).cardTheme.color,
+                      backgroundColor: Theme.of(ctx).cardTheme.color,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1352,7 +1352,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           child: Text(
                             'Cancel',
                             style: TextStyle(
-                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                              color: Theme.of(ctx).textTheme.bodyMedium?.color,
                             ),
                           ),
                         ),
@@ -1455,7 +1455,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           children: [
                             Text(
                               'Erase All Data',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(sheetContext).textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                                 color: AppTheme.urgentRed,
@@ -1464,9 +1464,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             const SizedBox(height: 4),
                             Text(
                               'WIPE EVERYTHING. Cloud and local data will be permanently deleted.',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                                 fontSize: 12,
-                                color: Theme.of(context).textTheme.bodySmall?.color,
+                                color: Theme.of(sheetContext).textTheme.bodySmall?.color,
                               ),
                             ),
                           ],
@@ -1487,12 +1487,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 // Option 3: Delete Account & Cloud Data
                 GestureDetector(
                   onTap: () async {
-                    Navigator.pop(context); // Close bottom sheet
+                    Navigator.pop(sheetContext); // Close bottom sheet
                     
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: Theme.of(context).cardTheme.color,
+                        backgroundColor: Theme.of(ctx).cardTheme.color,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -1506,7 +1506,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                color: Theme.of(context).textTheme.bodyMedium?.color,
+                                color: Theme.of(ctx).textTheme.bodyMedium?.color,
                               ),
                             ),
                           ),
@@ -1536,16 +1536,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       );
 
                       try {
-                        // 1. Wipe local and cloud database items
+                        // 1. Reauthenticate first to refresh credentials and prevent stale-session errors
+                        await ref.read(authServiceProvider).reauthenticate();
+
+                        // 2. Wipe local and cloud database items (Firestore & Drive AppData folder)
                         await ref
                             .read(vaultProvider.notifier)
                             .clearAllData(alsoDeleteCloud: true);
 
-                        // 2. Delete actual authentication registration
+                        // 3. Reset Local Security/PIN state
+                        await ref.read(securityProvider.notifier).reset();
+
+                        // 4. Delete actual authentication registration
                         await ref.read(authServiceProvider).deleteAccount();
 
-                        // 3. Complete sign-out cleanly
+                        // 5. Complete sign-out cleanly
                         await ref.read(authServiceProvider).signOut();
+
+                        // 6. Switch the memory guest provider state to true
+                        ref.read(isGuestProvider.notifier).state = true;
+
+                        // 7. Reset Isar config to switch back to guest mode automatically on launch
+                        final isar = ref.read(isarProvider);
+                        await isar.writeTxn(() async {
+                          final config = AppConfig()..isGuest = true;
+                          await isar.appConfigs.put(config);
+                        });
 
                         if (context.mounted) {
                           Navigator.pop(context); // Close progress dialog
@@ -1610,7 +1626,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             children: [
                               Text(
                                 'Delete Account & Data',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                style: Theme.of(sheetContext).textTheme.bodyLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                   color: AppTheme.urgentRed,
@@ -1619,9 +1635,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                               const SizedBox(height: 4),
                               Text(
                                 'Wipes all local & cloud data and permanently deletes your account registration.',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                                   fontSize: 12,
-                                  color: Theme.of(context).textTheme.bodySmall?.color,
+                                  color: Theme.of(sheetContext).textTheme.bodySmall?.color,
                                 ),
                               ),
                             ],

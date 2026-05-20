@@ -376,14 +376,14 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 'BILL CATEGORY',
                 style: AppTheme.labelCapsStyle(
                   context,
-                ).copyWith(fontSize: 12, letterSpacing: 1.2),
+                ).copyWith(fontSize: 14, letterSpacing: 1.2),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               BentoCard(
-                padding: const EdgeInsets.all(12), // Symmetrical padding
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: _buildCompactCategoryWrap(),
               ),
-              const SizedBox(height: 12), // Reduced spacing
+              const SizedBox(height: 8),
 
               _buildBentoInput(
                 label: 'TITLE',
@@ -392,7 +392,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 17,
+                    fontSize: 19,
                   ),
                   decoration: InputDecoration(
                     hintText: _getCategoryHint(),
@@ -401,7 +401,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     focusedBorder: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 14,
+                      vertical: 6,
                     ),
                   ),
                   onChanged: (val) => setState(() {}),
@@ -409,36 +409,42 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   validator: (value) => ValidationHelper.validateTitle(value),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               Row(
                 children: [
                   Expanded(
                     child: _buildBentoInput(
                       label: 'AMOUNT (${currency.code})',
-                      child: TextFormField(
-                        controller: _amountController,
-                        onChanged: (val) => setState(() {}),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                          signed: false,
-                        ),
-                        style: TextStyle(
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                          fontSize: 17,
-                        ),
-                        validator: (value) => ValidationHelper.validateAmount(value, isRequired: true),
-                        inputFormatters: [
-                          AmountInputFormatter(),
-                        ],
-                        decoration: const InputDecoration(
-                          hintText: '0.00',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                      child: SizedBox(
+                        height: 38,
+                        child: TextFormField(
+                          controller: _amountController,
+                          onChanged: (val) => setState(() {}),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: false,
+                          ),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontSize: 19,
+                          ),
+                          validator: (value) => ValidationHelper.validateAmount(value, isRequired: true),
+                          inputFormatters: [
+                            AmountInputFormatter(),
+                          ],
+                          decoration: const InputDecoration(
+                            hintText: '0.00',
+                            isDense: true,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              top: 10,
+                              bottom: 8,
+                            ),
                           ),
                         ),
                       ),
@@ -451,10 +457,11 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       child: InkWell(
                         onTap: _pickDate,
                         child: Container(
+                          height: 38,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
-                            vertical: 14,
                           ),
+                          alignment: Alignment.center,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -470,13 +477,13 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                       : Theme.of(
                                           context,
                                         ).textTheme.bodyMedium?.color,
-                                  fontSize: 15,
+                                  fontSize: 19,
                                 ),
                               ),
                               const Icon(
                                 Icons.calendar_today,
                                 color: AppTheme.primaryAction,
-                                size: 16,
+                                size: 18,
                               ),
                             ],
                           ),
@@ -486,7 +493,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               Row(
                 children: [
@@ -495,19 +502,21 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     child: _buildBentoInput(
                       label: 'RECURRENCE',
                       child: Container(
+                        height: 38,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 0,
                         ),
+                        alignment: Alignment.center,
                         child: DropdownButton<String>(
                           value: _recurrence,
                           isExpanded: true,
+                          isDense: true,
                           underline: const SizedBox(),
                           icon: const Icon(Icons.keyboard_arrow_down, size: 18),
                           dropdownColor: Theme.of(context).cardTheme.color,
                           style: TextStyle(
                             color: Theme.of(context).textTheme.bodyLarge?.color,
-                            fontSize: 13,
+                            fontSize: 19,
                           ),
                           items: ['None', 'Weekly', 'Monthly', 'Yearly'].map((
                             String value,
@@ -530,8 +539,9 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     child: _buildBentoInput(
                       label: 'AUTO-PAY',
                       child: Container(
-                        height: 48, // Match dropdown height
+                        height: 38,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.center,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -555,7 +565,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                                         color: Theme.of(
                                           context,
                                         ).textTheme.bodyMedium?.color,
-                                        fontSize: 11,
+                                        fontSize: 19,
                                         fontWeight: FontWeight.w600,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -571,15 +581,15 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                               activeThumbColor: AppTheme.primaryAction,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               _buildBentoInput(
                 label: 'NOTES',
@@ -590,7 +600,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 15,
+                    fontSize: 17,
                   ),
                   decoration: const InputDecoration(
                     hintText: 'Add details...',
@@ -599,12 +609,12 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     focusedBorder: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 12,
+                      vertical: 6,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               _buildBentoInput(
                 label: 'ATTACHMENTS',
@@ -612,7 +622,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
                           Expanded(child: _buildCameraCardWithOcrToggle()),
@@ -689,7 +699,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               PrimaryButton(
                 label: _isSaving
@@ -716,7 +726,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       onTap: onTap,
       child: Container(
         height: 110, // Reduced height
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
@@ -725,14 +735,14 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.primaryAction, size: 28),
+            Icon(icon, color: AppTheme.primaryAction, size: 32),
             const SizedBox(height: 6),
             Text(
               title,
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 15,
               ),
             ),
             const SizedBox(height: 2),
@@ -742,7 +752,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 color:
                     Theme.of(context).textTheme.bodySmall?.color ??
                     AppTheme.lightTextSecondary,
-                fontSize: 9,
+                fontSize: 11,
               ),
               textAlign: TextAlign.center,
             ),
@@ -757,7 +767,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
       onTap: _isProcessingOcr ? null : () => _pickImage(ImageSource.camera),
       child: Container(
         height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
@@ -795,7 +805,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 color: _useOcr
                     ? AppTheme.primaryAction
                     : AppTheme.lightTextSecondary,
-                size: 28,
+                size: 32,
               ),
 
             const SizedBox(height: 6),
@@ -804,7 +814,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 15,
               ),
             ),
 
@@ -815,7 +825,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 Text(
                   _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
                   style: TextStyle(
-                    fontSize: 8,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: _useOcr
                         ? AppTheme.primaryAction
@@ -851,7 +861,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
             label,
             style: TextStyle(
               color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
@@ -943,7 +953,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               children: [
                 Icon(
                   cat.icon,
-                  size: 28, // Maximized icon
+                  size: 32,
                   color: isSelected ? Colors.white : AppTheme.primaryAction,
                 ),
                 const SizedBox(height: 6),
@@ -953,7 +963,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                     color: isSelected
                         ? Colors.white
                         : Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 10, // Slightly larger font
+                    fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,

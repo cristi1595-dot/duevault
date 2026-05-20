@@ -182,14 +182,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     Widget buildGroupHeader(String title, int count, Color color) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               title.toUpperCase(),
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.grey.shade500,
                 letterSpacing: 1.2,
@@ -239,7 +239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const DueVaultLogo(
-                              size: 44,
+                              size: 53,
                               showGlow: false,
                             ),
                             const SizedBox(width: 12),
@@ -257,6 +257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           context,
                                         ).textTheme.bodyLarge?.color,
                                         letterSpacing: -0.5,
+                                        fontSize: 24,
                                       ),
                                 ),
                                 Text(
@@ -265,7 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     color: Theme.of(
                                       context,
                                     ).textTheme.bodySmall?.color,
-                                    fontSize: 12,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
@@ -371,8 +372,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   BentoCard(
                     color: bentoBgColor,
                     borderColor: bentoBorderColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                    borderRadius: 16.0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                    borderRadius: 14.0,
                     child: SizedBox(
                       width: double.infinity,
                       child: Column(
@@ -389,18 +390,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       'BILLS • NEXT 7 DAYS',
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
-                                        fontSize: 10,
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.0,
+                                        letterSpacing: 0.8,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
                                       currency.formatAmount(totalDue7Days),
                                       style: TextStyle(
                                         color: totalDue7Days > 0 ? AppTheme.urgentRed : AppTheme.safeGreen,
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 26,
+                                        fontSize: 24,
                                         letterSpacing: -0.5,
                                       ),
                                     ),
@@ -409,7 +410,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               Container(
                                 width: 1,
-                                height: 36,
+                                height: 28,
                                 color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
                               ),
                               const SizedBox(width: 16),
@@ -421,18 +422,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       'DOCS • NEXT 7 DAYS',
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
-                                        fontSize: 10,
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.0,
+                                        letterSpacing: 0.8,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
                                       '$totalDocs7Days',
                                       style: TextStyle(
                                         color: totalDocs7Days > 0 ? AppTheme.urgentRed : AppTheme.safeGreen,
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 26,
+                                        fontSize: 24,
                                         letterSpacing: -0.5,
                                       ),
                                     ),
@@ -442,7 +443,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ],
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10.0),
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
                             child: Divider(
                               color: Theme.of(context).dividerColor.withValues(alpha: 0.12),
                               height: 1,
@@ -459,18 +460,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       'BILLS • NEXT 30 DAYS',
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
-                                        fontSize: 10,
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.0,
+                                        letterSpacing: 0.8,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
                                       currency.formatAmount(totalDue30Days),
                                       style: TextStyle(
                                         color: totalDue30Days > 0 ? AppTheme.warningYellow : AppTheme.safeGreen,
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 22,
+                                        fontSize: 19,
                                         letterSpacing: -0.5,
                                       ),
                                     ),
@@ -479,7 +480,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               Container(
                                 width: 1,
-                                height: 36,
+                                height: 28,
                                 color: Theme.of(context).dividerColor.withValues(alpha: 0.15),
                               ),
                               const SizedBox(width: 16),
@@ -491,18 +492,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       'DOCS • NEXT 30 DAYS',
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
-                                        fontSize: 10,
+                                        fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.0,
+                                        letterSpacing: 0.8,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 2),
                                     Text(
                                       '$totalDocs30Days',
                                       style: TextStyle(
                                         color: totalDocs30Days > 0 ? AppTheme.warningYellow : AppTheme.safeGreen,
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 22,
+                                        fontSize: 19,
                                         letterSpacing: -0.5,
                                       ),
                                     ),
@@ -529,7 +530,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'Upcoming',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   if (allUpcoming.isEmpty)
                     const BentoCard(
                       child: SizedBox(

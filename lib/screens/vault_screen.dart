@@ -204,11 +204,17 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         title: const Row(
           children: [
             DueVaultLogo(
-              size: 28,
+              size: 34,
               showGlow: false,
             ),
             SizedBox(width: 12),
-            Text('Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Vault',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -269,10 +275,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         children: [
           // 1. Tab Switcher
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Container(
               height: 42,
-              padding: const EdgeInsets.all(4),
+              padding: EdgeInsets.zero,
               decoration: BoxDecoration(
                 color: Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(16),
@@ -703,7 +709,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   ? Colors.black
                   : Theme.of(context).textTheme.bodySmall?.color,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 12,
+              fontSize: 16,
               letterSpacing: 0.5,
             ),
           ),

@@ -354,16 +354,16 @@ class DriveService {
     try {
       final fileList = await driveApi.files.list(
         spaces: 'appDataFolder',
-        q: "name = 'duevault_backup.isar'",
       );
 
       if (fileList.files != null && fileList.files!.isNotEmpty) {
         for (var file in fileList.files!) {
           if (file.id != null) {
             await driveApi.files.delete(file.id!);
+            logger.i('Deleted cloud file: ${file.name} (${file.id})');
           }
         }
-        logger.i('Cloud backup deleted successfully.');
+        logger.i('All cloud backup files deleted successfully.');
         return true;
       }
       return false;

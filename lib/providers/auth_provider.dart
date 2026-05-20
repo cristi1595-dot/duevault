@@ -96,6 +96,30 @@ class AuthService {
     _cachedAccessToken = null;
   }
 
+  /// Reauthenticate the user with Google Sign-In to refresh credentials
+  Future<void> reauthenticate() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    logger.i('Reauthenticating user for sensitive operation...');
+    GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
+    googleUser ??= await _googleSignIn.signIn();
+
+    if (googleUser == null) {
+      throw Exception('Reauthentication canceled by the user.');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    await user.reauthenticateWithCredential(credential);
+    _cachedAccessToken = googleAuth.accessToken;
+    logger.i('Reauthentication successful.');
+  }
+
   /// Wipe and delete the Firebase Authentication user account permanently.
   /// Handles security reauthentication if the login session is stale.
   Future<void> deleteAccount() async {

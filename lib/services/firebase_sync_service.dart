@@ -177,12 +177,18 @@ class FirebaseSyncService {
     final snapshot = await collection.get();
     if (snapshot.docs.isEmpty) return;
 
-    final batch = FirebaseFirestore.instance.batch();
-    for (var doc in snapshot.docs) {
-      batch.delete(doc.reference);
+    final docs = snapshot.docs;
+    const batchSize = 400;
+    for (var i = 0; i < docs.length; i += batchSize) {
+      final batch = FirebaseFirestore.instance.batch();
+      final end = (i + batchSize < docs.length) ? i + batchSize : docs.length;
+      for (var j = i; j < end; j++) {
+        batch.delete(docs[j].reference);
+      }
+      await batch.commit();
     }
-
-    await batch.commit();
-    logger.w('FirebaseSyncService: Wiped all Firestore data for user $uid');
+    logger.w(
+      'FirebaseSyncService: Wiped all Firestore data for user $uid (${docs.length} items)',
+    );
   }
 }

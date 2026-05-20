@@ -375,11 +375,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 'DOCUMENT CATEGORY',
                 style: AppTheme.labelCapsStyle(
                   context,
-                ).copyWith(fontSize: 12, letterSpacing: 1.2),
+                ).copyWith(fontSize: 14, letterSpacing: 1.2),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               BentoCard(
-                padding: const EdgeInsets.all(12), // Symmetrical padding
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: GridView.builder(
                   padding: EdgeInsets.zero, // Remove default grid padding
                   shrinkWrap: true,
@@ -415,7 +415,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                           children: [
                             Icon(
                               cat.icon,
-                              size: 28, // Maximized to match Bills
+                              size: 32,
                               color: isSelected
                                   ? Colors.white
                                   : AppTheme.primaryAction,
@@ -429,7 +429,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                                     : Theme.of(
                                         context,
                                       ).textTheme.bodyLarge?.color,
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: isSelected
                                     ? FontWeight.bold
                                     : FontWeight.w500,
@@ -445,7 +445,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               _buildBentoInput(
                 label: 'DOCUMENT TITLE',
@@ -455,7 +455,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   onChanged: (val) => setState(() {}),
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 17,
+                    fontSize: 19,
                   ),
                   validator: (value) => ValidationHelper.validateTitle(value),
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
@@ -466,22 +466,23 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     focusedBorder: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 16,
+                      vertical: 6,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               _buildBentoInput(
                 label: 'EXPIRY / RENEWAL DATE',
                 child: InkWell(
                   onTap: _pickDate,
-                  child: Padding(
+                  child: Container(
+                    height: 38,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 16,
                     ),
+                    alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -493,20 +494,20 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                             color: _expiryDate != null
                                 ? Theme.of(context).textTheme.bodyLarge?.color
                                 : Theme.of(context).textTheme.bodyMedium?.color,
-                            fontSize: 15,
+                            fontSize: 19,
                           ),
                         ),
                         const Icon(
                           Icons.calendar_today,
                           color: AppTheme.primaryAction,
-                          size: 16,
+                          size: 18,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               _buildBentoInput(
                 label: 'NOTES',
@@ -517,7 +518,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 15,
+                    fontSize: 17,
                   ),
                   decoration: const InputDecoration(
                     hintText: 'Add details...',
@@ -526,12 +527,12 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     focusedBorder: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 12,
+                      vertical: 6,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               _buildBentoInput(
                 label: 'ATTACHMENTS',
@@ -539,7 +540,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
                           Expanded(child: _buildCameraCardWithOcrToggle()),
@@ -618,7 +619,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               PrimaryButton(
                 label: _isSaving
@@ -627,7 +628,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 icon: _isSaving ? null : Icons.check_circle_outline,
                 onPressed: (_isFormValid && !_isSaving) ? _submit : null,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -640,7 +641,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       onTap: _isProcessingOcr ? null : () => _pickImage(ImageSource.camera),
       child: Container(
         height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
@@ -678,7 +679,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 color: _useOcr
                     ? AppTheme.primaryAction
                     : AppTheme.lightTextSecondary,
-                size: 28,
+                size: 32,
               ),
 
             const SizedBox(height: 6),
@@ -687,7 +688,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 15,
               ),
             ),
 
@@ -698,7 +699,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 Text(
                   _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
                   style: TextStyle(
-                    fontSize: 8,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: _useOcr
                         ? AppTheme.primaryAction
@@ -734,7 +735,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       onTap: onTap,
       child: Container(
         height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
@@ -743,14 +744,14 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.primaryAction, size: 28),
+            Icon(icon, color: AppTheme.primaryAction, size: 32),
             const SizedBox(height: 6),
             Text(
               title,
               style: TextStyle(
                 color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 15,
               ),
             ),
             const SizedBox(height: 2),
@@ -760,7 +761,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 color:
                     Theme.of(context).textTheme.bodySmall?.color ??
                     AppTheme.lightTextSecondary,
-                fontSize: 9,
+                fontSize: 11,
               ),
               textAlign: TextAlign.center,
             ),
@@ -780,7 +781,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
             label,
             style: TextStyle(
               color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
