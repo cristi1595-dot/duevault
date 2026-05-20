@@ -526,11 +526,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(10, 4, 10, 100),
                 children: [
-                  Text(
-                    'Upcoming',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 4),
                   if (allUpcoming.isEmpty)
                     const BentoCard(
                       child: SizedBox(
