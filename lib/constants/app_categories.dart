@@ -78,9 +78,9 @@ class AppCategories {
       color: Colors.brown,
     ),
     CategoryData(
-      name: 'Legal',
-      icon: Icons.history_edu_outlined,
-      color: Colors.green,
+      name: 'Auto',
+      icon: Icons.directions_car_outlined,
+      color: Colors.red,
     ),
     CategoryData(
       name: 'Career',

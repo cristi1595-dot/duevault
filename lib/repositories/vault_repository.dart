@@ -481,7 +481,7 @@ class VaultRepository {
         ..uuid = uuid.v4()
         ..title = 'Rental Agreement (Demo)'
         ..itemType = 'Document'
-        ..category = 'Legal'
+        ..category = 'Auto'
         ..dueDate = now.add(const Duration(days: 60))
         ..isSample = true
         ..ownerId = ownerId,

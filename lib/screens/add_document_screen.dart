@@ -85,8 +85,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         return 'e.g. iPhone Warranty';
       case 'Property':
         return 'e.g. House Deed';
-      case 'Legal':
-        return 'e.g. Rent Contract';
+      case 'Auto':
+        return 'e.g. Driving License';
       case 'Career':
         return 'e.g. University Diploma';
       case 'Travel':
