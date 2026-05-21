@@ -16,12 +16,17 @@ class GoogleSignInSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isProcessing = ref.watch(isProcessingAuthSyncProvider);
+
     return GestureDetector(
       onTap: () async {
+        if (isProcessing) return;
         final messenger = ScaffoldMessenger.of(context);
         try {
           ref.read(isProcessingAuthSyncProvider.notifier).state = true;
           final result = await ref.read(authServiceProvider).signInWithGoogle();
+          if (!context.mounted) return;
+
           if (result != null) {
             final uid = result.user!.uid;
 
@@ -94,45 +99,50 @@ class GoogleSignInSection extends ConsumerWidget {
               }
             }
 
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Account secured. Syncing your vault...'),
-              ),
-            );
+            if (context.mounted) {
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Account secured. Syncing your vault...'),
+                ),
+              );
+            }
 
             // Intelligent sync
             final syncResult = await ref
                 .read(autoSyncServiceProvider)
                 .syncAfterLogin();
-            if (context.mounted) {
-              messenger.clearSnackBars();
-              String message;
-              Color? bgColor;
 
-              if (syncResult == 'restored') {
-                message = '✓ Your vault data has been restored!';
-                bgColor = AppTheme.safeGreen;
-              } else if (syncResult == 'uploaded') {
-                message = '✓ Local data synced with your account!';
-                bgColor = AppTheme.primaryAction;
-              } else {
-                message = 'No backup found. Starting fresh.';
-                bgColor = null;
-              }
+            if (!context.mounted) return;
 
-              messenger.showSnackBar(
-                SnackBar(content: Text(message), backgroundColor: bgColor),
-              );
+            messenger.clearSnackBars();
+            String message;
+            Color? bgColor;
+
+            if (syncResult == 'restored') {
+              message = '✓ Your vault data has been restored!';
+              bgColor = AppTheme.safeGreen;
+            } else if (syncResult == 'uploaded') {
+              message = '✓ Local data synced with your account!';
+              bgColor = AppTheme.primaryAction;
+            } else {
+              message = 'No backup found. Starting fresh.';
+              bgColor = null;
             }
-            if (context.mounted) {
-              unawaited(
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MainNavigation()),
-                  (route) => false,
-                ),
-              );
-            }
+
+            messenger.showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: bgColor),
+            );
+
+            // Turn off processing state BEFORE navigating so MainNavigation shows immediately
+            ref.read(isProcessingAuthSyncProvider.notifier).state = false;
+
+            unawaited(
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const MainNavigation()),
+                (route) => false,
+              ),
+            );
           } else {
             messenger.showSnackBar(
               const SnackBar(content: Text('Sign in canceled.')),
@@ -140,14 +150,18 @@ class GoogleSignInSection extends ConsumerWidget {
           }
         } catch (e) {
           logger.e('Sign in error', error: e);
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text('Sign in error: ${e.toString().split('\n').first}'),
-              backgroundColor: AppTheme.urgentRed,
-            ),
-          );
+          if (context.mounted) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text('Sign in error: ${e.toString().split('\n').first}'),
+                backgroundColor: AppTheme.urgentRed,
+              ),
+            );
+          }
         } finally {
-          ref.read(isProcessingAuthSyncProvider.notifier).state = false;
+          if (context.mounted) {
+            ref.read(isProcessingAuthSyncProvider.notifier).state = false;
+          }
         }
       },
       child: Container(
@@ -161,30 +175,54 @@ class GoogleSignInSection extends ConsumerWidget {
             width: 1,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.network(
-              'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
-              height: 18,
-              errorBuilder: (ctx, err, st) => Icon(
-                Icons.account_circle_outlined,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                size: 18,
+        child: isProcessing
+            ? const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.primaryAction,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Signing in & Syncing...',
+                    style: TextStyle(
+                      color: AppTheme.primaryAction,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.network(
+                    'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
+                    height: 18,
+                    errorBuilder: (ctx, err, st) => Icon(
+                      Icons.account_circle_outlined,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Sign in with Google',
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Sign in with Google',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

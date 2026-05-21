@@ -17,6 +17,7 @@ import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/security_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/sync_provider.dart';
 import '../services/notification_service.dart';
 import '../services/analytics_service.dart';
 
@@ -191,7 +192,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               builder: (context, ref, child) {
                 final authState = ref.watch(authStateProvider);
                 final user = authState.valueOrNull;
-                if (user == null) {
+                final isProcessing = ref.watch(isProcessingAuthSyncProvider);
+                if (user == null || isProcessing) {
                   return const Padding(
                     padding: EdgeInsets.only(bottom: 6),
                     child: GoogleSignInSection(),
