@@ -64,7 +64,7 @@ class AttachmentSection extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final path = attachedFiles[index];
                   return Stack(
-                    children: [
+                     children: [
                       Container(
                         width: 70,
                         decoration: BoxDecoration(

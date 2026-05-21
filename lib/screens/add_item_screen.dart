@@ -18,9 +18,9 @@ import '../utils/logger.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
 import '../constants/app_categories.dart';
-import 'add_item/bento_input_wrapper.dart';
-import 'add_item/category_selector.dart';
-import 'add_item/attachment_section.dart';
+import 'add_shared/bento_input_wrapper.dart';
+import 'add_shared/category_selector.dart';
+import 'add_shared/attachment_section.dart';
 
 class AddItemScreen extends ConsumerStatefulWidget {
   final VaultItem? item;

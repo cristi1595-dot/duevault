@@ -10,15 +10,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/ocr_service.dart';
 import '../services/encryption_service.dart';
-import '../widgets/encrypted_image.dart';
 import '../utils/permission_helper.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import '../utils/logger.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
-
 import '../constants/app_categories.dart';
+import 'add_shared/bento_input_wrapper.dart';
+import 'add_shared/category_selector.dart';
+import 'add_shared/attachment_section.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -380,74 +381,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               const SizedBox(height: 6),
               BentoCard(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: GridView.builder(
-                  padding: EdgeInsets.zero, // Remove default grid padding
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 4, // Reduced
-                    crossAxisSpacing: 6, // Reduced
-                    childAspectRatio: 1.15, // Taller
-                  ),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final cat = _categories[index];
-                    final isSelected = _category == cat.name;
-                    return GestureDetector(
-                      onTap: () => setState(() => _category = cat.name),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppTheme.primaryAction
-                              : Theme.of(context).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppTheme.primaryAction
-                                : Theme.of(
-                                    context,
-                                  ).dividerColor.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              cat.icon,
-                              size: 32,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.primaryAction,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              cat.name,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color,
-                                fontSize: 12,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                child: CategorySelector(
+                  selectedCategory: _category,
+                  categories: _categories,
+                  onCategorySelected: (cat) => setState(() => _category = cat),
                 ),
               ),
               const SizedBox(height: 8),
 
-              _buildBentoInput(
+              BentoInputWrapper(
                 label: 'DOCUMENT TITLE',
                 child: TextFormField(
                   controller: _titleController,
@@ -473,7 +415,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               ),
               const SizedBox(height: 10),
 
-              _buildBentoInput(
+              BentoInputWrapper(
                 label: 'EXPIRY / RENEWAL DATE',
                 child: InkWell(
                   onTap: _pickDate,
@@ -509,7 +451,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               ),
               const SizedBox(height: 10),
 
-              _buildBentoInput(
+              BentoInputWrapper(
                 label: 'NOTES',
                 child: TextFormField(
                   controller: _notesController,
@@ -534,90 +476,22 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               ),
               const SizedBox(height: 10),
 
-              _buildBentoInput(
-                label: 'ATTACHMENTS',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        children: [
-                          Expanded(child: _buildCameraCardWithOcrToggle()),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildActionCard(
-                              icon: Icons.upload_file_outlined,
-                              title: 'Upload Files',
-                              subtitle: 'PDF, Images',
-                              onTap: _pickFiles,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_attachedFiles.isNotEmpty)
-                      Container(
-                        height: 90,
-                        padding: const EdgeInsets.only(
-                          left: 12,
-                          bottom: 12,
-                          top: 4,
-                        ),
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _attachedFiles.length,
-                          separatorBuilder: (ctx, i) =>
-                              const SizedBox(width: 10),
-                          itemBuilder: (context, index) {
-                            final path = _attachedFiles[index];
-                            return Stack(
-                              children: [
-                                Container(
-                                  width: 70,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).scaffoldBackgroundColor,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).dividerColor.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  child: _buildAttachmentIcon(path),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => setState(
-                                      () => _attachedFiles.removeAt(index),
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
+              AttachmentSection(
+                attachedFiles: _attachedFiles,
+                useOcr: _useOcr,
+                isProcessingOcr: _isProcessingOcr,
+                onPickImage: () => _pickImage(ImageSource.camera),
+                onPickFiles: _pickFiles,
+                onRemoveAttachment: (index) {
+                  setState(() {
+                    _attachedFiles.removeAt(index);
+                  });
+                },
+                onOcrToggleChanged: (val) {
+                  setState(() {
+                    _useOcr = val;
+                  });
+                },
               ),
               const SizedBox(height: 16),
 
@@ -634,220 +508,5 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildCameraCardWithOcrToggle() {
-    return GestureDetector(
-      onTap: _isProcessingOcr ? null : () => _pickImage(ImageSource.camera),
-      child: Container(
-        height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _useOcr
-                ? AppTheme.primaryAction.withValues(alpha: 0.5)
-                : Theme.of(context).dividerColor,
-            width: _useOcr ? 1.5 : 1.0,
-          ),
-          boxShadow: _useOcr
-              ? [
-                  BoxShadow(
-                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_isProcessingOcr)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.auto_awesome,
-                    color: _useOcr
-                        ? AppTheme.primaryAction
-                        : AppTheme.lightTextSecondary,
-                    size: 32,
-                  ),
-
-                const SizedBox(height: 6),
-                Text(
-                  _isProcessingOcr ? 'Scanning...' : 'Smart Scan',
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _useOcr ? 'AUTO-FILL ON' : 'AUTO-FILL OFF',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: _useOcr
-                            ? AppTheme.primaryAction
-                            : Theme.of(context).textTheme.bodySmall?.color,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    SizedBox(
-                      height: 20,
-                      width: 32,
-                      child: Switch(
-                        value: _useOcr,
-                        onChanged: (val) => setState(() => _useOcr = val),
-                        activeThumbColor: AppTheme.primaryAction,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 110,
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
-        ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: AppTheme.primaryAction, size: 32),
-                const SizedBox(height: 6),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color:
-                        Theme.of(context).textTheme.bodySmall?.color ??
-                        AppTheme.lightTextSecondary,
-                    fontSize: 11,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBentoInput({required String label, required Widget child}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-        Container(
-          width: double.infinity,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-            ),
-          ),
-          child: child,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAttachmentIcon(String path) {
-    final isImage =
-        path.toLowerCase().endsWith('.jpg') ||
-        path.toLowerCase().endsWith('.jpeg') ||
-        path.toLowerCase().endsWith('.png');
-
-    if (isImage) {
-      final isStored = path.contains('app_flutter/attachments');
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: isStored
-            ? EncryptedImage(path: path, fit: BoxFit.cover)
-            : Image.file(
-                File(path),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.insert_drive_file,
-                  color: AppTheme.primaryAction,
-                ),
-              ),
-      );
-    } else {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.picture_as_pdf, color: AppTheme.urgentRed, size: 24),
-            SizedBox(height: 2),
-            Text(
-              'PDF',
-              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
