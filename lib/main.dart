@@ -14,7 +14,7 @@ import 'models/user.dart';
 import 'models/vault_item.dart';
 import 'services/notification_service.dart';
 import 'services/background_service.dart';
-import 'screens/add_item_screen.dart';
+import 'screens/add_bill_screen.dart';
 import 'screens/add_document_screen.dart';
 import 'widgets/global_components.dart';
 import 'providers/theme_provider.dart';
@@ -328,7 +328,7 @@ class MainNavigation extends ConsumerWidget {
           MaterialPageRoute(
             builder: (_) => title == 'Document'
                 ? const AddDocumentScreen()
-                : AddItemScreen(item: VaultItem()..itemType = title),
+                : AddBillScreen(item: VaultItem()..itemType = title),
           ),
         );
       },

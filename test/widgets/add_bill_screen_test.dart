@@ -6,7 +6,7 @@ import 'package:duevault_app/models/vault_item.dart';
 import 'package:duevault_app/models/app_config.dart';
 import 'package:duevault_app/providers/vault_provider.dart';
 import 'package:duevault_app/providers/database_provider.dart';
-import 'package:duevault_app/screens/add_item_screen.dart';
+import 'package:duevault_app/screens/add_bill_screen.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:isar/isar.dart';
 
@@ -50,12 +50,12 @@ void main() {
         isarProvider.overrideWith((ref) => mockIsar),
         vaultRepositoryProvider.overrideWithValue(mockRepository),
       ],
-      child: const MaterialApp(home: AddItemScreen()),
+      child: const MaterialApp(home: AddBillScreen()),
     );
   }
 
   testWidgets(
-    'AddItemScreen shows validation error when saving without a date',
+    'AddBillScreen shows validation error when saving without a date',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 2400);
       addTearDown(tester.view.resetPhysicalSize);
@@ -81,7 +81,7 @@ void main() {
   );
 
   testWidgets(
-    'AddItemScreen shows validation error when saving without amount',
+    'AddBillScreen shows validation error when saving without amount',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 2400);
       addTearDown(tester.view.resetPhysicalSize);
@@ -104,7 +104,7 @@ void main() {
     },
   );
 
-  testWidgets('AddItemScreen displays category selection', (tester) async {
+  testWidgets('AddBillScreen displays category selection', (tester) async {
     await tester.pumpWidget(createTestWidget());
 
     expect(find.text('BILL CATEGORY'), findsOneWidget);

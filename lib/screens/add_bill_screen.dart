@@ -22,15 +22,15 @@ import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
 
-class AddItemScreen extends ConsumerStatefulWidget {
+class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
-  const AddItemScreen({super.key, this.item});
+  const AddBillScreen({super.key, this.item});
 
   @override
-  ConsumerState<AddItemScreen> createState() => _AddItemScreenState();
+  ConsumerState<AddBillScreen> createState() => _AddBillScreenState();
 }
 
-class _AddItemScreenState extends ConsumerState<AddItemScreen> {
+class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   final _formKey = GlobalKey<FormState>();
   String _itemType = 'Bill';
   String _category = AppCategories.billCategories.first.name;

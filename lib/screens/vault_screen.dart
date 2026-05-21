@@ -7,7 +7,6 @@ import '../widgets/global_components.dart';
 import '../widgets/duevault_logo.dart';
 import '../theme/app_theme.dart';
 import 'settings_screen.dart';
-import '../constants/app_categories.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   const VaultScreen({super.key});
@@ -29,12 +28,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   int _currentPageIndex = _initialPageIndex;
 
   String _searchQuery = '';
-  String? _selectedCategory;
   SortOption _sortBy = SortOption.date;
   bool _sortAscending = true;
-
-  final List<CategoryData> _billCategories = AppCategories.billCategories;
-  final List<CategoryData> _docCategories = AppCategories.docCategories;
 
   @override
   void initState() {
@@ -133,10 +128,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             if (tabIndex == 2) return item.itemType == 'Document';
             return true;
           })
-          .where((item) {
-            return _selectedCategory == null ||
-                item.category == _selectedCategory;
-          })
           .toList()
         ..sort((a, b) {
           int result;
@@ -163,41 +154,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         });
     }
 
-    // Existing categories for CURRENT tab
-    final currentTabItems = searchFiltered.where((item) {
-      final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
-      final shouldBeInHistory = item.isArchived || (item.isPaid && isExpired);
-      if (_activeTabIndex == 3) return shouldBeInHistory;
-      if (shouldBeInHistory) return false;
-      if (_activeTabIndex == 1) return item.itemType == 'Bill';
-      if (_activeTabIndex == 2) return item.itemType == 'Document';
-      return true;
-    }).toList();
 
-    final existingCategoryNames = currentTabItems
-        .map((e) => e.category)
-        .toSet();
-    final List<Map<String, dynamic>> displayedCategories = [];
-    for (var cat in _billCategories) {
-      if (existingCategoryNames.contains(cat.name)) {
-        displayedCategories.add({
-          'name': cat.name,
-          'icon': cat.icon,
-          'color': cat.color,
-          'type': 'B',
-        });
-      }
-    }
-    for (var cat in _docCategories) {
-      if (existingCategoryNames.contains(cat.name)) {
-        displayedCategories.add({
-          'name': cat.name,
-          'icon': cat.icon,
-          'color': cat.color,
-          'type': 'D',
-        });
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -421,19 +378,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             ),
           ),
 
-          // 3. Categories
-          if (displayedCategories.isNotEmpty || _selectedCategory != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildAllCategoryTile(),
-                  const SizedBox(width: 8),
-                  _buildCategoryGrid(displayedCategories),
-                ],
-              ),
-            ),
+
 
           const SizedBox(height: 4),
 
@@ -444,7 +389,6 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               onPageChanged: (index) {
                 setState(() {
                   _currentPageIndex = index;
-                  _selectedCategory = null; // Clear category filter on swipe
                 });
               },
               itemBuilder: (context, index) {
@@ -493,178 +437,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     );
   }
 
-  Widget _buildAllCategoryTile() {
-    final isSelected = _selectedCategory == null;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = null),
-      child: Container(
-        width: 76,
-        height: 72,
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryAction,
-                    AppTheme.primaryAction.withValues(alpha: 0.8),
-                  ],
-                )
-              : null,
-          color: isSelected ? null : Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryAction
-                : Theme.of(context).dividerColor.withValues(alpha: 0.5),
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppTheme.primaryAction.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.grid_view_rounded,
-              color: isSelected ? Colors.black : AppTheme.primaryAction,
-              size: 26,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'ALL',
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.black
-                    : Theme.of(context).textTheme.bodySmall?.color,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildCategoryGrid(List<Map<String, dynamic>> categories) {
-    return Expanded(
-      child: SizedBox(
-        height: 72,
-        child: GridView.builder(
-          scrollDirection: Axis.horizontal,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisExtent: 110,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-          ),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final cat = categories[index];
-            final isSelected = _selectedCategory == cat['name'];
-            final Color catColor = cat['color'];
-            return GestureDetector(
-              onTap: () => setState(
-                () => _selectedCategory = isSelected ? null : cat['name'],
-              ),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? catColor.withValues(alpha: 0.15)
-                      : Theme.of(context).cardTheme.color,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? catColor
-                        : Theme.of(context).dividerColor.withValues(alpha: 0.5),
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            cat['icon'],
-                            color: isSelected
-                                ? catColor
-                                : catColor.withValues(alpha: 0.5),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              cat['name'].toString().toUpperCase(),
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color
-                                    : Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color
-                                          ?.withValues(alpha: 0.7),
-                                fontSize: 11,
-                                fontWeight: isSelected
-                                    ? FontWeight.w900
-                                    : FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      right: -1,
-                      bottom: -1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cat['type'] == 'B'
-                              ? AppTheme.primaryAction
-                              : AppTheme.safeGreen,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(6),
-                            bottomRight: Radius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          cat['type'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 7,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   Widget _buildTabPill(int index, String label) {
     final isSelected = _activeTabIndex == index;

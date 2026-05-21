@@ -5,7 +5,7 @@ import '../providers/vault_provider.dart';
 import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
-import 'add_item_screen.dart';
+import 'add_bill_screen.dart';
 import 'add_document_screen.dart';
 import '../services/encryption_service.dart';
 import 'item_detail/item_detail_dialogs.dart';
@@ -63,7 +63,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 MaterialPageRoute(
                   builder: (_) => currentItem.itemType == 'Document'
                       ? AddDocumentScreen(item: currentItem)
-                      : AddItemScreen(item: currentItem),
+                      : AddBillScreen(item: currentItem),
                 ),
               );
             },
