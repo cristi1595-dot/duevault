@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/encrypted_image.dart';
+import '../../widgets/global_components.dart';
 import 'bento_input_wrapper.dart';
 
 class AttachmentSection extends StatelessWidget {

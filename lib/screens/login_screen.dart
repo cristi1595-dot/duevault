@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
-import '../widgets/duevault_logo.dart';
 import '../services/auto_sync_service.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';

@@ -5,7 +5,7 @@ import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/drive_service.dart';
-import '../../widgets/encrypted_image.dart';
+import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
 import 'item_detail_dialogs.dart';
 

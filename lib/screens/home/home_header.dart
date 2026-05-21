@@ -4,7 +4,6 @@ import '../../providers/vault_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../widgets/global_components.dart';
-import '../../widgets/duevault_logo.dart';
 import '../../theme/app_theme.dart';
 import '../settings_screen.dart';
 

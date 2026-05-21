@@ -8,3 +8,7 @@ export 'integrated_bottom_nav_bar.dart';
 export 'custom_input_field.dart';
 export 'primary_button.dart';
 export 'secondary_button.dart';
+export 'bento_error_screen.dart';
+export 'security_lock_screen.dart';
+export 'duevault_logo.dart';
+export 'encrypted_image.dart';

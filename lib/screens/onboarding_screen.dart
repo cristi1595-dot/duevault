@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
-import '../widgets/duevault_logo.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
