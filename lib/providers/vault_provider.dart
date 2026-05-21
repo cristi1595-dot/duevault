@@ -404,6 +404,24 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     }
   }
 
+  Future<void> clearLocalCache() async {
+    logger.i('VaultNotifier: clearLocalCache called!');
+    final appDir = await getApplicationDocumentsDirectory();
+    final attachmentsDir = Directory('${appDir.path}/attachments');
+    if (await attachmentsDir.exists()) {
+      final entities = await attachmentsDir.list().toList();
+      for (final entity in entities) {
+        if (entity is File) {
+          try {
+            await entity.delete();
+          } catch (e) {
+            logger.e('Error deleting cached file: ${entity.path}', error: e);
+          }
+        }
+      }
+    }
+  }
+
   Future<void> clearAllData({bool alsoDeleteCloud = false}) async {
     logger.w(
       'VaultNotifier: clearAllData called! alsoDeleteCloud: $alsoDeleteCloud',

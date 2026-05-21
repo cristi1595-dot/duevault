@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vault_item.dart';
@@ -10,6 +11,8 @@ import 'add_document_screen.dart';
 
 import '../widgets/encrypted_image.dart';
 import '../services/encryption_service.dart';
+import '../services/drive_service.dart';
+import '../providers/auth_provider.dart';
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   final VaultItem item;
@@ -22,6 +25,7 @@ class ItemDetailScreen extends ConsumerStatefulWidget {
 
 class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   bool _isBusy = false;
+  final Map<String, bool> _downloadingPaths = {};
 
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;
@@ -266,55 +270,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                           ),
                       itemCount: currentItem.attachedFiles.length,
                       itemBuilder: (context, index) {
-                        final path = currentItem.attachedFiles[index];
-                        return GestureDetector(
-                          onTap: () => _viewAttachment(context, path),
-                          child: Stack(
-                            children: [
-                              Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).dividerColor.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).dividerColor.withValues(alpha: 0.1),
-                                  ),
-                                ),
-                                child: _buildAttachmentPreview(path),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _confirmDeleteAttachment(
-                                    context,
-                                    ref,
-                                    currentItem.id,
-                                    path,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.delete_outline,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
+                        return _buildAttachmentTile(context, currentItem, index);
                       },
                     ),
                   ],
@@ -412,6 +368,143 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleAttachmentTap(BuildContext context, String path, String? cloudId) async {
+    final file = File(path);
+    if (file.existsSync()) {
+      _viewAttachment(context, path);
+      return;
+    }
+
+    if (cloudId == null || cloudId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File not found locally and has no cloud backup.'),
+          backgroundColor: AppTheme.urgentRed,
+        ),
+      );
+      return;
+    }
+
+    // Start download
+    setState(() {
+      _downloadingPaths[path] = true;
+    });
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final token = await authService.getFreshAccessToken();
+      if (token == null) {
+        throw Exception('Please sign in to Google to download cloud files.');
+      }
+
+      final driveService = DriveService(GoogleAuthClient({'Authorization': 'Bearer $token'}));
+      try {
+        final success = await driveService.downloadAttachment(cloudId, path);
+        if (success) {
+          // Force a rebuild by updating state
+          setState(() {
+            _downloadingPaths[path] = false;
+          });
+          if (context.mounted) {
+            _viewAttachment(context, path);
+          }
+        } else {
+          throw Exception('Download failed.');
+        }
+      } finally {
+        driveService.dispose();
+      }
+    } catch (e) {
+      setState(() {
+        _downloadingPaths[path] = false;
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: AppTheme.urgentRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildAttachmentTile(BuildContext context, VaultItem item, int index) {
+    final path = item.attachedFiles[index];
+    final cloudId = index < item.cloudFileIds.length ? item.cloudFileIds[index] : null;
+    final fileExists = File(path).existsSync();
+    final isDownloading = _downloadingPaths[path] == true;
+
+    return GestureDetector(
+      onTap: () => _handleAttachmentTap(context, path, cloudId),
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+              ),
+            ),
+            child: fileExists
+                ? _buildAttachmentPreview(path)
+                : Opacity(
+                    opacity: 0.5,
+                    child: _buildAttachmentPreview(path),
+                  ),
+          ),
+          if (!fileExists)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: isDownloading
+                      ? const CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
+                      : const Icon(
+                          Icons.cloud_download_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                ),
+              ),
+            ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => _confirmDeleteAttachment(
+                context,
+                ref,
+                item.id,
+                path,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

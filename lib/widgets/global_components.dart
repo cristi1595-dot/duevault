@@ -392,8 +392,16 @@ class VaultItemTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF161A22), // Solid premium elevation
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF161A22) // Solid premium elevation
+                    : Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(16),
+                border: Theme.of(context).brightness == Brightness.light
+                    ? Border.all(
+                        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: IntrinsicHeight(
                 child: Row(
@@ -489,7 +497,7 @@ class VaultItemTile extends ConsumerWidget {
                                               ? Theme.of(
                                                   context,
                                                 ).textTheme.bodyMedium?.color
-                                              : Colors.white,
+                                              : Theme.of(context).textTheme.bodyLarge?.color,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
@@ -520,10 +528,10 @@ class VaultItemTile extends ConsumerWidget {
                                       fit: BoxFit.scaleDown,
                                       child: Text(
                                         currency.formatAmount(item.amount ?? 0.0),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 17,
-                                          color: Colors.white,
+                                          color: Theme.of(context).textTheme.bodyLarge?.color,
                                         ),
                                         textAlign: TextAlign.right,
                                       ),
