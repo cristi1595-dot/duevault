@@ -10,6 +10,7 @@ import '../../providers/vault_provider.dart';
 import '../../providers/security_provider.dart';
 import '../../models/app_config.dart';
 import '../../main.dart';
+import 'storage_reset_dialogs.dart';
 
 /// Shows the Storage & Reset bottom sheet allowing cache clearing, data wiping,
 /// and complete account deletion.
@@ -151,86 +152,75 @@ class StorageResetSheet extends ConsumerWidget {
     );
   }
 
+  Future<void> _runAction({
+    required BuildContext context,
+    required Future<bool?> Function() onConfirm,
+    required Future<void> Function() onExecute,
+    required String successMessage,
+    required String errorMessagePrefix,
+    VoidCallback? onSuccess,
+  }) async {
+    // 1. Close bottom sheet
+    Navigator.pop(context);
+
+    // 2. Ask for confirmation
+    final confirm = await onConfirm();
+    if (confirm != true) return;
+
+    if (!parentContext.mounted) return;
+
+    // 3. Show progress indicator dialog
+    unawaited(
+      showDialog(
+        context: parentContext,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      // 4. Run database/cloud tasks
+      await onExecute();
+
+      if (parentContext.mounted) {
+        Navigator.pop(parentContext); // Close progress dialog
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          SnackBar(
+            content: Text(successMessage),
+            backgroundColor: successMessage.contains('wiped') || successMessage.contains('deleted')
+                ? AppTheme.urgentRed
+                : null,
+          ),
+        );
+        onSuccess?.call();
+      }
+    } catch (e) {
+      if (parentContext.mounted) {
+        Navigator.pop(parentContext); // Close progress dialog
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          SnackBar(
+            content: Text('$errorMessagePrefix: $e'),
+            backgroundColor: AppTheme.urgentRed,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleClearCache(
     BuildContext context,
     WidgetRef ref,
     bool isGuest,
   ) async {
-    Navigator.pop(context); // Close bottom sheet
-
-    final confirm = await showDialog<bool>(
-      context: parentContext,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(ctx).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('Clear Local Cache'),
-        content: Text(
-          isGuest
-              ? 'This will permanently delete all local attached files/images from this phone. Your bills and documents list will remain.'
-              : 'This will delete local downloaded attached files/images from this phone to free up space. You can download them again from Google Drive when viewing them. Your bills and documents list will remain.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(ctx).textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.urgentRed,
-            ),
-            child: const Text(
-              'CLEAR CACHE',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+    await _runAction(
+      context: context,
+      onConfirm: () => showClearCacheConfirmDialog(parentContext, isGuest),
+      onExecute: () => ref.read(vaultProvider.notifier).clearLocalCache(),
+      successMessage: isGuest
+          ? 'Local attachments cache cleared.'
+          : 'Local attachments cache cleared. Attachments will download on demand.',
+      errorMessagePrefix: 'Failed',
     );
-
-    if (confirm == true) {
-      if (!parentContext.mounted) return;
-      unawaited(
-        showDialog(
-          context: parentContext,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(child: CircularProgressIndicator()),
-        ),
-      );
-
-      try {
-        await ref.read(vaultProvider.notifier).clearLocalCache();
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            SnackBar(
-              content: Text(
-                isGuest
-                    ? 'Local attachments cache cleared.'
-                    : 'Local attachments cache cleared. Attachments will download on demand.',
-              ),
-            ),
-          );
-        }
-      } catch (e) {
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            SnackBar(
-              content: Text('Failed: $e'),
-              backgroundColor: AppTheme.urgentRed,
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _handleEraseAllData(
@@ -238,202 +228,75 @@ class StorageResetSheet extends ConsumerWidget {
     WidgetRef ref,
     bool isGuest,
   ) async {
-    Navigator.pop(context); // Close bottom sheet
-
-    final confirm = await showDialog<bool>(
-      context: parentContext,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(ctx).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('WIPE EVERYTHING'),
-        content: const Text(
-          'WARNING: This will permanently delete ALL local data AND your Google Drive backup. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(ctx).textTheme.bodyMedium?.color,
-              ),
+    await _runAction(
+      context: context,
+      onConfirm: () => showWipeEverythingConfirmDialog(parentContext),
+      onExecute: () => ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: true),
+      successMessage: FirebaseAuth.instance.currentUser != null
+          ? 'All data has been wiped from device and cloud.'
+          : 'All local data has been wiped.',
+      errorMessagePrefix: 'Wipe failed',
+      onSuccess: () {
+        unawaited(
+          Navigator.pushAndRemoveUntil(
+            parentContext,
+            MaterialPageRoute(
+              builder: (_) => const MainNavigation(),
             ),
+            (route) => false,
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.urgentRed,
-            ),
-            child: const Text(
-              'ERASE CLOUD & PHONE',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
-
-    if (confirm == true) {
-      if (!parentContext.mounted) return;
-      unawaited(
-        showDialog(
-          context: parentContext,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(child: CircularProgressIndicator()),
-        ),
-      );
-
-      try {
-        await ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: true);
-
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          final isUserLoggedIn = FirebaseAuth.instance.currentUser != null;
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            SnackBar(
-              content: Text(
-                isUserLoggedIn
-                    ? 'All data has been wiped from device and cloud.'
-                    : 'All local data has been wiped.',
-              ),
-              backgroundColor: AppTheme.urgentRed,
-            ),
-          );
-          // Force navigation back to start
-          unawaited(
-            Navigator.pushAndRemoveUntil(
-              parentContext,
-              MaterialPageRoute(
-                builder: (_) => const MainNavigation(),
-              ),
-              (route) => false,
-            ),
-          );
-        }
-      } catch (e) {
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            SnackBar(
-              content: Text('Wipe failed: $e'),
-              backgroundColor: AppTheme.urgentRed,
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _handleDeleteAccount(
     BuildContext context,
     WidgetRef ref,
   ) async {
-    Navigator.pop(context); // Close bottom sheet
-
-    final confirm = await showDialog<bool>(
-      context: parentContext,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(ctx).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('DELETE ACCOUNT'),
-        content: const Text(
-          'WARNING: This is permanent and irreversible. This will delete all your local data, your Google Drive backup, your Firestore database records, and permanently close your account registration. You will be logged out completely.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(ctx).textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.urgentRed,
-            ),
-            child: const Text(
-              'DELETE CONT & DATE',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      if (!parentContext.mounted) return;
-      unawaited(
-        showDialog(
-          context: parentContext,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(child: CircularProgressIndicator()),
-        ),
-      );
-
-      try {
-        // 1. Reauthenticate first to refresh credentials and prevent stale-session errors
+    await _runAction(
+      context: context,
+      onConfirm: () => showDeleteAccountConfirmDialog(parentContext),
+      onExecute: () async {
+        // 1. Reauthenticate first
         await ref.read(authServiceProvider).reauthenticate();
 
-        // 2. Wipe local and cloud database items (Firestore & Drive AppData folder)
+        // 2. Wipe database & cloud
         await ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: true);
 
-        // 3. Reset Local Security/PIN state
+        // 3. Reset local PIN state
         await ref.read(securityProvider.notifier).reset();
 
-        // 4. Delete actual authentication registration
+        // 4. Delete registration
         await ref.read(authServiceProvider).deleteAccount();
 
-        // 5. Complete sign-out cleanly
+        // 5. Sign out
         await ref.read(authServiceProvider).signOut();
 
-        // 6. Switch the memory guest provider state to true
+        // 6. Set guest state
         ref.read(isGuestProvider.notifier).state = true;
 
-        // 7. Reset Isar config to switch back to guest mode automatically on launch
+        // 7. Reset Isar config
         final isar = ref.read(isarProvider);
         await isar.writeTxn(() async {
           final config = AppConfig()..isGuest = true;
           await isar.appConfigs.put(config);
         });
-
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            const SnackBar(
-              content: Text('Account and all data deleted successfully.'),
-              backgroundColor: AppTheme.urgentRed,
+      },
+      successMessage: 'Account and all data deleted successfully.',
+      errorMessagePrefix: 'Account deletion failed',
+      onSuccess: () {
+        unawaited(
+          Navigator.pushAndRemoveUntil(
+            parentContext,
+            MaterialPageRoute(
+              builder: (_) => const MainNavigation(),
             ),
-          );
-          // Force reset app navigation state
-          unawaited(
-            Navigator.pushAndRemoveUntil(
-              parentContext,
-              MaterialPageRoute(
-                builder: (_) => const MainNavigation(),
-              ),
-              (route) => false,
-            ),
-          );
-        }
-      } catch (e) {
-        if (parentContext.mounted) {
-          Navigator.pop(parentContext); // Close progress dialog
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            SnackBar(
-              content: Text('Account deletion failed: $e'),
-              backgroundColor: AppTheme.urgentRed,
-            ),
-          );
-        }
-      }
-    }
+            (route) => false,
+          ),
+        );
+      },
+    );
   }
 }
 
