@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
@@ -7,20 +6,18 @@ import '../providers/vault_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
 import '../providers/currency_provider.dart';
-import '../services/ocr_service.dart';
 import '../services/encryption_service.dart';
-import '../utils/permission_helper.dart';
-import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
-import '../utils/logger.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
+import 'add_shared/attachment_picker_helper.dart';
+import 'add_bill/bill_amount_date_row.dart';
+import 'add_bill/bill_recurrence_autopay_row.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -45,7 +42,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   bool _useOcr = true;
   bool _isProcessingOcr = false;
   bool _isSaving = false;
-  final ImagePicker _picker = ImagePicker();
 
   final List<CategoryData> _categories = AppCategories.billCategories;
 
@@ -87,161 +83,81 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    // 1. Permission Check - continue even if status is uncertain
-    if (!mounted) return;
-    if (source == ImageSource.camera) {
-      await PermissionHelper.requestCameraPermission(context);
-    } else {
-      await PermissionHelper.requestGalleryPermission(context);
-    }
-
-    if (!mounted) return;
-
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 1600, // Balanced resolution for mobile/cloud
-        imageQuality: 80, // High-quality compression
-      );
-      if (pickedFile != null && mounted) {
-        final file = File(pickedFile.path);
-        final fileSize = await file.length();
-
-        // 10MB limit (10 * 1024 * 1024)
-        if (fileSize > 10485760) {
-          _showValidationError(
-            'Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB',
-          );
-          return;
-        }
-
-        if (_useOcr) {
-          setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(File(pickedFile.path));
-          setState(() {
-            _isProcessingOcr = false;
-            if (result.probableAmount != null &&
-                _amountController.text.isEmpty) {
-              final valStr = result.probableAmount.toString();
-              if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
-                _amountController.text = valStr;
-              }
-            }
-            if (result.probableDate != null && _dueDate == null) {
-              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
-                _dueDate = result.probableDate;
-              }
-            }
-            if (_titleController.text.isEmpty) {
-              if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
-                _titleController.text = result.probableTitle!;
-              } else if (_dueDate != null) {
-                _titleController.text =
-                    'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
-              } else {
-                _titleController.text = 'Scanned Bill';
-              }
-            }
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(pickedFile.path);
-            }
-
-            // Optionally add raw OCR text to notes if empty
-            if (_notesController.text.isEmpty && result.rawText.isNotEmpty) {
-              // _notesController.text = 'OCR Text:\n${result.rawText}';
-              // Decided to keep notes clean, or user can uncomment this
-            }
-          });
-        } else {
-          setState(() {
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(pickedFile.path);
-            } else {
-              _showValidationError('Maximum 5 attachments allowed');
-            }
-          });
-        }
-      }
-    } catch (e) {
-      logger.e('Error picking image', error: e);
-    }
-  }
-
-  Future<void> _pickFiles() async {
-    // Try to request, but don't block
-    await PermissionHelper.requestGalleryPermission(context);
-
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg'],
-        allowMultiple: true,
-      );
-      if (result != null) {
-        final newPaths = result.paths.whereType<String>().toList();
-        final List<String> validPaths = [];
-
-        for (var path in newPaths) {
-          final file = File(path);
-          final fileSize = await file.length();
-
-          if (fileSize > 10485760) {
-            _showValidationError(
-              'File too large: ${p.basename(path)} (Max 10MB)',
-            );
-            continue;
-          }
-          validPaths.add(path);
-        }
-
+    await AttachmentPickerHelper.pickImage(
+      context: context,
+      source: source,
+      useOcr: _useOcr,
+      isDocument: false,
+      currentCount: _attachedFiles.length,
+      onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
+      onFileAdded: (path) {
         setState(() {
-          for (var path in validPaths) {
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(path);
+          _attachedFiles.add(path);
+        });
+      },
+      onOcrResult: (result) {
+        setState(() {
+          if (result.probableAmount != null && _amountController.text.isEmpty) {
+            final valStr = result.probableAmount.toString();
+            if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
+              _amountController.text = valStr;
+            }
+          }
+          if (result.probableDate != null && _dueDate == null) {
+            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+              _dueDate = result.probableDate;
+            }
+          }
+          if (_titleController.text.isEmpty) {
+            if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
+              _titleController.text = result.probableTitle!;
+            } else if (_dueDate != null) {
+              _titleController.text =
+                  'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
+            } else {
+              _titleController.text = 'Scanned Bill';
             }
           }
         });
+      },
+      onError: _showValidationError,
+    );
+  }
 
-        // OCR Support for Uploaded Images
-        final firstImagePath = validPaths.firstWhere(
-          (path) =>
-              path.toLowerCase().endsWith('.jpg') ||
-              path.toLowerCase().endsWith('.jpeg') ||
-              path.toLowerCase().endsWith('.png'),
-          orElse: () => '',
-        );
-
-        if (firstImagePath.isNotEmpty &&
-            (_amountController.text.isEmpty || _dueDate == null || _titleController.text.isEmpty)) {
-          setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(File(firstImagePath));
-          setState(() {
-            _isProcessingOcr = false;
-            if (result.probableAmount != null &&
-                _amountController.text.isEmpty) {
-              _amountController.text = result.probableAmount!.toStringAsFixed(
-                2,
-              );
+  Future<void> _pickFiles() async {
+    await AttachmentPickerHelper.pickFiles(
+      context: context,
+      useOcr: _useOcr,
+      isDocument: false,
+      currentCount: _attachedFiles.length,
+      onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
+      onFilesAdded: (paths) {
+        setState(() {
+          _attachedFiles.addAll(paths);
+        });
+      },
+      onOcrResult: (result) {
+        setState(() {
+          if (result.probableAmount != null && _amountController.text.isEmpty) {
+            _amountController.text = result.probableAmount!.toStringAsFixed(2);
+          }
+          if (result.probableDate != null && _dueDate == null) {
+            _dueDate = result.probableDate;
+          }
+          if (_titleController.text.isEmpty) {
+            if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
+              _titleController.text = result.probableTitle!;
+            } else if (_dueDate != null) {
+              _titleController.text =
+                  'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
+            } else {
+              _titleController.text = 'Scanned Bill';
             }
-            if (result.probableDate != null && _dueDate == null) {
-              _dueDate = result.probableDate;
-            }
-            if (_titleController.text.isEmpty) {
-              if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
-                _titleController.text = result.probableTitle!;
-              } else if (_dueDate != null) {
-                _titleController.text =
-                    'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
-              } else {
-                _titleController.text = 'Scanned Bill';
-              }
-            }
-          });
-        }
-      }
-    } catch (e) {
-      logger.e('Error picking files', error: e);
-    }
+          }
+        });
+      },
+      onError: _showValidationError,
+    );
   }
 
   Future<void> _pickDate() async {
@@ -443,183 +359,22 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
               ),
               const SizedBox(height: 10),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: BentoInputWrapper(
-                      label: 'AMOUNT (${currency.code})',
-                      child: SizedBox(
-                        height: 38,
-                        child: TextFormField(
-                          controller: _amountController,
-                          onChanged: (val) => setState(() {}),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                            signed: false,
-                          ),
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                            fontSize: 19,
-                          ),
-                          validator: (value) => ValidationHelper.validateAmount(value, isRequired: true),
-                          inputFormatters: [
-                            AmountInputFormatter(),
-                          ],
-                          decoration: const InputDecoration(
-                            hintText: '0.00',
-                            isDense: true,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.only(
-                              left: 16,
-                              right: 16,
-                              top: 10,
-                              bottom: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: BentoInputWrapper(
-                      label: 'DUE DATE',
-                      child: InkWell(
-                        onTap: _pickDate,
-                        child: Container(
-                          height: 38,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _dueDate != null
-                                    ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
-                                    : 'Select',
-                                style: TextStyle(
-                                  color: _dueDate != null
-                                      ? Theme.of(
-                                          context,
-                                        ).textTheme.bodyLarge?.color
-                                      : Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium?.color,
-                                  fontSize: 19,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.calendar_today,
-                                color: AppTheme.primaryAction,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              BillAmountDateRow(
+                amountController: _amountController,
+                dueDate: _dueDate,
+                currencyCode: currency.code,
+                onDateTap: _pickDate,
+                onAmountChanged: (val) => setState(() {}),
               ),
               const SizedBox(height: 10),
 
-              Row(
-                children: [
-                  // Recurrence (50%)
-                  Expanded(
-                    child: BentoInputWrapper(
-                      label: 'RECURRENCE',
-                      child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        alignment: Alignment.center,
-                        child: DropdownButton<String>(
-                          value: _recurrence,
-                          isExpanded: true,
-                          isDense: true,
-                          underline: const SizedBox(),
-                          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                          dropdownColor: Theme.of(context).cardTheme.color,
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                            fontSize: 19,
-                          ),
-                          items: ['None', 'Weekly', 'Monthly', 'Yearly'].map((
-                            String value,
-                          ) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (v) {
-                            if (v != null) setState(() => _recurrence = v);
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Direct Debit (50%)
-                  Expanded(
-                    child: BentoInputWrapper(
-                      label: 'AUTO-PAY',
-                      child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.account_balance_outlined,
-                                    color: _directDebit
-                                        ? AppTheme.primaryAction
-                                        : Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall?.color,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      'Direct Debit',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium?.color,
-                                        fontSize: 19,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: _directDebit,
-                              onChanged: (val) =>
-                                  setState(() => _directDebit = val),
-                              activeThumbColor: AppTheme.primaryAction,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ),
-                ],
+              BillRecurrenceAutoPayRow(
+                recurrence: _recurrence,
+                directDebit: _directDebit,
+                onRecurrenceChanged: (v) {
+                  if (v != null) setState(() => _recurrence = v);
+                },
+                onDirectDebitChanged: (val) => setState(() => _directDebit = val),
               ),
               const SizedBox(height: 10),
 

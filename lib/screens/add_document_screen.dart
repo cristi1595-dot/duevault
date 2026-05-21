@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
@@ -7,19 +6,15 @@ import '../providers/vault_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart';
-import '../services/ocr_service.dart';
 import '../services/encryption_service.dart';
-import '../utils/permission_helper.dart';
-import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
-import '../utils/logger.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
+import 'add_shared/attachment_picker_helper.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -40,7 +35,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool _useOcr = true;
   bool _isProcessingOcr = false;
   bool _isSaving = false;
-  final ImagePicker _picker = ImagePicker();
 
   final List<CategoryData> _categories = AppCategories.docCategories;
 
@@ -98,146 +92,69 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    // 1. Permission Check - continue even if status is uncertain
-    if (!mounted) return;
-    if (source == ImageSource.camera) {
-      await PermissionHelper.requestCameraPermission(context);
-    } else {
-      await PermissionHelper.requestGalleryPermission(context);
-    }
-
-    if (!mounted) return;
-
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 1600,
-        imageQuality: 80,
-      );
-      if (pickedFile != null && mounted) {
-        final file = File(pickedFile.path);
-        final fileSize = await file.length();
-
-        if (fileSize > 10485760) {
-          _showValidationError(
-            'Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB',
-          );
-          return;
-        }
-
-        if (_useOcr) {
-          setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(
-            File(pickedFile.path),
-            isDocument: true,
-          );
-          setState(() {
-            _isProcessingOcr = false;
-
-            // Auto-fill Title if empty
-            if (_titleController.text.isEmpty && result.probableTitle != null) {
-              final rawTitle = result.probableTitle!;
-              _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
-            } else if (_titleController.text.isEmpty) {
-              _titleController.text = 'Scanned Document';
-            }
-
-            // Auto-fill Expiry Date if found and not set
-            if (result.probableDate != null && _expiryDate == null) {
-              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
-                _expiryDate = result.probableDate;
-              }
-            }
-
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(pickedFile.path);
-            }
-          });
-        } else {
-          setState(() {
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(pickedFile.path);
-            } else {
-              _showValidationError('Maximum 5 attachments allowed');
-            }
-          });
-        }
-      }
-    } catch (e) {
-      logger.e('Error picking image', error: e);
-    }
-  }
-
-  Future<void> _pickFiles() async {
-    // We try to request, but don't block, as FilePicker handles its own permissions on many platforms
-    await PermissionHelper.requestGalleryPermission(context);
-
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg'],
-        allowMultiple: true,
-      );
-      if (result != null) {
-        final newPaths = result.paths.whereType<String>().toList();
-        final List<String> validPaths = [];
-
-        for (var path in newPaths) {
-          final file = File(path);
-          final fileSize = await file.length();
-
-          if (fileSize > 10485760) {
-            _showValidationError(
-              'File too large: ${p.basename(path)} (Max 10MB)',
-            );
-            continue;
-          }
-          validPaths.add(path);
-        }
-
+    await AttachmentPickerHelper.pickImage(
+      context: context,
+      source: source,
+      useOcr: _useOcr,
+      isDocument: true,
+      currentCount: _attachedFiles.length,
+      onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
+      onFileAdded: (path) {
         setState(() {
-          for (var path in validPaths) {
-            if (_attachedFiles.length < 5) {
-              _attachedFiles.add(path);
+          _attachedFiles.add(path);
+        });
+      },
+      onOcrResult: (result) {
+        setState(() {
+          // Auto-fill Title if empty
+          if (_titleController.text.isEmpty && result.probableTitle != null) {
+            final rawTitle = result.probableTitle!;
+            _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+          } else if (_titleController.text.isEmpty) {
+            _titleController.text = 'Scanned Document';
+          }
+
+          // Auto-fill Expiry Date if found and not set
+          if (result.probableDate != null && _expiryDate == null) {
+            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+              _expiryDate = result.probableDate;
             }
           }
         });
+      },
+      onError: _showValidationError,
+    );
+  }
 
-        // OCR Support for Uploaded Images
-        final firstImagePath = validPaths.firstWhere(
-          (path) =>
-              path.toLowerCase().endsWith('.jpg') ||
-              path.toLowerCase().endsWith('.jpeg') ||
-              path.toLowerCase().endsWith('.png'),
-          orElse: () => '',
-        );
-
-        if (firstImagePath.isNotEmpty &&
-            (_titleController.text.isEmpty || _expiryDate == null)) {
-          setState(() => _isProcessingOcr = true);
-          final result = await OcrService.processImage(
-            File(firstImagePath),
-            isDocument: true,
-          );
-          setState(() {
-            _isProcessingOcr = false;
-            if (_titleController.text.isEmpty && result.probableTitle != null) {
-              final rawTitle = result.probableTitle!;
-              _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
-            } else if (_titleController.text.isEmpty) {
-              _titleController.text = 'Scanned Document';
+  Future<void> _pickFiles() async {
+    await AttachmentPickerHelper.pickFiles(
+      context: context,
+      useOcr: _useOcr,
+      isDocument: true,
+      currentCount: _attachedFiles.length,
+      onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
+      onFilesAdded: (paths) {
+        setState(() {
+          _attachedFiles.addAll(paths);
+        });
+      },
+      onOcrResult: (result) {
+        setState(() {
+          if (_titleController.text.isEmpty && result.probableTitle != null) {
+            final rawTitle = result.probableTitle!;
+            _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+          } else if (_titleController.text.isEmpty) {
+            _titleController.text = 'Scanned Document';
+          }
+          if (result.probableDate != null && _expiryDate == null) {
+            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+              _expiryDate = result.probableDate;
             }
-            if (result.probableDate != null && _expiryDate == null) {
-              if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
-                _expiryDate = result.probableDate;
-              }
-            }
-          });
-        }
-      }
-    } catch (e) {
-      logger.e('Error picking files', error: e);
-    }
+          }
+        });
+      },
+      onError: _showValidationError,
+    );
   }
 
   Future<void> _pickDate() async {
