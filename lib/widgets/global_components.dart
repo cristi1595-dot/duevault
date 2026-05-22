@@ -3,7 +3,6 @@ export 'sync_status_indicator.dart';
 export 'bento_card.dart';
 export 'status_badge.dart';
 export 'vault_item_tile.dart';
-export 'critical_alert_card.dart';
 export 'integrated_bottom_nav_bar.dart';
 export 'custom_input_field.dart';
 export 'primary_button.dart';

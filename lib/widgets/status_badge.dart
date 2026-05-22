@@ -30,25 +30,21 @@ class StatusBadge extends StatelessWidget {
       textColor = const Color(0xFF94A3B8); // Muted Slate
     }
 
-    final Color bgColor = textColor.withValues(alpha: 0.08);
+    final Color bgColor = textColor.withValues(alpha: 0.12);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3.5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: textColor.withValues(alpha: 0.15),
-          width: 1.0,
-        ),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label.toUpperCase(),
         style: TextStyle(
           color: textColor,
-          fontSize: isDocument ? 10 : 9,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.6,
+          fontSize: isDocument ? 10.5 : 9.5,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
         ),
       ),
     );

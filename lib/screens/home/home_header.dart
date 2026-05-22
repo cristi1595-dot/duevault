@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/vault_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/currency_provider.dart';
 import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
 import '../settings_screen.dart';
@@ -12,33 +10,6 @@ class HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vaultItems = ref.watch(vaultProvider);
-    final currency = ref.watch(currencyProvider);
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final overdueBills = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.dueDate == null) {
-        return false;
-      }
-      return item.dueDate!.isBefore(today);
-    }).toList();
-
-    final expiredDocs = vaultItems.where((item) {
-      if (item.itemType != 'Document' ||
-          item.isArchived ||
-          item.dueDate == null) {
-        return false;
-      }
-      return item.dueDate!.isBefore(today);
-    }).toList();
-
-    final totalDueOverdue = overdueBills.fold(
-      0.0,
-      (sum, item) => sum + (item.amount ?? 0),
-    );
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
       child: Column(
@@ -163,24 +134,6 @@ class HomeHeader extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Alerts
-          if (overdueBills.isNotEmpty) ...[
-            CriticalAlertCard(
-              message:
-                  '${overdueBills.length} Overdue Payment: ${currency.formatAmount(totalDueOverdue)}',
-              onTap: () {},
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (expiredDocs.isNotEmpty) ...[
-            CriticalAlertCard(
-              message:
-                  '${expiredDocs.length} Expired Document${expiredDocs.length > 1 ? 's' : ''}: Needs Attention',
-              onTap: () {},
-            ),
-            const SizedBox(height: 8),
-          ],
         ],
       ),
     );

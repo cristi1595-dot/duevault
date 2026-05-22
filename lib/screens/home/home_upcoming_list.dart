@@ -16,7 +16,7 @@ class HomeUpcomingList extends ConsumerWidget {
 
   Widget _buildGroupHeader(String title, int count, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 5, 4, 5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -30,10 +30,10 @@ class HomeUpcomingList extends ConsumerWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: color.withValues(alpha: 0.15),
                 width: 1,
@@ -42,7 +42,7 @@ class HomeUpcomingList extends ConsumerWidget {
             child: Text(
               '$count ${count == 1 ? "item" : "items"}',
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: color,
                 letterSpacing: 0.5,

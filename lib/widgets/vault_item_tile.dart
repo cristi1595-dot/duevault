@@ -39,9 +39,9 @@ class VaultItemTile extends ConsumerWidget {
     final itemColor = isBill ? const Color(0xFF6366F1) : const Color(0xFF34D399);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 5),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Dismissible(
           key: ValueKey(item.id),
           direction: DismissDirection.horizontal,
@@ -179,13 +179,13 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                   );
                 },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? const Color(0xFF161A22) // Solid premium elevation
                     : Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 border: Theme.of(context).brightness == Brightness.light
                     ? Border.all(
                         color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
@@ -199,12 +199,12 @@ class VaultItemTile extends ConsumerWidget {
                   children: [
                     // Left Icon Box: occupies full height
                     Container(
-                      width: 52,
+                      width: 57,
                       decoration: BoxDecoration(
                         color: itemColor.withValues(alpha: 0.08),
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          bottomLeft: Radius.circular(16),
+                          topLeft: Radius.circular(18),
+                          bottomLeft: Radius.circular(18),
                         ),
                       ),
                       child: Stack(
@@ -213,20 +213,20 @@ class VaultItemTile extends ConsumerWidget {
                             child: Icon(
                               CategoryUtils.getIcon(item.category),
                               color: itemColor,
-                              size: 28,
+                              size: 31,
                             ),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
                             child: Container(
-                              width: 18,
-                              height: 18,
+                              width: 20,
+                              height: 20,
                               decoration: BoxDecoration(
                                 color: itemColor,
                                 borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(5),
-                                  bottomLeft: Radius.circular(5),
+                                  topLeft: Radius.circular(6),
+                                  bottomLeft: Radius.circular(6),
                                 ),
                               ),
                               child: Center(
@@ -234,7 +234,7 @@ class VaultItemTile extends ConsumerWidget {
                                     isBill ? 'B' : 'D',
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 10,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w900,
                                       height: 1.0,
                                     ),
@@ -248,10 +248,10 @@ class VaultItemTile extends ConsumerWidget {
                     Expanded(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
-                          12,
-                          4,
-                          (!item.isPaid && onCheckPressed != null) ? 6 : 12,
-                          4,
+                          13,
+                          5,
+                          (!item.isPaid && onCheckPressed != null) ? 3 : 13,
+                          5,
                         ),
                         child: Row(
                           children: [
@@ -277,7 +277,7 @@ class VaultItemTile extends ConsumerWidget {
                                             final rawTitle = item.title.isEmpty
                                                 ? item.category
                                                 : item.title;
-                                            return rawTitle.length > 20 ? 13.0 : 16.0;
+                                            return rawTitle.length > 20 ? 14.5 : 17.5;
                                           }(),
                                           height: 1.1,
                                           decoration: item.isPaid
@@ -291,7 +291,7 @@ class VaultItemTile extends ConsumerWidget {
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
-                                  const SizedBox(height: 1),
+                                  const SizedBox(height: 2),
                                   Text(
                                     item.dueDate != null
                                         ? '${isBill ? "Due" : "Expires"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
@@ -299,16 +299,18 @@ class VaultItemTile extends ConsumerWidget {
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodyMedium?.copyWith(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade500,
+                                      fontSize: 13,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white.withValues(alpha: 0.45)
+                                          : Colors.black.withValues(alpha: 0.45),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 9),
                             SizedBox(
-                              width: 100,
+                              width: 110,
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -319,8 +321,9 @@ class VaultItemTile extends ConsumerWidget {
                                       child: Text(
                                         currency.formatAmount(item.amount ?? 0.0),
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 20,
+                                          letterSpacing: -0.2,
                                           color: Theme.of(context).textTheme.bodyLarge?.color,
                                         ),
                                         textAlign: TextAlign.right,
@@ -353,26 +356,35 @@ class VaultItemTile extends ConsumerWidget {
                     if (!item.isPaid && onCheckPressed != null)
                       GestureDetector(
                         onTap: onCheckPressed,
+                        behavior: HitTestBehavior.opaque,
                         child: Container(
-                          width: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(16),
-                              bottomRight: Radius.circular(16),
-                            ),
-                            border: Border(
-                              left: BorderSide(
-                                color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
-                                width: 1,
-                              ),
+                          width: 48,
+                          decoration: const BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.only(
+                              topRight: Radius.circular(18),
+                              bottomRight: Radius.circular(18),
                             ),
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.check_rounded,
-                              color: Color(0xFF6366F1),
-                              size: 20,
+                          child: Center(
+                            child: Container(
+                              width: 33,
+                              height: 33,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+                                border: Border.all(
+                                  color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                                  width: 1.3,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.check_rounded,
+                                  color: Color(0xFF6366F1),
+                                  size: 23,
+                                ),
+                              ),
                             ),
                           ),
                         ),
