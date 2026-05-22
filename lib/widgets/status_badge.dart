@@ -27,7 +27,7 @@ class StatusBadge extends StatelessWidget {
     } else if (label == 'PERMANENT' || label == 'RENEWED') {
       textColor = const Color(0xFF34D399); // Valid Green
     } else {
-      textColor = const Color(0xFF94A3B8); // Muted Slate
+      textColor = const Color(0xFF10B981); // Green (safe zone > 7 days)
     }
 
     final Color bgColor = textColor.withValues(alpha: 0.12);

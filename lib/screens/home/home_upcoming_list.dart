@@ -109,6 +109,7 @@ class HomeUpcomingList extends ConsumerWidget {
                 child: VaultItemTile(
                   item: item,
                   currency: currency,
+                  isHomeScreen: true,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -147,6 +148,7 @@ class HomeUpcomingList extends ConsumerWidget {
                 child: VaultItemTile(
                   item: item,
                   currency: currency,
+                  isHomeScreen: true,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -181,6 +183,7 @@ class HomeUpcomingList extends ConsumerWidget {
                 child: VaultItemTile(
                   item: item,
                   currency: currency,
+                  isHomeScreen: true,
                   onTap: () {
                     Navigator.push(
                       context,

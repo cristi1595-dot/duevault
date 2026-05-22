@@ -19,6 +19,7 @@ class VaultItemTile extends ConsumerWidget {
   final VoidCallback? onTap;
   final VoidCallback? onCheckPressed;
   final Currency currency;
+  final bool isHomeScreen;
 
   const VaultItemTile({
     super.key,
@@ -26,6 +27,7 @@ class VaultItemTile extends ConsumerWidget {
     this.onTap,
     this.onCheckPressed,
     required this.currency,
+    this.isHomeScreen = false,
   });
 
   @override
@@ -37,6 +39,28 @@ class VaultItemTile extends ConsumerWidget {
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
     final itemColor = isBill ? const Color(0xFF6366F1) : const Color(0xFF34D399);
+
+    final Color statusColor;
+    if (item.isPaid) {
+      statusColor = const Color(0xFF34D399); // Mint Sage
+    } else if (isOverdue || (daysLeft <= 3)) {
+      statusColor = const Color(0xFFE11D48); // Red
+    } else if (daysLeft <= 7) {
+      statusColor = const Color(0xFFF59E0B); // Amber
+    } else {
+      statusColor = const Color(0xFF10B981); // Green (safe zone > 7 days)
+    }
+
+    Color cardBg = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF161A22)
+        : (Theme.of(context).cardTheme.color ?? Colors.white);
+
+    if (isHomeScreen && !isInHistory) {
+      cardBg = Color.alphaBlend(
+        statusColor.withValues(alpha: 0.04),
+        cardBg,
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
@@ -182,16 +206,19 @@ class VaultItemTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(18),
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF161A22) // Solid premium elevation
-                    : Theme.of(context).cardTheme.color,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(18),
-                border: Theme.of(context).brightness == Brightness.light
+                border: isHomeScreen && !isInHistory
                     ? Border.all(
-                        color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-                        width: 1,
+                        color: statusColor.withValues(alpha: 0.15),
+                        width: 1.2,
                       )
-                    : null,
+                    : (Theme.of(context).brightness == Brightness.light
+                        ? Border.all(
+                            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                            width: 1,
+                          )
+                        : null),
               ),
               child: IntrinsicHeight(
                 child: Row(
@@ -200,49 +227,31 @@ class VaultItemTile extends ConsumerWidget {
                     // Left Icon Box: occupies full height
                     Container(
                       width: 57,
-                      decoration: BoxDecoration(
-                        color: itemColor.withValues(alpha: 0.08),
-                        borderRadius: const BorderRadius.only(
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(18),
                           bottomLeft: Radius.circular(18),
                         ),
                       ),
-                      child: Stack(
-                        children: [
-                          Center(
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: itemColor.withValues(alpha: 0.08),
+                            shape: isBill ? BoxShape.circle : BoxShape.rectangle,
+                            borderRadius: isBill
+                                ? null
+                                : BorderRadius.circular(10),
+                          ),
+                          child: Center(
                             child: Icon(
                               CategoryUtils.getIcon(item.category),
                               color: itemColor,
-                              size: 31,
+                              size: 24,
                             ),
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: itemColor,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(6),
-                                  bottomLeft: Radius.circular(6),
-                                ),
-                              ),
-                              child: Center(
-                                  child: Text(
-                                    isBill ? 'B' : 'D',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w900,
-                                      height: 1.0,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                     Expanded(
@@ -294,8 +303,8 @@ class VaultItemTile extends ConsumerWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     item.dueDate != null
-                                        ? '${isBill ? "Due" : "Expires"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
-                                        : (isBill ? 'No due date' : 'Permanent'),
+                                        ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
+                                        : (isBill ? 'Bill • No due date' : 'Doc • Permanent'),
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodyMedium?.copyWith(
