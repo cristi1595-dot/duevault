@@ -1,11 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
-import 'package:path_provider/path_provider.dart';
-import '../models/app_config.dart';
 import '../services/migration_service.dart';
 import '../models/vault_item.dart';
 import '../repositories/vault_repository.dart';
@@ -15,9 +11,8 @@ import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../services/auto_sync_service.dart';
 import '../services/firebase_sync_service.dart';
-import '../services/notification_service.dart';
-import '../services/encryption_service.dart';
-import '../services/drive_service.dart';
+import '../services/vault_notification_helper.dart';
+import '../services/vault_data_manager.dart';
 
 final vaultRepositoryProvider = Provider<VaultRepository>((ref) {
   final isar = ref.watch(isarProvider);
@@ -262,51 +257,15 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     final notificationTime = ref.read(notificationTimeProvider);
     final notificationsEnabled = ref.read(globalNotificationsProvider);
 
-    // ═══════ DIAGNOSTIC: Riverpod State ═══════
-    debugPrint('╔══════════════════════════════════════════════════════');
-    debugPrint('║ 🔄 rescheduleAllNotifications() CALLED');
-    debugPrint('║ Global Notifications Enabled: $notificationsEnabled');
-    debugPrint('║ First Reminder: ${threeDayAlert ? "ON" : "OFF"} ($alertDays days)');
-    debugPrint('║ Final Reminder: ${finalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days)');
-    debugPrint('║ Notification Time: ${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}');
-    debugPrint('║ Total items in Riverpod state: ${state.length}');
-    debugPrint('╚══════════════════════════════════════════════════════');
-    // ═══════ END DIAGNOSTIC ═══════
-
-    int scheduledCount = 0;
-    int skippedCount = 0;
-
-    for (final item in state) {
-      if ((item.itemType == 'Bill' || item.itemType == 'Document') &&
-          item.dueDate != null &&
-          !item.isPaid && !item.isArchived) {
-        
-        if (notificationsEnabled) {
-          scheduledCount++;
-          await NotificationService.scheduleDualAlerts(
-            billId: item.id,
-            billTitle: item.title,
-            dueDate: item.dueDate!,
-            firstReminderDays: alertDays,
-            finalReminderDays: finalReminderDays,
-            isFirstReminderEnabled: threeDayAlert,
-            isFinalReminderEnabled: finalReminderEnabled,
-            notificationHour: notificationTime.hour,
-            notificationMinute: notificationTime.minute,
-            itemType: item.itemType ?? 'Document',
-            amount: item.amount,
-          );
-        } else {
-          await NotificationService.cancelBillNotifications(item.id);
-        }
-      } else {
-        skippedCount++;
-      }
-    }
-
-    // ═══════ DIAGNOSTIC: Summary ═══════
-    debugPrint('🏁 rescheduleAll DONE: $scheduledCount scheduled, $skippedCount skipped (paid/archived/no-date)');
-    // ═══════ END DIAGNOSTIC ═══════
+    await VaultNotificationHelper.rescheduleAll(
+      items: state,
+      alertDays: alertDays,
+      threeDayAlert: threeDayAlert,
+      finalReminderDays: finalReminderDays,
+      finalReminderEnabled: finalReminderEnabled,
+      notificationTime: notificationTime,
+      notificationsEnabled: notificationsEnabled,
+    );
   }
 
   Future<void> deleteItem(int id) async {
@@ -344,141 +303,46 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
   Future<void> removeAttachment(int itemId, String localPath) async {
     final isar = ref.read(isarProvider);
-    final item = await isar.collection<VaultItem>().get(itemId);
-    if (item == null) return;
+    final authService = ref.read(authServiceProvider);
+    final token = await authService.getFreshAccessToken();
 
-    // 1. Remove from local file system
-    try {
-      final file = File(localPath);
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (e) {
-      logger.e('Error deleting local file: $localPath', error: e);
-    }
+    final removed = await VaultDataManager.removeAttachment(
+      isar: isar,
+      itemId: itemId,
+      localPath: localPath,
+      userAccessToken: token,
+    );
 
-    // 2. Identify and remove from cloud (Drive)
-    final index = item.attachedFiles.indexOf(localPath);
-    if (index != -1) {
-      if (index < item.cloudFileIds.length) {
-        final cloudId = item.cloudFileIds[index];
-        if (cloudId.isNotEmpty) {
-          // Trigger async cloud deletion
-          unawaited(_deleteFromCloud(cloudId));
-        }
-        item.cloudFileIds.removeAt(index);
-      }
-
-      // Update item lists
-      item.attachedFiles.removeAt(index);
-      item.lastModified = DateTime.now();
-
-      // 3. Persist change
-      await isar.writeTxn(() async {
-        await isar.collection<VaultItem>().put(item);
-      });
-
+    if (removed) {
       await _loadItems(FirebaseAuth.instance.currentUser);
       await _markAsDirty();
       _triggerSync();
-
-      logger.i('Attachment removed: $localPath');
-    }
-  }
-
-  Future<void> _deleteFromCloud(String fileId) async {
-    final authService = ref.read(authServiceProvider);
-    final token = await authService.getFreshAccessToken();
-    if (token != null) {
-      final driveService = DriveService(
-        GoogleAuthClient({'Authorization': 'Bearer $token'}),
-      );
-      try {
-        await driveService.deleteFile(fileId);
-        logger.i('Cloud file deleted: $fileId');
-      } catch (e) {
-        logger.e('Failed to delete cloud file: $fileId', error: e);
-      } finally {
-        driveService.dispose();
-      }
     }
   }
 
   Future<void> clearLocalCache() async {
-    logger.i('VaultNotifier: clearLocalCache called!');
-    final appDir = await getApplicationDocumentsDirectory();
-    final attachmentsDir = Directory('${appDir.path}/attachments');
-    if (await attachmentsDir.exists()) {
-      final entities = await attachmentsDir.list().toList();
-      for (final entity in entities) {
-        if (entity is File) {
-          try {
-            await entity.delete();
-          } catch (e) {
-            logger.e('Error deleting cached file: ${entity.path}', error: e);
-          }
-        }
-      }
-    }
+    await VaultDataManager.clearLocalCache();
   }
 
   Future<void> clearAllData({bool alsoDeleteCloud = false}) async {
-    logger.w(
-      'VaultNotifier: clearAllData called! alsoDeleteCloud: $alsoDeleteCloud',
-    );
     final isar = ref.read(isarProvider);
+    final user = ref.read(authStateProvider).valueOrNull;
 
-    // 1. Notifications cleanup
-    final allItems = await isar.collection<VaultItem>().where().findAll();
-    for (final item in allItems) {
-      await NotificationService.cancelBillNotifications(item.id);
+    String? token;
+    if (alsoDeleteCloud && user != null) {
+      final authService = ref.read(authServiceProvider);
+      token = await authService.getFreshAccessToken();
     }
 
-    // 2. Local wipe
-    final appDir = await getApplicationDocumentsDirectory();
-    final attachmentsDir = Directory('${appDir.path}/attachments');
-    if (await attachmentsDir.exists()) {
-      await attachmentsDir.delete(recursive: true);
-    }
-
-    await EncryptionService.deleteKey();
-
-    await isar.writeTxn(() async {
-      await isar.collection<VaultItem>().clear();
-      if (alsoDeleteCloud) {
-        await isar.collection<AppConfig>().clear();
-      }
-    });
-
-    // 2b. Recreate attachments directory to avoid path errors
-    if (!await attachmentsDir.exists()) {
-      await attachmentsDir.create(recursive: true);
-    }
+    await VaultDataManager.clearAllData(
+      isar: isar,
+      alsoDeleteCloud: alsoDeleteCloud,
+      currentUser: user,
+      userAccessToken: token,
+      firebaseSyncService: ref.read(firebaseSyncServiceProvider),
+    );
 
     state = [];
-
-    // 3. Cloud wipe
-    if (alsoDeleteCloud) {
-      final user = ref.read(authStateProvider).valueOrNull;
-      if (user != null) {
-        // Wipe Firestore
-        await ref.read(firebaseSyncServiceProvider).wipeData(user.uid);
-
-        // Wipe Drive
-        final authService = ref.read(authServiceProvider);
-        final token = await authService.getFreshAccessToken();
-        if (token != null) {
-          final driveService = DriveService(
-            GoogleAuthClient({'Authorization': 'Bearer $token'}),
-          );
-          try {
-            await driveService.deleteBackup();
-          } finally {
-            driveService.dispose();
-          }
-        }
-      }
-    }
   }
 }
 
