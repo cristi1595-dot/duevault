@@ -9,6 +9,7 @@ import '../models/app_config.dart';
 import '../services/auto_sync_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../providers/notification_provider.dart';
+import '../providers/vault_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'onboarding/onboarding_notifications_page.dart';
