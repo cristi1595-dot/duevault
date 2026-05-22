@@ -257,6 +257,7 @@ class MainNavigation extends ConsumerWidget {
     final currentIndex = ref.watch(bottomNavIndexProvider);
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(index: currentIndex, children: _screens),
       bottomNavigationBar: IntegratedBottomNavBar(
         currentIndex: currentIndex,

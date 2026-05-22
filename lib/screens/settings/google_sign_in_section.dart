@@ -169,9 +169,9 @@ class GoogleSignInSection extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),

@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/analytics_service.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
 import 'settings_list_tile.dart';
-import 'settings_section_header.dart';
 
 class InterfaceCustomizationSection extends ConsumerWidget {
   const InterfaceCustomizationSection({super.key});
@@ -17,39 +14,34 @@ class InterfaceCustomizationSection extends ConsumerWidget {
     final themeMode = ref.watch(themeProvider);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SettingsSectionHeader(title: 'INTERFACE CUSTOMIZATION'),
-        const SizedBox(height: 2),
-        BentoCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _buildCurrencyItem(context, ref, currentCurrency),
-              SettingsListTile(
-                icon: themeMode == ThemeMode.dark
-                    ? Icons.dark_mode_outlined
-                    : Icons.light_mode_outlined,
-                title: 'Light & Dark Mode',
-                trailing: SizedBox(
-                  height: 24,
-                  child: Switch(
-                    value: themeMode == ThemeMode.dark,
-                    onChanged: (v) {
-                      ref.read(themeProvider.notifier).toggleTheme();
-                      ref.read(analyticsServiceProvider).logSettingsChanged(
-                            'theme_mode',
-                            themeMode == ThemeMode.dark ? 'light' : 'dark',
-                          );
-                    },
-                    activeThumbColor: AppTheme.primaryAction,
-                    activeTrackColor: AppTheme.primaryAction.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                ),
+        _buildCurrencyItem(context, ref, currentCurrency),
+        Divider(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+          height: 1,
+          indent: 56,
+        ),
+        SettingsListTile(
+          icon: themeMode == ThemeMode.dark
+              ? Icons.dark_mode_outlined
+              : Icons.light_mode_outlined,
+          title: 'Light & Dark Mode',
+          trailing: SizedBox(
+            height: 24,
+            child: Switch(
+              value: themeMode == ThemeMode.dark,
+              onChanged: (v) {
+                ref.read(themeProvider.notifier).toggleTheme();
+                ref.read(analyticsServiceProvider).logSettingsChanged(
+                      'theme_mode',
+                      themeMode == ThemeMode.dark ? 'light' : 'dark',
+                    );
+              },
+              activeThumbColor: Colors.greenAccent,
+              activeTrackColor: Colors.greenAccent.withValues(
+                alpha: 0.3,
               ),
-            ],
+            ),
           ),
         ),
       ],

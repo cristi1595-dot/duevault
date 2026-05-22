@@ -46,7 +46,7 @@ class VaultListBuilder extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 100),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];

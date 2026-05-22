@@ -60,7 +60,7 @@ class SettingsListTile extends StatelessWidget {
             color: Theme.of(context).textTheme.bodySmall?.color,
             size: 14,
           ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 }

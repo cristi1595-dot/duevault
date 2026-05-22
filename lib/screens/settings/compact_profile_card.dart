@@ -4,7 +4,6 @@ import 'dart:async';
 
 import '../../models/app_config.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/security_provider.dart';
 import '../../providers/database_provider.dart';
@@ -28,8 +27,38 @@ class CompactProfileCard extends ConsumerWidget {
           ref.read(analyticsServiceProvider).logUserType(isGuest);
         });
 
-        return BentoCard(
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF1E222B),
+                      const Color(0xFF13171F),
+                    ]
+                  : [
+                      const Color(0xFFF8FAFC),
+                      const Color(0xFFE2E8F0),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: isDark
+                  ? Colors.greenAccent.withValues(alpha: 0.15)
+                  : Colors.greenAccent.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Row(
             children: [
               Container(
@@ -38,8 +67,8 @@ class CompactProfileCard extends ConsumerWidget {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      AppTheme.primaryAction.withValues(alpha: 0.8),
-                      AppTheme.primaryAction.withValues(alpha: 0.2),
+                      Colors.greenAccent.withValues(alpha: 0.8),
+                      Colors.greenAccent.withValues(alpha: 0.2),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,

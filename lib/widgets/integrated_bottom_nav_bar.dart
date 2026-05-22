@@ -1,5 +1,5 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 
 class IntegratedBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -18,26 +18,50 @@ class IntegratedBottomNavBar extends StatelessWidget {
     final inactiveColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
 
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
+    return SafeArea(
+      bottom: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.65), // Dark semi-transparent background
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _buildNavItem(
+                      0,
+                      Icons.home_rounded,
+                      'Home',
+                      inactiveColor,
+                    ),
+                  ),
+                  _buildAddButton(),
+                  Expanded(
+                    child: _buildNavItem(
+                      1,
+                      Icons.folder_rounded,
+                      'Vault',
+                      inactiveColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
-      padding: EdgeInsets.zero,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: _buildNavItem(0, Icons.home_filled, 'Home', inactiveColor),
-          ),
-          _buildAddButton(),
-          Expanded(
-            child: _buildNavItem(1, Icons.folder_copy, 'Vault', inactiveColor),
-          ),
-        ],
       ),
     );
   }
@@ -49,8 +73,8 @@ class IntegratedBottomNavBar extends StatelessWidget {
     Color inactiveColor,
   ) {
     final isSelected = currentIndex == index;
-    const activeColor = AppTheme.primaryAction;
-    final color = isSelected ? activeColor : inactiveColor;
+    const activeColor = Colors.greenAccent;
+    final color = isSelected ? activeColor : inactiveColor.withValues(alpha: 0.5);
 
     return GestureDetector(
       onTap: () => onTap(index),
@@ -58,14 +82,29 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 34),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          Icon(
+            icon,
+            color: color,
+            size: 26,
+          ),
+          const SizedBox(height: 6),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            width: isSelected ? 16 : 0,
+            height: 3,
+            decoration: BoxDecoration(
+              color: Colors.greenAccent,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.greenAccent.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         ],
@@ -77,14 +116,34 @@ class IntegratedBottomNavBar extends StatelessWidget {
     return GestureDetector(
       onTap: onAddPressed,
       child: Container(
-        width: 80,
-        height: 80,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
-          color: AppTheme.primaryAction,
-          borderRadius: BorderRadius.circular(20), // Matches Bento style radius
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            colors: [
+              Colors.greenAccent,
+              Color(0xFF00E676), // bright neon green
+            ],
+            center: Alignment.center,
+            radius: 0.85,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.greenAccent.withValues(alpha: 0.35),
+              blurRadius: 12,
+              spreadRadius: 2,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 40),
+        child: const Icon(
+          Icons.add,
+          color: Colors.black, // High contrast dark icon
+          size: 28,
+        ),
       ),
     );
   }
 }
+

@@ -8,6 +8,7 @@ import 'settings/google_sign_in_section.dart';
 import 'settings/interface_customization_section.dart';
 import 'settings/security_lock_section.dart';
 import 'settings/settings_permission_helper.dart';
+import 'settings/settings_section_header.dart';
 import 'settings/settings_version_footer.dart';
 import 'settings/smart_alerts_section.dart';
 import 'settings/storage_integrity_section.dart';
@@ -85,6 +86,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
+  Widget _buildCategoryCard(BuildContext context, {required Widget child}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,13 +137,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Profile Header
             const CompactProfileCard(),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
 
             // 1.1 Sign In Option (Only for Guests) - Directly under Guest User
             Consumer(
@@ -126,7 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 final isProcessing = ref.watch(isProcessingAuthSyncProvider);
                 if (user == null || isProcessing) {
                   return const Padding(
-                    padding: EdgeInsets.only(bottom: 6),
+                    padding: EdgeInsets.only(bottom: 12),
                     child: GoogleSignInSection(),
                   );
                 }
@@ -135,30 +162,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
 
             // 1.5 Biometric Lock (Security)
-            const SecurityLockSection(),
-            const SizedBox(height: 4),
+            const SettingsSectionHeader(title: 'SECURITY'),
+            const SizedBox(height: 6),
+            _buildCategoryCard(
+              context,
+              child: const SecurityLockSection(),
+            ),
 
-            // 2. Sync Options (Only for Authenticated Users)
-            const DriveSyncSection(),
-            const SizedBox(height: 4),
-
-            // 3. Preferences Section
-            const InterfaceCustomizationSection(),
-            const SizedBox(height: 4),
+            // 3. Preferences (Interface) Section
+            const SettingsSectionHeader(title: 'INTERFACE'),
+            const SizedBox(height: 6),
+            _buildCategoryCard(
+              context,
+              child: const InterfaceCustomizationSection(),
+            ),
 
             // 4. Alerts & Notifications Section
-            SmartAlertsSection(
-              isBatteryOptimizationDisabled: _isBatteryOptimizationDisabled,
-              isNotificationPermissionGranted: _isNotificationPermissionGranted,
-              isExactAlarmGranted: _isExactAlarmGranted,
-              onAttemptActivation: _attemptActivation,
+            const SettingsSectionHeader(title: 'SMART ALERTS'),
+            const SizedBox(height: 6),
+            _buildCategoryCard(
+              context,
+              child: SmartAlertsSection(
+                isBatteryOptimizationDisabled: _isBatteryOptimizationDisabled,
+                isNotificationPermissionGranted: _isNotificationPermissionGranted,
+                isExactAlarmGranted: _isExactAlarmGranted,
+                onAttemptActivation: _attemptActivation,
+              ),
             ),
-            const SizedBox(height: 4),
 
-            const StorageIntegritySection(),
+            // 5. Storage & Cloud Sync Section
+            const SettingsSectionHeader(title: 'STORAGE'),
+            const SizedBox(height: 6),
+            Consumer(
+              builder: (context, ref, child) {
+                final authState = ref.watch(authStateProvider);
+                final user = authState.valueOrNull;
+                final isGuest = user == null;
+                return _buildCategoryCard(
+                  context,
+                  child: Column(
+                    children: [
+                      if (!isGuest) ...[
+                        const DriveSyncSection(),
+                        Divider(
+                          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+                          height: 1,
+                          indent: 56,
+                        ),
+                      ],
+                      const StorageIntegritySection(),
+                    ],
+                  ),
+                );
+              },
+            ),
+
             if (_isDevModeEnabled) ...[
-              const SizedBox(height: 4),
-              const DeveloperOptionsSection(),
+              const SettingsSectionHeader(title: 'DEVELOPER'),
+              const SizedBox(height: 6),
+              _buildCategoryCard(
+                context,
+                child: const DeveloperOptionsSection(),
+              ),
             ],
             const SizedBox(height: 16),
             SettingsVersionFooter(
