@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -42,6 +43,16 @@ void main() async {
 
     // Parallelize ONLY critical initializations
     await Firebase.initializeApp();
+
+    // Initialize Firebase App Check with Play Integrity for Android (conditional debug/release)
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
+      providerApple: kDebugMode
+          ? const AppleDebugProvider()
+          : const AppleDeviceCheckProvider(),
+    );
 
     // Enable Crashlytics collection (explicitly enabled for both debug & release in beta phase)
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);

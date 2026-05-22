@@ -8,6 +8,7 @@ import '../../providers/database_provider.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../services/auto_sync_service.dart';
+import '../../services/firebase_sync_service.dart';
 import '../../utils/logger.dart';
 import '../../main.dart';
 
@@ -111,6 +112,9 @@ class GoogleSignInSection extends ConsumerWidget {
             final syncResult = await ref
                 .read(autoSyncServiceProvider)
                 .syncAfterLogin();
+
+            // Also trigger Firebase Firestore sync immediately after settings login to pull user items
+            await ref.read(firebaseSyncServiceProvider).sync();
 
             if (!context.mounted) return;
 

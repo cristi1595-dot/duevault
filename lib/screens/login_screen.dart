@@ -10,6 +10,7 @@ import '../models/app_config.dart';
 import '../providers/vault_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/firebase_sync_service.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -219,6 +220,9 @@ class LoginScreen extends ConsumerWidget {
           final syncResult = await ref
               .read(autoSyncServiceProvider)
               .syncAfterLogin();
+
+          // Also trigger Firebase Firestore sync immediately after login to pull user items
+          await ref.read(firebaseSyncServiceProvider).sync();
 
           // 3. FINISHED - Release the screen navigation
           ref.read(isProcessingAuthSyncProvider.notifier).state = false;

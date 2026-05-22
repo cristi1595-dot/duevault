@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../models/app_config.dart';
 import '../services/auto_sync_service.dart';
+import '../services/firebase_sync_service.dart';
 import '../providers/notification_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
@@ -250,6 +251,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       final syncResult = await ref
           .read(autoSyncServiceProvider)
           .syncAfterLogin();
+      
+      // Also trigger Firebase Firestore sync immediately after onboarding login to pull user items
+      await ref.read(firebaseSyncServiceProvider).sync();
+      
       if (!mounted) return;
 
       messenger.clearSnackBars();
