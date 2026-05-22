@@ -116,6 +116,9 @@ class GoogleSignInSection extends ConsumerWidget {
             // Also trigger Firebase Firestore sync immediately after settings login to pull user items
             await ref.read(firebaseSyncServiceProvider).sync();
 
+            // Refresh UI state to load the newly downloaded items from Isar
+            await ref.read(vaultProvider.notifier).refreshVault();
+
             if (!context.mounted) return;
 
             messenger.clearSnackBars();

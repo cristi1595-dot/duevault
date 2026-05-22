@@ -224,6 +224,9 @@ class LoginScreen extends ConsumerWidget {
           // Also trigger Firebase Firestore sync immediately after login to pull user items
           await ref.read(firebaseSyncServiceProvider).sync();
 
+          // Refresh UI state to load the newly downloaded items from Isar
+          await ref.read(vaultProvider.notifier).refreshVault();
+
           // 3. FINISHED - Release the screen navigation
           ref.read(isProcessingAuthSyncProvider.notifier).state = false;
 
