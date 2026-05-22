@@ -11,13 +11,14 @@ import '../services/encryption_service.dart';
 import 'package:flutter/services.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
+import '../services/ocr_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/bento_input_wrapper.dart';
-import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
 import 'add_bill/bill_amount_date_row.dart';
 import 'add_bill/bill_recurrence_autopay_row.dart';
+import 'add_bill/bill_category_selector.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -82,6 +83,30 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     super.dispose();
   }
 
+  void _handleOcrResult(OcrResult result) {
+    if (result.probableAmount != null && _amountController.text.isEmpty) {
+      final valStr = result.probableAmount!.toStringAsFixed(2);
+      if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
+        _amountController.text = valStr;
+      }
+    }
+    if (result.probableDate != null && _dueDate == null) {
+      if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+        _dueDate = result.probableDate;
+      }
+    }
+    if (_titleController.text.isEmpty) {
+      if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
+        _titleController.text = result.probableTitle!;
+      } else if (_dueDate != null) {
+        _titleController.text =
+            'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
+      } else {
+        _titleController.text = 'Scanned Bill';
+      }
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     await AttachmentPickerHelper.pickImage(
       context: context,
@@ -97,27 +122,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       },
       onOcrResult: (result) {
         setState(() {
-          if (result.probableAmount != null && _amountController.text.isEmpty) {
-            final valStr = result.probableAmount.toString();
-            if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
-              _amountController.text = valStr;
-            }
-          }
-          if (result.probableDate != null && _dueDate == null) {
-            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
-              _dueDate = result.probableDate;
-            }
-          }
-          if (_titleController.text.isEmpty) {
-            if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
-              _titleController.text = result.probableTitle!;
-            } else if (_dueDate != null) {
-              _titleController.text =
-                  'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
-            } else {
-              _titleController.text = 'Scanned Bill';
-            }
-          }
+          _handleOcrResult(result);
         });
       },
       onError: _showValidationError,
@@ -138,22 +143,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       },
       onOcrResult: (result) {
         setState(() {
-          if (result.probableAmount != null && _amountController.text.isEmpty) {
-            _amountController.text = result.probableAmount!.toStringAsFixed(2);
-          }
-          if (result.probableDate != null && _dueDate == null) {
-            _dueDate = result.probableDate;
-          }
-          if (_titleController.text.isEmpty) {
-            if (result.probableTitle != null && result.probableTitle!.isNotEmpty) {
-              _titleController.text = result.probableTitle!;
-            } else if (_dueDate != null) {
-              _titleController.text =
-                  'Scanned Bill - ${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}';
-            } else {
-              _titleController.text = 'Scanned Bill';
-            }
-          }
+          _handleOcrResult(result);
         });
       },
       onError: _showValidationError,
@@ -301,35 +291,25 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'BILL CATEGORY',
-                style: AppTheme.labelCapsStyle(
-                  context,
-                ).copyWith(fontSize: 14, letterSpacing: 1.2),
-              ),
-              const SizedBox(height: 6),
-              BentoCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: CategorySelector(
-                  selectedCategory: _category,
-                  categories: _categories,
-                  onCategorySelected: (catName) {
-                    setState(() {
-                      _category = catName;
-                      // Auto-set recurrence based on category
-                      if ([
-                        'Housing',
-                        'Utilities',
-                        'Subscription',
-                        'Telecom',
-                      ].contains(_category)) {
-                        _recurrence = 'Monthly';
-                      } else {
-                        _recurrence = 'None';
-                      }
-                    });
-                  },
-                ),
+              BillCategorySelector(
+                selectedCategory: _category,
+                categories: _categories,
+                onCategorySelected: (catName) {
+                  setState(() {
+                    _category = catName;
+                    // Auto-set recurrence based on category
+                    if ([
+                      'Housing',
+                      'Utilities',
+                      'Subscription',
+                      'Telecom',
+                    ].contains(_category)) {
+                      _recurrence = 'Monthly';
+                    } else {
+                      _recurrence = 'None';
+                    }
+                  });
+                },
               ),
               const SizedBox(height: 8),
 
@@ -437,8 +417,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     );
   }
 
-
-
   String _getCategoryHint() {
     switch (_category) {
       case 'Housing':
@@ -459,6 +437,4 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         return 'e.g. Grocery Bill';
     }
   }
-
-
 }
