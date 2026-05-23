@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../models/vault_item.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/vault_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
@@ -35,12 +36,14 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool _useOcr = true;
   bool _isProcessingOcr = false;
   bool _isSaving = false;
+  String? _attachmentsDirPath;
 
   final List<CategoryData> _categories = AppCategories.docCategories;
 
   @override
   void initState() {
     super.initState();
+    _loadAttachmentsDirectory();
     if (widget.item != null) {
       _category = widget.item!.category;
       _expiryDate = widget.item!.dueDate;
@@ -188,6 +191,25 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     }
     // Force keyboard down globally
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  Future<void> _loadAttachmentsDirectory() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (mounted) {
+      setState(() {
+        _attachmentsDirPath = '${appDir.path}/attachments';
+      });
+    }
+  }
+
+  List<String> get _resolvedAttachedFiles {
+    if (_attachmentsDirPath == null) return [];
+    return _attachedFiles.map((path) {
+      if (path.contains('/') || path.contains('\\')) {
+        return path;
+      }
+      return '$_attachmentsDirPath/$path';
+    }).toList();
   }
 
   Future<void> _submit() async {
@@ -394,7 +416,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               const SizedBox(height: 10),
 
               AttachmentSection(
-                attachedFiles: _attachedFiles,
+                attachedFiles: _resolvedAttachedFiles,
                 useOcr: _useOcr,
                 isProcessingOcr: _isProcessingOcr,
                 onPickImage: () => _pickImage(ImageSource.camera),

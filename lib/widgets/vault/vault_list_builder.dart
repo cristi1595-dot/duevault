@@ -53,11 +53,14 @@ class VaultListBuilder extends StatelessWidget {
         return VaultItemTile(
           item: item,
           currency: currency,
-          onCheckPressed: item.isPaid || item.isArchived
+          onCheckPressed: item.isArchived
               ? null
               : () {
-                  final actionText = item.itemType == 'Bill' ? 'Paid' : 'Renewed';
-                  onPaidStatusToggle(item.id, true, item.title.isEmpty ? item.category : item.title, actionText);
+                  final nextStatus = !item.isPaid;
+                  final actionText = nextStatus
+                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                  onPaidStatusToggle(item.id, nextStatus, item.title.isEmpty ? item.category : item.title, actionText);
                 },
         );
       },

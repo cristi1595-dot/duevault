@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../models/vault_item.dart';
 import '../utils/logger.dart';
 import 'drive_service.dart';
@@ -29,32 +30,13 @@ class AttachmentSyncManager {
       try {
         bool modified = false;
 
-        // 1. CLEANUP: Delete local files that are no longer tracked in Cloud IDs
-        if (item.attachedFiles.length > item.cloudFileIds.length) {
-          final newPaths = List<String>.from(item.attachedFiles);
-          final newChecksums = List<String>.from(item.cloudFileChecksums);
-
-          for (
-            int i = item.attachedFiles.length - 1;
-            i >= item.cloudFileIds.length;
-            i--
-          ) {
-            final localPath = item.attachedFiles[i];
-            final file = File(localPath);
-            if (await file.exists()) {
-              await file.delete();
-            }
-            newPaths.removeAt(i);
-            if (i < newChecksums.length) newChecksums.removeAt(i);
-            modified = true;
-          }
-          item.attachedFiles = newPaths;
-          item.cloudFileChecksums = newChecksums;
-        }
+        final appDir = await getApplicationDocumentsDirectory();
+        final attachmentsDir = Directory('${appDir.path}/attachments');
 
         // 2. UPLOAD/UPDATE files in Cloud based on Checksums
         for (int i = 0; i < item.attachedFiles.length; i++) {
-          final localFile = File(item.attachedFiles[i]);
+          final fileName = p.basename(item.attachedFiles[i].replaceAll('\\', '/'));
+          final localFile = File('${attachmentsDir.path}/$fileName');
           if (!await localFile.exists()) continue;
 
           // Calculate current local checksum
@@ -135,7 +117,7 @@ class AttachmentSyncManager {
             );
             if (success) {
               final newPaths = List<String>.from(item.attachedFiles);
-              newPaths.add(localPath);
+              newPaths.add(fileName);
               item.attachedFiles = newPaths;
 
               // After download, update the local checksum to match what we just got

@@ -204,12 +204,14 @@ class VaultItemTile extends ConsumerWidget {
                   );
                 },
             borderRadius: BorderRadius.circular(18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(18),
-                border: isHomeScreen && !isInHistory
-                    ? Border.all(
+            child: Opacity(
+              opacity: item.isPaid ? 0.6 : 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(18),
+                  border: isHomeScreen && !isInHistory
+                      ? Border.all(
                         color: statusColor.withValues(alpha: 0.15),
                         width: 1.2,
                       )
@@ -259,7 +261,7 @@ class VaultItemTile extends ConsumerWidget {
                         padding: EdgeInsets.fromLTRB(
                           13,
                           5,
-                          (!item.isPaid && onCheckPressed != null) ? 3 : 13,
+                          (onCheckPressed != null) ? 3 : 13,
                           5,
                         ),
                         child: Row(
@@ -362,7 +364,7 @@ class VaultItemTile extends ConsumerWidget {
                       ),
                     ),
                     // Right Checkmark Button: occupies full height, flush to edge
-                    if (!item.isPaid && onCheckPressed != null)
+                    if (onCheckPressed != null)
                       GestureDetector(
                         onTap: onCheckPressed,
                         behavior: HitTestBehavior.opaque,
@@ -381,16 +383,20 @@ class VaultItemTile extends ConsumerWidget {
                               height: 33,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+                                color: item.isPaid
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF6366F1).withValues(alpha: 0.06),
                                 border: Border.all(
-                                  color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                                  color: item.isPaid
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF6366F1).withValues(alpha: 0.25),
                                   width: 1.3,
                                 ),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
                                   Icons.check_rounded,
-                                  color: Color(0xFF6366F1),
+                                  color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
                                   size: 23,
                                 ),
                               ),
@@ -405,8 +411,9 @@ class VaultItemTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;

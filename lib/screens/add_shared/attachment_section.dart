@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../../theme/app_theme.dart';
 import '../../widgets/global_components.dart';
 import 'bento_input_wrapper.dart';
@@ -249,40 +250,78 @@ class AttachmentSection extends StatelessWidget {
   }
 
   Widget _buildAttachmentIcon(String path) {
-    final isImage =
-        path.toLowerCase().endsWith('.jpg') ||
-        path.toLowerCase().endsWith('.jpeg') ||
-        path.toLowerCase().endsWith('.png');
+    final isPdf = path.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      return _buildFileIcon(path, isPdf: true);
+    }
 
-    if (isImage) {
-      final isStored = path.contains('app_flutter/attachments');
+    final isStored = path.contains('app_flutter/attachments') ||
+        path.contains('/attachments/') ||
+        (!path.contains('/') && !path.contains('\\')) ||
+        path.toLowerCase().endsWith('.enc');
+
+    if (isStored) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: isStored
-            ? EncryptedImage(path: path, fit: BoxFit.cover)
-            : Image.file(
-                File(path),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.insert_drive_file,
-                  color: AppTheme.primaryAction,
-                ),
-              ),
-      );
-    } else {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.picture_as_pdf, color: AppTheme.urgentRed, size: 24),
-            SizedBox(height: 2),
-            Text(
-              'PDF',
-              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
-            ),
-          ],
+        child: EncryptedImage(
+          path: path,
+          fit: BoxFit.cover,
+          errorWidget: _buildFileIcon(path, isPdf: false),
         ),
       );
+    } else {
+      final isImage = path.toLowerCase().endsWith('.jpg') ||
+          path.toLowerCase().endsWith('.jpeg') ||
+          path.toLowerCase().endsWith('.png') ||
+          path.toLowerCase().endsWith('.gif');
+      if (isImage) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(
+            File(path),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                _buildFileIcon(path, isPdf: false),
+          ),
+        );
+      } else {
+        return _buildFileIcon(path, isPdf: false);
+      }
     }
+  }
+
+  Widget _buildFileIcon(String path, {required bool isPdf}) {
+    final ext = p.extension(path).toLowerCase();
+    String label = 'DOCUMENT';
+    IconData icon = Icons.insert_drive_file_outlined;
+    Color color = AppTheme.primaryAction;
+
+    if (isPdf) {
+      label = 'PDF';
+      icon = Icons.picture_as_pdf;
+      color = AppTheme.urgentRed;
+    } else if (ext == '.enc') {
+      label = 'ENCRYPTED';
+      icon = Icons.lock_outline;
+      color = AppTheme.primaryAction;
+    } else if (ext.isNotEmpty) {
+      label = ext.substring(1).toUpperCase();
+      icon = Icons.insert_drive_file_outlined;
+      color = AppTheme.primaryAction;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 }

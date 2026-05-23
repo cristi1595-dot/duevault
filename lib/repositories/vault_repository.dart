@@ -1,4 +1,9 @@
 import 'package:isar/isar.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import '../services/drive_service.dart';
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
 import '../services/notification_service.dart';
@@ -68,8 +73,78 @@ class VaultRepository {
     int? notificationHour,
     int? notificationMinute,
     bool notificationsEnabled = false,
+    String? userAccessToken,
   }) async {
     try {
+      // 1. If updating an existing item, compare attachments to detect removals
+      if (item.id != Isar.autoIncrement) {
+        final oldItem = await isar.collection<VaultItem>().get(item.id);
+        if (oldItem != null) {
+          final List<String> removedFiles = [];
+          final List<String> removedCloudIds = [];
+
+          for (int i = 0; i < oldItem.attachedFiles.length; i++) {
+            final oldPath = oldItem.attachedFiles[i];
+            final oldFileName = p.basename(oldPath.replaceAll('\\', '/'));
+
+            // Check if this file is still present in the updated item's attachments
+            final stillExists = item.attachedFiles.any((newPath) =>
+                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+
+            if (!stillExists) {
+              removedFiles.add(oldFileName);
+              if (i < oldItem.cloudFileIds.length) {
+                removedCloudIds.add(oldItem.cloudFileIds[i]);
+              }
+            }
+          }
+
+          // Delete removed files locally
+          if (removedFiles.isNotEmpty) {
+            final appDir = await getApplicationDocumentsDirectory();
+            for (final fileName in removedFiles) {
+              try {
+                final file = File('${appDir.path}/attachments/$fileName');
+                if (await file.exists()) {
+                  await file.delete();
+                  logger.i('Local removed file deleted: $fileName');
+                }
+              } catch (e) {
+                logger.e('Failed to delete local removed file: $fileName', error: e);
+              }
+            }
+          }
+
+          // Delete removed files from cloud
+          if (removedCloudIds.isNotEmpty && userAccessToken != null) {
+            for (final cloudId in removedCloudIds) {
+              if (cloudId.isNotEmpty) {
+                unawaited(_deleteCloudFile(cloudId, userAccessToken));
+              }
+            }
+          }
+
+          // Align cloudFileIds and cloudFileChecksums of updated item
+          final List<String> newCloudIds = [];
+          final List<String> newChecksums = [];
+          for (int i = 0; i < oldItem.attachedFiles.length; i++) {
+            final oldFileName = p.basename(oldItem.attachedFiles[i].replaceAll('\\', '/'));
+            final stillExists = item.attachedFiles.any((newPath) =>
+                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+            if (stillExists) {
+              if (i < oldItem.cloudFileIds.length) {
+                newCloudIds.add(oldItem.cloudFileIds[i]);
+              }
+              if (i < oldItem.cloudFileChecksums.length) {
+                newChecksums.add(oldItem.cloudFileChecksums[i]);
+              }
+            }
+          }
+          item.cloudFileIds = newCloudIds;
+          item.cloudFileChecksums = newChecksums;
+        }
+      }
+
       // Process the item (validation, encryption, file handling)
       final processedItem = await VaultItemProcessor.prepareForSave(item);
 
@@ -187,5 +262,19 @@ class VaultRepository {
   // Automation Methods - Delegated to VaultAutomationManager
   Future<void> autoArchiveExpiredItems(String ownerId) async {
     await _automationManager.autoArchiveExpiredItems(ownerId);
+  }
+
+  Future<void> _deleteCloudFile(String fileId, String token) async {
+    final driveService = DriveService(
+      GoogleAuthClient({'Authorization': 'Bearer $token'}),
+    );
+    try {
+      await driveService.deleteFile(fileId);
+      logger.i('Cloud file deleted: $fileId');
+    } catch (e) {
+      logger.e('Failed to delete cloud file: $fileId', error: e);
+    } finally {
+      driveService.dispose();
+    }
   }
 }

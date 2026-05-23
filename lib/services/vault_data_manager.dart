@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
 import 'encryption_service.dart';
@@ -23,19 +24,26 @@ class VaultDataManager {
     final item = await isar.collection<VaultItem>().get(itemId);
     if (item == null) return false;
 
+    final fileName = p.basename(localPath.replaceAll('\\', '/'));
+    final appDir = await getApplicationDocumentsDirectory();
+    final resolvedPath = '${appDir.path}/attachments/$fileName';
+
     // 1. Remove from local file system
     try {
-      final file = File(localPath);
+      final file = File(resolvedPath);
       if (await file.exists()) {
         await file.delete();
       }
     } catch (e) {
-      logger.e('Error deleting local file: $localPath', error: e);
+      logger.e('Error deleting local file: $resolvedPath', error: e);
     }
 
     // 2. Identify and remove from cloud (Drive)
-    final index = item.attachedFiles.indexOf(localPath);
-    if (index == -1) return false;
+    final index = item.attachedFiles.indexWhere((path) => p.basename(path.replaceAll('\\', '/')) == fileName);
+    if (index == -1) {
+      logger.w('removeAttachment: File $fileName not found in item attachments: ${item.attachedFiles}');
+      return false;
+    }
 
     if (index < item.cloudFileIds.length) {
       final cloudId = item.cloudFileIds[index];
@@ -44,6 +52,10 @@ class VaultDataManager {
         unawaited(_deleteFromCloud(cloudId, userAccessToken));
       }
       item.cloudFileIds.removeAt(index);
+    }
+
+    if (index < item.cloudFileChecksums.length) {
+      item.cloudFileChecksums.removeAt(index);
     }
 
     // Update item lists
@@ -55,7 +67,7 @@ class VaultDataManager {
       await isar.collection<VaultItem>().put(item);
     });
 
-    logger.i('Attachment removed: $localPath');
+    logger.i('Attachment removed: $fileName');
     return true;
   }
 

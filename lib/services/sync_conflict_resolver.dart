@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../models/vault_item.dart';
 import '../models/app_config.dart';
@@ -68,6 +71,33 @@ class SyncConflictResolver {
             if (cloudItem.lastModified.isAfter(
               localItem.lastModified.add(const Duration(seconds: 1)),
             )) {
+              // 1. Delete local files that were removed in the cloud version
+              // We match by cloud ID rather than file paths because paths are device-specific.
+              final appDir = await getApplicationDocumentsDirectory();
+              final attachmentsDir = Directory('${appDir.path}/attachments');
+
+              for (int i = 0; i < localItem.attachedFiles.length; i++) {
+                final fileName = p.basename(localItem.attachedFiles[i].replaceAll('\\', '/'));
+                final cloudId = i < localItem.cloudFileIds.length ? localItem.cloudFileIds[i] : null;
+                
+                if (cloudId != null && cloudId.isNotEmpty) {
+                  final stillExists = cloudItem.cloudFileIds.contains(cloudId);
+                  if (!stillExists) {
+                    try {
+                      final file = File('${attachmentsDir.path}/$fileName');
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                    } catch (e) {
+                      logger.e('Failed to delete removed attachment file: $fileName', error: e);
+                    }
+                  }
+                }
+              }
+
+              // 2. Normalize and keep only filenames for cloudItem
+              cloudItem.attachedFiles = cloudItem.attachedFiles.map((path) => p.basename(path.replaceAll('\\', '/'))).toList();
+
               // Cloud version is NEWER -> Update local
               cloudItem.id = localItem.id; // Keep local database ID
               cloudItem.wasSynced = true; // Mark as synced
@@ -94,6 +124,9 @@ class SyncConflictResolver {
 
       // 2. Check for local items that don't exist in cloud -> They need to be uploaded
       // OR if they were previously synced, it means they were deleted on another device.
+      final appDir = await getApplicationDocumentsDirectory();
+      final attachmentsDir = Directory('${appDir.path}/attachments');
+
       for (var localItem in localItems) {
         final existsInCloud = cloudItems.any((i) => i.uuid == localItem.uuid);
         if (!existsInCloud) {
@@ -102,6 +135,18 @@ class SyncConflictResolver {
             logger.i(
               'SyncConflictResolver: Local item "${localItem.title}" was deleted from cloud. Removing locally...',
             );
+            // Delete its local attachment files too
+            for (final localPath in localItem.attachedFiles) {
+              try {
+                final fileName = p.basename(localPath.replaceAll('\\', '/'));
+                final file = File('${attachmentsDir.path}/$fileName');
+                if (await file.exists()) {
+                  await file.delete();
+                }
+              } catch (e) {
+                logger.e('Failed to delete attachment file for deleted item: $localPath', error: e);
+              }
+            }
             await localIsar.writeTxn(() async {
               await localIsar.collection<VaultItem>().delete(localItem.id);
             });

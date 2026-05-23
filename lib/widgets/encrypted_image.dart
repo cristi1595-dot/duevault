@@ -60,6 +60,10 @@ class _EncryptedImageState extends State<EncryptedImage> {
           fit: widget.fit,
           width: widget.width,
           height: widget.height,
+          errorBuilder: (context, error, stackTrace) {
+            return widget.errorWidget ??
+                const Center(child: Icon(Icons.error_outline));
+          },
         );
       },
     );

@@ -62,10 +62,10 @@ class HomeUpcomingList extends ConsumerWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Upcoming list: ONLY UNPAID items sorted by dueDate
+    // Upcoming list: Both paid and unpaid items sorted by dueDate
     final allUpcoming = vaultItems
         .where(
-          (item) => !item.isArchived && !item.isPaid && item.dueDate != null,
+          (item) => !item.isArchived && item.dueDate != null,
         )
         .toList()
       ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
@@ -102,7 +102,13 @@ class HomeUpcomingList extends ConsumerWidget {
           )
         else ...[
           if (upcoming7Days.isNotEmpty) ...[
-            _buildGroupHeader('Next 7 Days', upcoming7Days.length, AppTheme.urgentRed),
+            _buildGroupHeader(
+              'Next 7 Days',
+              upcoming7Days.length,
+              upcoming7Days.any((item) => getDaysLeft(item.dueDate!) <= 3)
+                  ? AppTheme.urgentRed
+                  : AppTheme.warningYellow,
+            ),
             ...upcoming7Days.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -120,16 +126,17 @@ class HomeUpcomingList extends ConsumerWidget {
                   },
                   onCheckPressed: () {
                     final notifier = ref.read(vaultProvider.notifier);
-                    notifier.updatePaidStatus(item.id, true);
-                    final isExpired =
-                        item.dueDate != null && item.dueDate!.isBefore(today);
-                    final destination = isExpired ? 'Archive' : 'Vault';
+                    final nextPaidState = !item.isPaid;
+                    notifier.updatePaidStatus(item.id, nextPaidState);
                     final name = item.title.isEmpty ? item.category : item.title;
+                    final actionText = nextPaidState
+                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
                     VaultSnackBar.show(
-                      message: '$name sent to $destination',
+                      message: '$name $actionText',
                       actionLabel: 'UNDO',
                       backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, false),
+                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
                     );
                   },
                 ),
@@ -140,7 +147,7 @@ class HomeUpcomingList extends ConsumerWidget {
             _buildGroupHeader(
               'Next 30 Days',
               upcoming30Days.length,
-              AppTheme.warningYellow,
+              AppTheme.safeGreen,
             ),
             ...upcoming30Days.map(
               (item) => Padding(
@@ -159,16 +166,17 @@ class HomeUpcomingList extends ConsumerWidget {
                   },
                   onCheckPressed: () {
                     final notifier = ref.read(vaultProvider.notifier);
-                    notifier.updatePaidStatus(item.id, true);
-                    final isExpired =
-                        item.dueDate != null && item.dueDate!.isBefore(today);
-                    final destination = isExpired ? 'Archive' : 'Vault';
+                    final nextPaidState = !item.isPaid;
+                    notifier.updatePaidStatus(item.id, nextPaidState);
                     final name = item.title.isEmpty ? item.category : item.title;
+                    final actionText = nextPaidState
+                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
                     VaultSnackBar.show(
-                      message: '$name sent to $destination',
+                      message: '$name $actionText',
                       actionLabel: 'UNDO',
                       backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, false),
+                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
                     );
                   },
                 ),
@@ -176,7 +184,11 @@ class HomeUpcomingList extends ConsumerWidget {
             ),
           ],
           if (upcomingLater.isNotEmpty) ...[
-            _buildGroupHeader('Later', upcomingLater.length, Colors.grey.shade500),
+            _buildGroupHeader(
+              'Later',
+              upcomingLater.length,
+              AppTheme.safeGreen,
+            ),
             ...upcomingLater.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -194,16 +206,17 @@ class HomeUpcomingList extends ConsumerWidget {
                   },
                   onCheckPressed: () {
                     final notifier = ref.read(vaultProvider.notifier);
-                    notifier.updatePaidStatus(item.id, true);
-                    final isExpired =
-                        item.dueDate != null && item.dueDate!.isBefore(today);
-                    final destination = isExpired ? 'Archive' : 'Vault';
+                    final nextPaidState = !item.isPaid;
+                    notifier.updatePaidStatus(item.id, nextPaidState);
                     final name = item.title.isEmpty ? item.category : item.title;
+                    final actionText = nextPaidState
+                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
                     VaultSnackBar.show(
-                      message: '$name sent to $destination',
+                      message: '$name $actionText',
                       actionLabel: 'UNDO',
                       backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, false),
+                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
                     );
                   },
                 ),

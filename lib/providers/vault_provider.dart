@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
+import 'package:path/path.dart' as p;
 import '../services/migration_service.dart';
 import '../models/vault_item.dart';
 import '../repositories/vault_repository.dart';
@@ -194,6 +195,16 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       item.ownerId = user.uid;
     }
 
+    String? token;
+    if (user != null) {
+      try {
+        final authService = ref.read(authServiceProvider);
+        token = await authService.getFreshAccessToken();
+      } catch (e) {
+        logger.w('Failed to get fresh access token for deletion cleanup: $e');
+      }
+    }
+
     // 3. Save via Repository
     await _repository.saveItem(
       item,
@@ -204,6 +215,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       notificationHour: notificationTime.hour,
       notificationMinute: notificationTime.minute,
       notificationsEnabled: notificationsEnabled,
+      userAccessToken: token,
     );
 
     await _loadItems(user);
@@ -314,7 +326,35 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     );
 
     if (removed) {
-      await _loadItems(FirebaseAuth.instance.currentUser);
+      final fileName = p.basename(localPath.replaceAll('\\', '/'));
+      state = state.map((item) {
+        if (item.id == itemId) {
+          final updatedFiles = List<String>.from(item.attachedFiles);
+          final idx = updatedFiles.indexWhere((path) => p.basename(path.replaceAll('\\', '/')) == fileName);
+          
+          final updatedCloudIds = List<String>.from(item.cloudFileIds);
+          final updatedChecksums = List<String>.from(item.cloudFileChecksums);
+          
+          if (idx != -1) {
+            updatedFiles.removeAt(idx);
+            if (idx < updatedCloudIds.length) {
+              updatedCloudIds.removeAt(idx);
+            }
+            if (idx < updatedChecksums.length) {
+              updatedChecksums.removeAt(idx);
+            }
+          }
+
+          final newItem = VaultItem.fromMap(item.toMap())
+            ..id = item.id
+            ..attachedFiles = updatedFiles
+            ..cloudFileIds = updatedCloudIds
+            ..cloudFileChecksums = updatedChecksums;
+          return newItem;
+        }
+        return item;
+      }).toList();
+
       await _markAsDirty();
       _triggerSync();
     }

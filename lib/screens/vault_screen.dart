@@ -56,14 +56,12 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final notifier = ref.read(vaultProvider.notifier);
     notifier.updatePaidStatus(id, isPaid);
     
-    if (isPaid) {
-      VaultSnackBar.show(
-        message: '$title $actionText',
-        actionLabel: 'UNDO',
-        backgroundColor: AppTheme.safeGreen,
-        onAction: () => notifier.updatePaidStatus(id, false),
-      );
-    }
+    VaultSnackBar.show(
+      message: '$title $actionText',
+      actionLabel: 'UNDO',
+      backgroundColor: AppTheme.safeGreen,
+      onAction: () => notifier.updatePaidStatus(id, !isPaid),
+    );
   }
 
   List<VaultItem> _getFilteredAndSortedItems(List<VaultItem> allItems, int tabIndex) {

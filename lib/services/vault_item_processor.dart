@@ -52,17 +52,25 @@ class VaultItemProcessor {
       await attachmentsDir.create(recursive: true);
     }
 
-    final List<String> finalPaths = [];
+    final List<String> finalFiles = [];
     final List<String> checksums = [];
 
-    for (final path in item.attachedFiles) {
-      // Only process files that are NOT already in our internal attachments folder
-      if (!path.contains('app_flutter/attachments')) {
-        final originalFile = File(path);
+    for (final rawPath in item.attachedFiles) {
+      final fileName = p.basename(rawPath.replaceAll('\\', '/'));
+      final isFullPath = rawPath.contains('/') || rawPath.contains('\\');
+      
+      // Determine if the path is already inside our internal attachments directory
+      final isInternal = isFullPath && 
+          (p.canonicalize(rawPath).contains(p.canonicalize(attachmentsDir.path)) || 
+           rawPath.contains('app_flutter/attachments'));
+
+      if (isFullPath && !isInternal) {
+        // This is a newly picked file from outside
+        final originalFile = File(rawPath);
         if (await originalFile.exists()) {
-          final fileName =
-              'doc_${DateTime.now().microsecondsSinceEpoch}_${p.basename(path)}';
-          final newPath = '${attachmentsDir.path}/$fileName';
+          final newFileName =
+              'doc_${DateTime.now().microsecondsSinceEpoch}_$fileName';
+          final newPath = '${attachmentsDir.path}/$newFileName';
 
           try {
             final bytes = await originalFile.readAsBytes();
@@ -73,19 +81,18 @@ class VaultItemProcessor {
             // Calculate MD5 of the encrypted file for cloud comparison
             final encryptedBytes = await fileToSave.readAsBytes();
             checksums.add(md5.convert(encryptedBytes).toString());
+            finalFiles.add(newFileName);
           } on FileSystemException catch (e) {
             if (e.osError?.errorCode == 28 || e.message.contains('space')) {
               throw Exception('Cannot save attachment: Storage is full.');
             }
             rethrow;
           }
-
-          finalPaths.add(newPath);
         }
       } else {
-        // Already in internal storage, just recalculate checksum
-        finalPaths.add(path);
-        final file = File(path);
+        // It's already inside internal storage (either just the filename, or an old absolute internal path)
+        finalFiles.add(fileName);
+        final file = File('${attachmentsDir.path}/$fileName');
         if (await file.exists()) {
           final bytes = await file.readAsBytes();
           checksums.add(md5.convert(bytes).toString());
@@ -93,7 +100,7 @@ class VaultItemProcessor {
       }
     }
 
-    item.attachedFiles = finalPaths;
+    item.attachedFiles = finalFiles;
     item.cloudFileChecksums = checksums;
   }
 
