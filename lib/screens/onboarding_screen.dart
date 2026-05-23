@@ -241,8 +241,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     Navigator.pop(context);
 
     if (userCredential != null) {
-      await _completeOnboarding();
-
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Account secured. Syncing your vault...'),
@@ -283,6 +281,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           behavior: SnackBarBehavior.floating,
         ),
       );
+
+      // Complete onboarding last so navigation triggers after all sync operations are done
+      await _completeOnboarding();
     } else {
       messenger.showSnackBar(
         const SnackBar(content: Text('Google Sign-in failed')),
