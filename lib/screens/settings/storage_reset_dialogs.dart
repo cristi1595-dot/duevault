@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 /// Prompts confirmation for clearing local cached attachments.
-Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isGuest) {
+Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isPro) {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -12,9 +12,9 @@ Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isGuest) {
       ),
       title: const Text('Clear Local Cache'),
       content: Text(
-        isGuest
-            ? 'This will permanently delete all local attached files/images from this phone. Your bills and documents list will remain.'
-            : 'This will delete local downloaded attached files/images from this phone to free up space. You can download them again from Google Drive when viewing them. Your bills and documents list will remain.',
+        isPro
+            ? 'This will delete local downloaded attached files/images from this phone to free up space. You can download them again from Google Drive when viewing them. Your bills and documents list will remain.'
+            : 'This will permanently delete all local attached files/images from this phone. Your bills and documents list will remain.',
       ),
       actions: [
         TextButton(
@@ -42,7 +42,7 @@ Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isGuest) {
 }
 
 /// Prompts confirmation for wiping all phone and cloud data.
-Future<bool?> showWipeEverythingConfirmDialog(BuildContext context) {
+Future<bool?> showWipeEverythingConfirmDialog(BuildContext context, bool isPro) {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -51,8 +51,10 @@ Future<bool?> showWipeEverythingConfirmDialog(BuildContext context) {
         borderRadius: BorderRadius.circular(16),
       ),
       title: const Text('WIPE EVERYTHING'),
-      content: const Text(
-        'WARNING: This will permanently delete ALL local data AND your Google Drive backup. This cannot be undone.',
+      content: Text(
+        isPro
+            ? 'WARNING: This will permanently delete ALL local data AND your Google Drive backup. This cannot be undone.'
+            : 'WARNING: This will permanently delete ALL local data from this device. This cannot be undone.',
       ),
       actions: [
         TextButton(
@@ -69,9 +71,9 @@ Future<bool?> showWipeEverythingConfirmDialog(BuildContext context) {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.urgentRed,
           ),
-          child: const Text(
-            'ERASE CLOUD & PHONE',
-            style: TextStyle(color: Colors.white),
+          child: Text(
+            isPro ? 'ERASE CLOUD & PHONE' : 'ERASE ALL LOCAL DATA',
+            style: const TextStyle(color: Colors.white),
           ),
         ),
       ],

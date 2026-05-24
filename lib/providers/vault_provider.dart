@@ -120,29 +120,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         'VaultNotifier: Found ${freshItems.length} items in DB for $ownerId',
       );
 
-      // Check if we need to add sample data (ONLY at the very first opening for guest mode)
-      if (user == null) {
-        final config = await _repository.getConfig();
-        if (!config.hasSeenDemo && freshItems.isEmpty) {
-          logger.i(
-            'Vault: Fresh install detected. Generating sample data for Guest.',
-          );
-          await _repository.generateSampleData('local_user');
-          final updatedItems = await _repository.getItems('local_user');
-          state = updatedItems;
-        }
-      } else {
-        // Real user logged in -> Ensure sample data from guest mode is gone
-        await _repository.deleteSamplesForUser(user.uid);
-        // Re-load items to show clean state
-        state = await _repository.getItems(user.uid);
-
-        // Also mark as having seen demo so it doesn't reappear if they log out
-        final config = await _repository.getConfig();
-        if (!config.hasSeenDemo) {
-          config.hasSeenDemo = true;
-          await _repository.updateConfig(config);
-        }
+      // Ensure hasSeenDemo is marked true on first run to avoid demo checks elsewhere
+      final config = await _repository.getConfig();
+      if (!config.hasSeenDemo) {
+        config.hasSeenDemo = true;
+        await _repository.updateConfig(config);
       }
 
       // Final fetch to ensure state is perfectly in sync with DB changes above

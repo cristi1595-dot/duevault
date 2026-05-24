@@ -84,6 +84,10 @@ class HomeUpcomingList extends ConsumerWidget {
     final upcomingLater =
         allUpcoming.where((item) => getDaysLeft(item.dueDate!) > 30).toList();
 
+    if (vaultItems.isEmpty) {
+      return const EmptyState();
+    }
+
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 100),

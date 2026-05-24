@@ -5,12 +5,14 @@ class IntegratedBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final VoidCallback onAddPressed;
+  final bool isVaultEmpty;
 
   const IntegratedBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.onAddPressed,
+    required this.isVaultEmpty,
   });
 
   @override
@@ -48,7 +50,10 @@ class IntegratedBottomNavBar extends StatelessWidget {
                       inactiveColor,
                     ),
                   ),
-                  _buildAddButton(),
+                  PulsingAddButton(
+                    onPressed: onAddPressed,
+                    shouldPulse: isVaultEmpty,
+                  ),
                   Expanded(
                     child: _buildNavItem(
                       1,
@@ -111,39 +116,116 @@ class IntegratedBottomNavBar extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildAddButton() {
-    return GestureDetector(
-      onTap: onAddPressed,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const RadialGradient(
-            colors: [
-              Colors.greenAccent,
-              Color(0xFF00E676), // bright neon green
-            ],
-            center: Alignment.center,
-            radius: 0.85,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.greenAccent.withValues(alpha: 0.35),
-              blurRadius: 12,
-              spreadRadius: 2,
-              offset: const Offset(0, 2),
+class PulsingAddButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final bool shouldPulse;
+
+  const PulsingAddButton({
+    super.key,
+    required this.onPressed,
+    required this.shouldPulse,
+  });
+
+  @override
+  State<PulsingAddButton> createState() => _PulsingAddButtonState();
+}
+
+class _PulsingAddButtonState extends State<PulsingAddButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _glowAnimation = Tween<double>(begin: 12.0, end: 24.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    if (widget.shouldPulse) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PulsingAddButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shouldPulse != oldWidget.shouldPulse) {
+      if (widget.shouldPulse) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.animateTo(0.0, duration: const Duration(milliseconds: 300));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = widget.shouldPulse ? _scaleAnimation.value : 1.0;
+        final glow = widget.shouldPulse ? _glowAnimation.value : 12.0;
+        final spread = widget.shouldPulse ? 2.0 + (_controller.value * 2.0) : 2.0;
+
+        return Transform.scale(
+          scale: scale,
+          child: GestureDetector(
+            onTap: widget.onPressed,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(
+                  colors: [
+                    Colors.greenAccent,
+                    Color(0xFF00E676),
+                  ],
+                  center: Alignment.center,
+                  radius: 0.85,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.greenAccent.withValues(
+                      alpha: widget.shouldPulse ? 0.35 + (_controller.value * 0.15) : 0.35,
+                    ),
+                    blurRadius: glow,
+                    spreadRadius: spread,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.black,
+                size: 28,
+              ),
             ),
-          ],
-        ),
-        child: const Icon(
-          Icons.add,
-          color: Colors.black, // High contrast dark icon
-          size: 28,
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
+
 

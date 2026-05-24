@@ -70,6 +70,7 @@ dependencies:
   firebase_analytics: ^12.4.1
   firebase_app_check: ^0.4.4+1
   open_filex: ^4.7.0
+  purchases_flutter: ^10.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

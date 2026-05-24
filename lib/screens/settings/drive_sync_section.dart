@@ -9,6 +9,8 @@ import '../../providers/database_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../services/drive_service.dart';
 import 'settings_dialogs.dart';
+import '../paywall_screen.dart';
+import '../../providers/premium_provider.dart';
 
 class DriveSyncSection extends ConsumerWidget {
   const DriveSyncSection({super.key});
@@ -52,7 +54,17 @@ class DriveSyncSection extends ConsumerWidget {
                   )
                 : Switch(
                     value: autoSync,
-                    onChanged: (v) => ref.read(autoSyncProvider.notifier).toggleAutoSync(v),
+                    onChanged: (v) async {
+                      final isPremium = ref.read(isPremiumProvider);
+                      if (!isPremium) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                        );
+                        return;
+                      }
+                      await ref.read(autoSyncProvider.notifier).toggleAutoSync(v);
+                    },
                     activeThumbColor: Colors.greenAccent,
                     activeTrackColor: Colors.greenAccent.withValues(
                       alpha: 0.3,
@@ -77,7 +89,17 @@ class DriveSyncSection extends ConsumerWidget {
               height: 24,
               child: Switch(
                 value: wifiOnly,
-                onChanged: (v) => ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v),
+                onChanged: (v) async {
+                  final isPremium = ref.read(isPremiumProvider);
+                  if (!isPremium) {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    );
+                    return;
+                  }
+                  await ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v);
+                },
                 activeThumbColor: Colors.greenAccent,
                 activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
               ),
@@ -98,6 +120,14 @@ class DriveSyncSection extends ConsumerWidget {
             title: 'Backup Now',
             subtitle: 'Manual push to cloud',
             onTap: () async {
+              final isPremium = ref.read(isPremiumProvider);
+              if (!isPremium) {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                );
+                return;
+              }
               final confirm = await SettingsDialogs.showBackupNowDialog(context, userEmail);
 
               if (confirm != true) return;

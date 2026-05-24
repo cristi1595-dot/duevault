@@ -16,6 +16,9 @@ import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
+import '../providers/premium_provider.dart';
+import '../providers/auth_provider.dart';
+import 'paywall_screen.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -44,6 +47,12 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   void initState() {
     super.initState();
     _loadAttachmentsDirectory();
+
+    // Default OCR to false for Guest or Free tier users
+    final isGuest = ref.read(isGuestProvider);
+    final isPremium = ref.read(isPremiumProvider);
+    _useOcr = !isGuest && isPremium;
+
     if (widget.item != null) {
       _category = widget.item!.category;
       _expiryDate = widget.item!.dueDate;
@@ -95,6 +104,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final isGuest = ref.read(isGuestProvider);
+    final isPremium = ref.read(isPremiumProvider);
+    if (isGuest || !isPremium) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+      );
+      return;
+    }
     await AttachmentPickerHelper.pickImage(
       context: context,
       source: source,
@@ -427,6 +445,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   });
                 },
                 onOcrToggleChanged: (val) {
+                  final isGuest = ref.read(isGuestProvider);
+                  final isPremium = ref.read(isPremiumProvider);
+                  if (val && (isGuest || !isPremium)) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    );
+                    return;
+                  }
                   setState(() {
                     _useOcr = val;
                   });

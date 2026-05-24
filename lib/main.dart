@@ -30,6 +30,7 @@ import 'dart:async';
 import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
 import 'providers/sync_provider.dart';
+import 'providers/vault_provider.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -266,12 +267,14 @@ class MainNavigation extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
+    final isVaultEmpty = ref.watch(vaultProvider).isEmpty;
 
     return Scaffold(
       extendBody: true,
       body: IndexedStack(index: currentIndex, children: _screens),
       bottomNavigationBar: IntegratedBottomNavBar(
         currentIndex: currentIndex,
+        isVaultEmpty: isVaultEmpty,
         onTap: (index) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ref.read(bottomNavIndexProvider.notifier).state = index;

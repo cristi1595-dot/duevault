@@ -11,6 +11,7 @@ import '../../providers/security_provider.dart';
 import '../../models/app_config.dart';
 import '../../main.dart';
 import 'storage_reset_dialogs.dart';
+import '../../providers/premium_provider.dart';
 
 /// Shows the Storage & Reset bottom sheet allowing cache clearing, data wiping,
 /// and complete account deletion.
@@ -31,6 +32,8 @@ class StorageResetSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isGuest = FirebaseAuth.instance.currentUser == null;
+    final isPremium = ref.watch(isPremiumProvider);
+    final isPro = !isGuest && isPremium;
 
     return Container(
       decoration: BoxDecoration(
@@ -108,27 +111,31 @@ class StorageResetSheet extends ConsumerWidget {
 
           // Option 1: Clear Local Cache
           _StorageOptionTile(
-            title: 'Clear Local Cache',
-            subtitle: 'Deletes local temporary items only. Cloud backup stays safe.',
+            title: isPro ? 'Clear Local Cache (Cloud safe)' : 'Clear Local Cache',
+            subtitle: isPro
+                ? 'Deletes local temporary items only. Cloud backup stays safe.'
+                : 'Deletes local temporary items only.',
             icon: Icons.phonelink_erase_rounded,
             iconColor: AppTheme.primaryAction,
             iconBgColor: AppTheme.primaryAction.withValues(alpha: 0.1),
-            onTap: () => _handleClearCache(context, ref, isGuest),
+            onTap: () => _handleClearCache(context, ref, isPro),
           ),
 
           const SizedBox(height: 16),
 
           // Option 2: Erase All Data
           _StorageOptionTile(
-            title: 'Erase All Data',
-            subtitle: 'WIPE EVERYTHING. Cloud and local data will be permanently deleted.',
+            title: isPro ? 'Erase All Data (Cloud & Local)' : 'Erase All Data (Local)',
+            subtitle: isPro
+                ? 'WIPE EVERYTHING. Cloud and local data will be permanently deleted.'
+                : 'WIPE EVERYTHING. Local data will be permanently deleted.',
             icon: Icons.delete_forever_rounded,
             iconColor: AppTheme.urgentRed,
             iconBgColor: AppTheme.urgentRed.withValues(alpha: 0.15),
             backgroundColor: AppTheme.urgentRed.withValues(alpha: 0.08),
             borderColor: AppTheme.urgentRed.withValues(alpha: 0.3),
             textColor: AppTheme.urgentRed,
-            onTap: () => _handleEraseAllData(context, ref, isGuest),
+            onTap: () => _handleEraseAllData(context, ref, isPro),
           ),
 
           if (!isGuest) ...[
@@ -210,13 +217,13 @@ class StorageResetSheet extends ConsumerWidget {
   Future<void> _handleClearCache(
     BuildContext context,
     WidgetRef ref,
-    bool isGuest,
+    bool isPro,
   ) async {
     await _runAction(
       context: context,
-      onConfirm: () => showClearCacheConfirmDialog(parentContext, isGuest),
+      onConfirm: () => showClearCacheConfirmDialog(parentContext, isPro),
       onExecute: () => ref.read(vaultProvider.notifier).clearLocalCache(),
-      successMessage: isGuest
+      successMessage: !isPro
           ? 'Local attachments cache cleared.'
           : 'Local attachments cache cleared. Attachments will download on demand.',
       errorMessagePrefix: 'Failed',
@@ -226,13 +233,13 @@ class StorageResetSheet extends ConsumerWidget {
   Future<void> _handleEraseAllData(
     BuildContext context,
     WidgetRef ref,
-    bool isGuest,
+    bool isPro,
   ) async {
     await _runAction(
       context: context,
-      onConfirm: () => showWipeEverythingConfirmDialog(parentContext),
-      onExecute: () => ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: true),
-      successMessage: FirebaseAuth.instance.currentUser != null
+      onConfirm: () => showWipeEverythingConfirmDialog(parentContext, isPro),
+      onExecute: () => ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: isPro),
+      successMessage: isPro
           ? 'All data has been wiped from device and cloud.'
           : 'All local data has been wiped.',
       errorMessagePrefix: 'Wipe failed',

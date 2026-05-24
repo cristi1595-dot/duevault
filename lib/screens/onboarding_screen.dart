@@ -15,6 +15,9 @@ import 'package:app_settings/app_settings.dart';
 import 'onboarding/onboarding_notifications_page.dart';
 import 'onboarding/onboarding_battery_page.dart';
 import 'onboarding/onboarding_sync_page.dart';
+import 'onboarding/onboarding_tutorial_page.dart';
+import 'paywall_screen.dart';
+import '../providers/premium_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -49,7 +52,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _checkPermissionsOnResume() async {
-    if (_currentPage == 0) {
+    if (_currentPage == 1) {
       final isGranted = await Permission.notification.isGranted;
       if (isGranted && mounted) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
@@ -60,7 +63,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
         );
       }
-    } else if (_currentPage == 1) {
+    } else if (_currentPage == 2) {
       final isBatteryDisabled =
           await DisableBatteryOptimization.isBatteryOptimizationDisabled ?? false;
       if (isBatteryDisabled && mounted) {
@@ -223,6 +226,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _handleGoogleSignIn() async {
+    final isPremium = ref.read(isPremiumProvider);
+    if (!isPremium) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+      );
+      return;
+    }
+
     final messenger = ScaffoldMessenger.of(context);
     unawaited(
       showDialog(
@@ -306,6 +318,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   setState(() => _currentPage = page);
                 },
                 children: [
+                  OnboardingTutorialPage(
+                    onContinue: _goToNextPage,
+                  ),
                   OnboardingNotificationsPage(
                     onEnableNotifications: _requestNotificationPermission,
                     onDecideLater: _goToNextPage,
@@ -335,7 +350,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       padding: const EdgeInsets.only(bottom: 32),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(3, (index) {
+        children: List.generate(4, (index) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             width: _currentPage == index ? 32 : 10,

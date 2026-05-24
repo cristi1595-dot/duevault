@@ -11,6 +11,8 @@ import '../../services/auto_sync_service.dart';
 import '../../services/firebase_sync_service.dart';
 import '../../utils/logger.dart';
 import '../../main.dart';
+import '../paywall_screen.dart';
+import '../../providers/premium_provider.dart';
 
 class GoogleSignInSection extends ConsumerWidget {
   const GoogleSignInSection({super.key});
@@ -22,6 +24,17 @@ class GoogleSignInSection extends ConsumerWidget {
     return GestureDetector(
       onTap: () async {
         if (isProcessing) return;
+        
+        // Gate Google Sign-In behind PRO subscription
+        final isPremium = ref.read(isPremiumProvider);
+        if (!isPremium) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+          return;
+        }
+
         final messenger = ScaffoldMessenger.of(context);
         try {
           ref.read(isProcessingAuthSyncProvider.notifier).state = true;
@@ -228,6 +241,40 @@ class GoogleSignInSection extends ConsumerWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
+                  if (!ref.watch(isPremiumProvider)) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.safeGreen.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppTheme.safeGreen.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.lock_outline,
+                            size: 10,
+                            color: AppTheme.safeGreen,
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            'PRO',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.safeGreen,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
       ),

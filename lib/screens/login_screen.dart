@@ -11,6 +11,8 @@ import '../providers/vault_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/firebase_sync_service.dart';
+import 'paywall_screen.dart';
+import '../providers/premium_provider.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -111,6 +113,16 @@ class LoginScreen extends ConsumerWidget {
   Widget _buildGoogleSignInButton(BuildContext context, WidgetRef ref) {
     return ElevatedButton(
       onPressed: () async {
+        final isGuest = ref.read(isGuestProvider);
+        final isPremium = ref.read(isPremiumProvider);
+        if (isGuest && !isPremium) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+          return;
+        }
+
         final messenger = ScaffoldMessenger.of(context);
 
         // Show loading indicator
@@ -287,6 +299,40 @@ class LoginScreen extends ConsumerWidget {
             'Sign in with Google',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          if (!ref.watch(isPremiumProvider)) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.safeGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppTheme.safeGreen.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 11,
+                    color: AppTheme.safeGreen,
+                  ),
+                  SizedBox(width: 3),
+                  Text(
+                    'PRO',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.safeGreen,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

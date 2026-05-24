@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/global_components.dart';
 import 'onboarding_header.dart';
 import 'onboarding_ripple_illustration.dart';
+import '../../providers/premium_provider.dart';
 
-class OnboardingSyncPage extends StatelessWidget {
+class OnboardingSyncPage extends ConsumerWidget {
   final VoidCallback onGoogleSignInPressed;
   final VoidCallback onGuestLoginPressed;
 
@@ -15,7 +17,7 @@ class OnboardingSyncPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
@@ -48,7 +50,7 @@ class OnboardingSyncPage extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 40),
-            _buildGoogleSignInButton(context),
+            _buildGoogleSignInButton(context, ref),
             const SizedBox(height: 16),
             // Outlined elegant Guest Button
             SecondaryButton(
@@ -62,7 +64,7 @@ class OnboardingSyncPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGoogleSignInButton(BuildContext context) {
+  Widget _buildGoogleSignInButton(BuildContext context, WidgetRef ref) {
     return ElevatedButton(
       onPressed: onGoogleSignInPressed,
       style: ElevatedButton.styleFrom(
@@ -93,6 +95,40 @@ class OnboardingSyncPage extends StatelessWidget {
             'Sync with Google',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          if (!ref.watch(isPremiumProvider)) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppTheme.safeGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppTheme.safeGreen.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 11,
+                    color: AppTheme.safeGreen,
+                  ),
+                  SizedBox(width: 3),
+                  Text(
+                    'PRO',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.safeGreen,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

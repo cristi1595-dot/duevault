@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import '../../theme/app_theme.dart';
 import '../../widgets/global_components.dart';
 import 'bento_input_wrapper.dart';
+import '../../providers/premium_provider.dart';
 
-class AttachmentSection extends StatelessWidget {
+class AttachmentSection extends ConsumerWidget {
   final List<String> attachedFiles;
   final bool useOcr;
   final bool isProcessingOcr;
@@ -26,7 +28,7 @@ class AttachmentSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return BentoInputWrapper(
       label: 'ATTACHMENTS',
       child: Column(
@@ -36,7 +38,7 @@ class AttachmentSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                Expanded(child: _buildCameraCardWithOcrToggle(context)),
+                Expanded(child: _buildCameraCardWithOcrToggle(context, ref)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildActionCard(
@@ -157,7 +159,7 @@ class AttachmentSection extends StatelessWidget {
     );
   }
 
-  Widget _buildCameraCardWithOcrToggle(BuildContext context) {
+  Widget _buildCameraCardWithOcrToggle(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: isProcessingOcr ? null : onPickImage,
       child: Container(
@@ -206,13 +208,40 @@ class AttachmentSection extends StatelessWidget {
                     size: 32,
                   ),
                 const SizedBox(height: 6),
-                Text(
-                  isProcessingOcr ? 'Scanning...' : 'Smart Scan',
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isProcessingOcr ? 'Scanning...' : 'Smart Scan',
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (!ref.watch(isPremiumProvider)) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: AppTheme.primaryAction.withValues(alpha: 0.4),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Text(
+                          'PRO',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primaryAction,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(
