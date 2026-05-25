@@ -31,6 +31,7 @@ import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
 import 'providers/sync_provider.dart';
 import 'providers/vault_provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -66,6 +67,14 @@ void main() async {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
+
+    // Initialize RevenueCat for in-app purchases
+    // TODO: Înlocuiește cu cheia ta reală din RevenueCat Dashboard → API Keys
+    await Purchases.configure(
+      PurchasesConfiguration('test_JMXMgXfNnCRyhbUSrXggQnDkMOw'),
+    );
+    logger.i('RevenueCat SDK configured successfully.');
+
     final appDir = await getApplicationDocumentsDirectory();
 
     // Initialize notifications in the background to not block the UI

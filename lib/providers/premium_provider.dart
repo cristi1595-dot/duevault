@@ -14,22 +14,24 @@ class PremiumNotifier extends StateNotifier<bool> {
   Future<void> _checkPremiumStatus() async {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      // Check if 'pro' entitlement is active
-      state = customerInfo.entitlements.all['pro']?.isActive ?? false;
-      logger.d('RevenueCat customer info loaded. Premium status: $state');
+      state = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
+      logger.d('RevenueCat: Premium status checked. isPro: $state');
     } catch (e) {
-      // API key is mock, so this will print a warning but not crash the application.
-      logger.w('RevenueCat getCustomerInfo failed (expected for mock API key): $e');
+      logger.w('RevenueCat: getCustomerInfo failed: $e');
       state = false;
     }
   }
 
+  /// Re-checks the premium status from RevenueCat.
+  /// Call this after a successful purchase or restore.
   Future<void> refresh() async {
     await _checkPremiumStatus();
   }
 
-  void setMockPremium(bool value) {
-    state = value;
-    logger.i('Premium state manually overridden (mock): $value');
+  /// Directly sets premium state from a CustomerInfo object.
+  /// Used after purchase/restore to avoid an extra network call.
+  void updateFromCustomerInfo(CustomerInfo customerInfo) {
+    state = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
+    logger.i('RevenueCat: Premium state updated from CustomerInfo. isPro: $state');
   }
 }

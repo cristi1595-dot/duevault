@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../providers/premium_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/logger.dart';
@@ -37,62 +39,42 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Future<void> _handleUnlockPro() async {
     setState(() => _isLoading = true);
     try {
-      logger.i('Attempting RevenueCat purchase with mock key...');
-      // In production, we would fetch offerings first:
-      // Offerings offerings = await Purchases.getOfferings();
-      // await Purchases.purchasePackage(offerings.current!.monthly!);
-      
-      // Since we are using a mock API key, we will simulate the purchase
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF161622),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'PRO Purchase Simulator',
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          content: Text(
-            'RevenueCat is configured with a mock API key. Would you like to simulate a successful purchase and unlock PRO for this session?',
-            style: GoogleFonts.outfit(color: Colors.grey[300]),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _showNotification('Purchase cancelled by user.', isError: true);
-              },
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.outfit(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                // Set mock premium state to true
-                ref.read(isPremiumProvider.notifier).setMockPremium(true);
-                _showNotification('✓ Purchase successful! PRO unlocked.');
-                Navigator.pop(context); // Close Paywall
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryAction,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text(
-                'Simulate Success',
-                style: GoogleFonts.outfit(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      );
+      logger.i('Fetching RevenueCat offerings...');
+      final offerings = await Purchases.getOfferings();
+
+      if (offerings.current == null) {
+        _showNotification('No offerings available. Please try again later.', isError: true);
+        return;
+      }
+
+      // Use the default (first available) package from the current offering
+      final package = offerings.current!.availablePackages.first;
+      logger.i('Initiating purchase for package: ${package.identifier}');
+
+      final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
+      final customerInfo = purchaseResult.customerInfo;
+
+      if (customerInfo.entitlements.all['DueVault Pro']?.isActive == true) {
+        // Update premium state immediately from the returned CustomerInfo
+        ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
+        if (!mounted) return;
+        _showNotification('✓ Purchase successful! PRO unlocked.');
+        Navigator.pop(context); // Close Paywall
+      } else {
+        _showNotification('Purchase completed but PRO entitlement not found. Contact support.', isError: true);
+      }
+    } on PlatformException catch (e) {
+      // RevenueCat wraps errors in PlatformException
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        logger.i('Purchase cancelled by user.');
+        _showNotification('Purchase cancelled.', isError: true);
+      } else {
+        logger.e('Purchase error', error: e);
+        _showNotification('Purchase failed: ${e.message}', isError: true);
+      }
     } catch (e, stack) {
-      logger.e('Purchase error', error: e, stackTrace: stack);
+      logger.e('Unexpected purchase error', error: e, stackTrace: stack);
       _showNotification('Error initiating purchase: $e', isError: true);
     } finally {
       if (mounted) {
@@ -105,17 +87,21 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     setState(() => _isLoading = true);
     try {
       logger.i('Restoring purchases with RevenueCat...');
-      // In production:
-      // CustomerInfo customerInfo = await Purchases.restorePurchases();
-      // bool isPro = customerInfo.entitlements.all['pro']?.isActive ?? false;
-      
-      // Simulation for testing:
-      await Future.delayed(const Duration(milliseconds: 1000));
+      final customerInfo = await Purchases.restorePurchases();
+      final isPro = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
+
       if (!mounted) return;
-      
-      _showNotification('Purchases restored. No active PRO entitlement found on mock key.', isError: true);
+
+      if (isPro) {
+        ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
+        _showNotification('✓ Purchases restored! PRO unlocked.');
+        Navigator.pop(context); // Close Paywall
+      } else {
+        _showNotification('No active PRO subscription found.', isError: true);
+      }
     } catch (e, stack) {
       logger.e('Restore error', error: e, stackTrace: stack);
+      if (!mounted) return;
       _showNotification('Error restoring purchases: $e', isError: true);
     } finally {
       if (mounted) {

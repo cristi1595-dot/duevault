@@ -200,8 +200,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       userAccessToken: token,
     );
 
-    await _loadItems(user);
     await _markAsDirty();
+    // Wait for any in-progress background load to finish, then force a fresh reload
+    await waitForLoad();
+    _isLoading = false;
+    await _loadItems(user);
     _triggerSync();
   }
 
@@ -219,8 +222,8 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     // 2. Persistent update
     await _repository.updatePaidStatus(id, isPaid);
-    await _loadItems(ref.read(authStateProvider).valueOrNull);
     await _markAsDirty();
+    await _loadItems(ref.read(authStateProvider).valueOrNull);
     _triggerSync();
   }
 
@@ -237,8 +240,8 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       await isar.writeTxn(() async {
         await isar.collection<VaultItem>().put(item);
       });
-      await _loadItems(ref.read(authStateProvider).valueOrNull);
       await _markAsDirty();
+      await _loadItems(ref.read(authStateProvider).valueOrNull);
       _triggerSync();
     }
   }
@@ -268,8 +271,8 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     // 2. Persistent update
     await _repository.softDeleteItem(id);
-    await _loadItems(ref.read(authStateProvider).valueOrNull);
     await _markAsDirty();
+    await _loadItems(ref.read(authStateProvider).valueOrNull);
     _triggerSync();
   }
 
