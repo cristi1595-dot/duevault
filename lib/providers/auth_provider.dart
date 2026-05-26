@@ -5,7 +5,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../utils/logger.dart';
 
 final authStateProvider = StreamProvider<User?>((ref) {
-  return FirebaseAuth.instance.authStateChanges();
+  try {
+    return FirebaseAuth.instance.authStateChanges();
+  } catch (e) {
+    logger.w('Firebase Auth is not available: $e');
+    return const Stream.empty();
+  }
 });
 
 final isGuestProvider = StateProvider<bool>((ref) => true);
@@ -16,7 +21,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
   // Standard GoogleSignIn instance - MINIMAL for testing
   final GoogleSignIn _googleSignIn = GoogleSignIn(
