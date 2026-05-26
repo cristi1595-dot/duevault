@@ -183,20 +183,32 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
   }
 
   Widget _buildAttachmentPreview(String path) {
-    final isPdf = path.toLowerCase().endsWith('.pdf');
+    final lowerPath = path.toLowerCase();
+    final isPdf = lowerPath.endsWith('.pdf');
 
     if (isPdf) {
       return _buildFileIcon(path, isPdf: true);
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: EncryptedImage(
-        path: path,
-        fit: BoxFit.cover,
-        errorWidget: _buildFileIcon(path, isPdf: false),
-      ),
-    );
+    final isImage = lowerPath.endsWith('.jpg') ||
+        lowerPath.endsWith('.jpeg') ||
+        lowerPath.endsWith('.png') ||
+        lowerPath.endsWith('.heic') ||
+        lowerPath.endsWith('.heif') ||
+        lowerPath.endsWith('.webp');
+
+    if (isImage) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: EncryptedImage(
+          path: path,
+          fit: BoxFit.cover,
+          errorWidget: _buildFileIcon(path, isPdf: false),
+        ),
+      );
+    }
+
+    return _buildFileIcon(path, isPdf: false);
   }
 
   Widget _buildFileIcon(String path, {required bool isPdf}) {

@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../services/firebase_sync_service.dart';
 import 'paywall_screen.dart';
 import '../providers/premium_provider.dart';
+import '../utils/logger.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -143,11 +144,6 @@ class LoginScreen extends ConsumerWidget {
             .read(authServiceProvider)
             .signInWithGoogle();
 
-        // Remove loading indicator
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-
         if (userCredential != null) {
           final uid = userCredential.user!.uid;
 
@@ -160,6 +156,9 @@ class LoginScreen extends ConsumerWidget {
               .hasRealGuestData();
 
           if (hasGuestData && context.mounted) {
+            // Dismiss loading indicator temporarily so user can see migration dialog
+            Navigator.pop(context);
+
             await Future.delayed(const Duration(milliseconds: 500));
             if (!context.mounted) return;
 
@@ -195,6 +194,19 @@ class LoginScreen extends ConsumerWidget {
               ),
             );
 
+            // Re-show loading indicator after dialog decision
+            if (context.mounted) {
+              unawaited(
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(color: AppTheme.primaryAction),
+                  ),
+                ),
+              );
+            }
+
             if (shouldMigrate == true) {
               await ref.read(vaultProvider.notifier).migrateGuestData(uid);
               if (context.mounted) {
@@ -228,46 +240,63 @@ class LoginScreen extends ConsumerWidget {
             ),
           );
 
-          // Intelligent sync after login
-          final syncResult = await ref
-              .read(autoSyncServiceProvider)
-              .syncAfterLogin();
+          // Run synchronization synchronously
+          try {
+            // Intelligent sync after login
+            final syncResult = await ref
+                .read(autoSyncServiceProvider)
+                .syncAfterLogin();
 
-          // Also trigger Firebase Firestore sync immediately after login to pull user items
-          await ref.read(firebaseSyncServiceProvider).sync();
+            // Also trigger Firebase Firestore sync immediately after login to pull user items
+            await ref.read(firebaseSyncServiceProvider).sync(force: true);
 
-          // Refresh UI state to load the newly downloaded items from Isar
-          await ref.read(vaultProvider.notifier).refreshVault();
+            // Refresh UI state to load the newly downloaded items from Isar
+            await ref.read(vaultProvider.notifier).refreshVault();
 
-          // 3. FINISHED - Release the screen navigation
+            if (context.mounted) {
+              final items = ref.read(vaultProvider);
+              messenger.clearSnackBars();
+              String message;
+              Color? bgColor;
+
+              if (syncResult == 'restored') {
+                message = '✓ Your vault data has been restored from Cloud!';
+                bgColor = AppTheme.safeGreen;
+              } else if (syncResult == 'uploaded') {
+                message =
+                    '✓ Your local data has been synchronized with your account!';
+                bgColor = AppTheme.primaryAction;
+              } else if (syncResult == 'empty' && items.isEmpty) {
+                message = 'Welcome! Starting fresh with your new vault.';
+                bgColor = null;
+              } else {
+                message = 'Welcome back! Your vault is ready.';
+                bgColor = AppTheme.primaryAction;
+              }
+
+              messenger.showSnackBar(
+                SnackBar(content: Text(message), backgroundColor: bgColor),
+              );
+            }
+          } catch (e) {
+            logger.e('Error during background login sync', error: e);
+          }
+
+          // Remove loading indicator
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+
+          // 3. FINISHED - Release the screen navigation immediately
           ref.read(isProcessingAuthSyncProvider.notifier).state = false;
 
-          // ONLY mark onboarding complete AFTER sync is done
-          // This ensures main.dart doesn't switch to MainNavigation prematurely
+          // Complete onboarding to trigger immediate navigation to MainNavigation
           await _completeOnboarding(ref);
-
-          if (context.mounted) {
-            messenger.clearSnackBars();
-            String message;
-            Color? bgColor;
-
-            if (syncResult == 'restored') {
-              message = '✓ Your vault data has been restored from Cloud!';
-              bgColor = AppTheme.safeGreen;
-            } else if (syncResult == 'uploaded') {
-              message =
-                  '✓ Your local data has been synchronized with your account!';
-              bgColor = AppTheme.primaryAction;
-            } else {
-              message = 'Welcome! Starting fresh with your new vault.';
-              bgColor = null;
-            }
-
-            messenger.showSnackBar(
-              SnackBar(content: Text(message), backgroundColor: bgColor),
-            );
-          }
         } else {
+          // Remove loading indicator
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
           // Sign in failed/canceled -> Reset busy state
           ref.read(isProcessingAuthSyncProvider.notifier).state = false;
           messenger.showSnackBar(

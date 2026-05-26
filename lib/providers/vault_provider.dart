@@ -25,20 +25,33 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
   bool _isLoading = false;
   Completer<void>? _loadCompleter;
   int _currentLoadVersion = 0;
+  static bool _firstLoadDone = false;
 
   @override
   List<VaultItem> build() {
     _repository = ref.watch(vaultRepositoryProvider);
 
-    // Listen to auth state to trigger reload on login/logout
+    // Listen to auth state to trigger reload on login/logout and keep isGuestProvider in sync
     ref.listen<AsyncValue<User?>>(authStateProvider, (previous, next) {
       if (previous?.valueOrNull != next.valueOrNull) {
-        _loadItems(next.valueOrNull);
+        final user = next.valueOrNull;
+        if (user != null) {
+          ref.read(isGuestProvider.notifier).state = false;
+        } else {
+          ref.read(isGuestProvider.notifier).state = true;
+        }
+        _loadItems(user);
       }
     });
 
     // Load items immediately on startup using current value if available
-    final initialUser = ref.read(authStateProvider).valueOrNull;
+    final initialUser = FirebaseAuth.instance.currentUser;
+    if (initialUser != null) {
+      // Ensure guest provider is set properly if already authenticated
+      Future.microtask(() {
+        ref.read(isGuestProvider.notifier).state = false;
+      });
+    }
     _loadItems(initialUser);
 
     return [];
@@ -56,28 +69,39 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     await _repository.updateConfig(config);
   }
 
+  User? _lastLoadedUser;
+  bool _lastLoadedUserSet = false;
+
   Future<void> _loadItems(User? initialUser) async {
-    if (_isLoading) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (_isLoading && _lastLoadedUserSet && _lastLoadedUser?.uid == user?.uid) {
+      return;
+    }
     _isLoading = true;
+    _lastLoadedUser = user;
+    _lastLoadedUserSet = true;
     _loadCompleter = Completer<void>();
     final loadVersion = ++_currentLoadVersion;
 
     try {
       // Stabilization Fix for Android 15/Pixel 9 kernel (userfaultfd)
-      await Future.delayed(const Duration(milliseconds: 1000));
+      if (!_firstLoadDone) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+        _firstLoadDone = true;
+      }
 
       // CRITICAL: Ensure we are not in the build phase
       await Future.microtask(() {});
 
       // Re-fetch current user to ensure we use the latest auth state
-      final user = ref.read(authStateProvider).valueOrNull;
+      final currentUser = FirebaseAuth.instance.currentUser;
 
       final isar = ref.read(isarProvider);
 
       // Perform Migrations here (lazy-loaded)
       await MigrationService.runMigrations(isar);
 
-      final ownerId = user?.uid ?? 'local_user';
+      final ownerId = currentUser?.uid ?? 'local_user';
       logger.i(
         'VaultNotifier: Loading items for owner: $ownerId (v$loadVersion)',
       );
@@ -135,15 +159,17 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     } catch (e) {
       logger.e('VaultNotifier: Error loading items', error: e);
     } finally {
-      _isLoading = false;
-      if (_loadCompleter?.isCompleted == false) {
-        _loadCompleter?.complete();
+      if (loadVersion == _currentLoadVersion) {
+        _isLoading = false;
+        if (_loadCompleter?.isCompleted == false) {
+          _loadCompleter?.complete();
+        }
       }
     }
   }
 
   Future<void> refreshVault() async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = FirebaseAuth.instance.currentUser;
     await _loadItems(user);
   }
 
@@ -153,7 +179,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
   }
 
   Future<void> addItem(VaultItem item) async {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final firebaseUser = FirebaseAuth.instance.currentUser;
     final alertDays = ref.read(alertDaysProvider);
     final threeDayAlert = ref.read(threeDayAlertEnabledProvider);
     final notificationsEnabled = ref.read(globalNotificationsProvider);
@@ -165,20 +191,18 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     // 1. Delete samples if adding real data
     if (!item.isSample) {
-      await _repository.deleteSamplesForUser(user?.uid ?? 'local_user');
+      await _repository.deleteSamplesForUser(firebaseUser?.uid ?? 'local_user');
     }
 
-    // 2. Assign Owner ID (CRITICAL FIX: Respect isGuest state strictly)
-    final isGuest = ref.read(isGuestProvider);
-
-    if (isGuest || user == null) {
+    // 2. Assign Owner ID
+    if (firebaseUser == null) {
       item.ownerId = 'local_user';
     } else {
-      item.ownerId = user.uid;
+      item.ownerId = firebaseUser.uid;
     }
 
     String? token;
-    if (user != null) {
+    if (firebaseUser != null) {
       try {
         final authService = ref.read(authServiceProvider);
         token = await authService.getFreshAccessToken();
@@ -204,7 +228,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     // Wait for any in-progress background load to finish, then force a fresh reload
     await waitForLoad();
     _isLoading = false;
-    await _loadItems(user);
+    await _loadItems(firebaseUser);
     _triggerSync();
   }
 
@@ -223,7 +247,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     // 2. Persistent update
     await _repository.updatePaidStatus(id, isPaid);
     await _markAsDirty();
-    await _loadItems(ref.read(authStateProvider).valueOrNull);
+    await _loadItems(FirebaseAuth.instance.currentUser);
     _triggerSync();
   }
 
@@ -241,7 +265,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         await isar.collection<VaultItem>().put(item);
       });
       await _markAsDirty();
-      await _loadItems(ref.read(authStateProvider).valueOrNull);
+      await _loadItems(FirebaseAuth.instance.currentUser);
       _triggerSync();
     }
   }
@@ -272,7 +296,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
     // 2. Persistent update
     await _repository.softDeleteItem(id);
     await _markAsDirty();
-    await _loadItems(ref.read(authStateProvider).valueOrNull);
+    await _loadItems(FirebaseAuth.instance.currentUser);
     _triggerSync();
   }
 
@@ -295,7 +319,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
   Future<void> deleteGuestData() async {
     await _repository.deleteGuestData();
-    await _loadItems(ref.read(authStateProvider).valueOrNull);
+    await _loadItems(FirebaseAuth.instance.currentUser);
   }
 
   Future<void> removeAttachment(int itemId, String localPath) async {
@@ -351,7 +375,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
   Future<void> clearAllData({bool alsoDeleteCloud = false}) async {
     final isar = ref.read(isarProvider);
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = FirebaseAuth.instance.currentUser;
 
     String? token;
     if (alsoDeleteCloud && user != null) {

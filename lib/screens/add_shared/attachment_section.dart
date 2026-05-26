@@ -279,7 +279,8 @@ class AttachmentSection extends ConsumerWidget {
   }
 
   Widget _buildAttachmentIcon(String path) {
-    final isPdf = path.toLowerCase().endsWith('.pdf');
+    final lowerPath = path.toLowerCase();
+    final isPdf = lowerPath.endsWith('.pdf');
     if (isPdf) {
       return _buildFileIcon(path, isPdf: true);
     }
@@ -287,22 +288,30 @@ class AttachmentSection extends ConsumerWidget {
     final isStored = path.contains('app_flutter/attachments') ||
         path.contains('/attachments/') ||
         (!path.contains('/') && !path.contains('\\')) ||
-        path.toLowerCase().endsWith('.enc');
+        lowerPath.endsWith('.enc');
+
+    final cleanPath = lowerPath.replaceAll('.enc', '');
+    final isImage = cleanPath.endsWith('.jpg') ||
+        cleanPath.endsWith('.jpeg') ||
+        cleanPath.endsWith('.png') ||
+        cleanPath.endsWith('.heic') ||
+        cleanPath.endsWith('.heif') ||
+        cleanPath.endsWith('.webp');
 
     if (isStored) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: EncryptedImage(
-          path: path,
-          fit: BoxFit.cover,
-          errorWidget: _buildFileIcon(path, isPdf: false),
-        ),
-      );
+      if (isImage) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: EncryptedImage(
+            path: path,
+            fit: BoxFit.cover,
+            errorWidget: _buildFileIcon(path, isPdf: false),
+          ),
+        );
+      } else {
+        return _buildFileIcon(path, isPdf: false);
+      }
     } else {
-      final isImage = path.toLowerCase().endsWith('.jpg') ||
-          path.toLowerCase().endsWith('.jpeg') ||
-          path.toLowerCase().endsWith('.png') ||
-          path.toLowerCase().endsWith('.gif');
       if (isImage) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(8),

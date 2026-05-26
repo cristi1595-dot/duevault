@@ -62,6 +62,36 @@ class VaultItemTile extends ConsumerWidget {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double textColumnWidth = screenWidth -
+        20 - // List horizontal padding
+        57 - // Left Icon Box
+        13 - // Left padding of the middle section
+        ((onCheckPressed != null) ? 3 : 13) - // Right padding of the middle section
+        9 - // Gap between text and right columns
+        110 - // Right column width
+        ((onCheckPressed != null) ? 48 : 0); // Right checkmark button
+
+    final rawTitle = item.title.isEmpty ? item.category : item.title;
+    final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
+    final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: displayTitle,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontSize: fontSize,
+              height: 1.1,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+      maxLines: 2,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: textColumnWidth > 0 ? textColumnWidth : 150);
+
+    final isTwoLines = textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
+    final gapHeight = isTwoLines ? 2.0 : 10.0;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
       child: ClipRRect(
@@ -229,6 +259,7 @@ class VaultItemTile extends ConsumerWidget {
                     // Left Icon Box: occupies full height
                     Container(
                       width: 57,
+                      constraints: const BoxConstraints(minHeight: 66),
                       decoration: const BoxDecoration(
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(18),
@@ -272,49 +303,32 @@ class VaultItemTile extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    () {
-                                      final rawTitle = item.title.isEmpty
-                                          ? item.category
-                                          : item.title;
-                                      return rawTitle.length > 40
-                                          ? '${rawTitle.substring(0, 37)}...'
-                                          : rawTitle;
-                                    }(),
+                                    displayTitle,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(
-                                          fontSize: () {
-                                            final rawTitle = item.title.isEmpty
-                                                ? item.category
-                                                : item.title;
-                                            return rawTitle.length > 20 ? 14.5 : 17.5;
-                                          }(),
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                          fontSize: fontSize,
                                           height: 1.1,
                                           decoration: item.isPaid
                                               ? TextDecoration.lineThrough
                                               : null,
                                           color: item.isPaid
-                                              ? Theme.of(
-                                                  context,
-                                                ).textTheme.bodyMedium?.color
+                                              ? Theme.of(context).textTheme.bodyMedium?.color
                                               : Theme.of(context).textTheme.bodyLarge?.color,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: gapHeight),
                                   Text(
                                     item.dueDate != null
                                         ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
                                         : (isBill ? 'Bill • No due date' : 'Doc • Permanent'),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium?.copyWith(
-                                      fontSize: 13,
-                                      color: Theme.of(context).brightness == Brightness.dark
-                                          ? Colors.white.withValues(alpha: 0.45)
-                                          : Colors.black.withValues(alpha: 0.45),
-                                    ),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontSize: 13,
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.white.withValues(alpha: 0.45)
+                                              : Colors.black.withValues(alpha: 0.45),
+                                        ),
                                   ),
                                 ],
                               ),

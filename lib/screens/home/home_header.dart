@@ -31,19 +31,25 @@ class HomeHeader extends ConsumerWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'DueVault',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge?.color,
-                                letterSpacing: -0.5,
-                                fontSize: 24,
-                              ),
+                        Row(
+                          children: [
+                            Text(
+                              'DueVault',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge?.color,
+                                    letterSpacing: -0.5,
+                                    fontSize: 24,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            const SyncStatusIndicator(),
+                          ],
                         ),
                         Text(
                           'Smart Bill Manager',

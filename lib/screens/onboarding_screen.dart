@@ -18,6 +18,7 @@ import 'onboarding/onboarding_sync_page.dart';
 import 'onboarding/onboarding_tutorial_page.dart';
 import 'paywall_screen.dart';
 import '../providers/premium_provider.dart';
+import '../utils/logger.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -250,7 +251,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         .read(authServiceProvider)
         .signInWithGoogle();
     if (!mounted) return;
-    Navigator.pop(context);
 
     if (userCredential != null) {
       messenger.showSnackBar(
@@ -259,44 +259,62 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         ),
       );
 
-      final syncResult = await ref
-          .read(autoSyncServiceProvider)
-          .syncAfterLogin();
-      
-      // Also trigger Firebase Firestore sync immediately after onboarding login to pull user items
-      await ref.read(firebaseSyncServiceProvider).sync();
+      // Run synchronization synchronously
+      try {
+        final syncResult = await ref
+            .read(autoSyncServiceProvider)
+            .syncAfterLogin();
+        
+        // Also trigger Firebase Firestore sync immediately after onboarding login to pull user items
+        await ref.read(firebaseSyncServiceProvider).sync(force: true);
 
-      // Refresh UI state to load the newly downloaded items from Isar
-      await ref.read(vaultProvider.notifier).refreshVault();
-      
-      if (!mounted) return;
+        // Refresh UI state to load the newly downloaded items from Isar
+        await ref.read(vaultProvider.notifier).refreshVault();
+        
+        if (mounted) {
+          final items = ref.read(vaultProvider);
+          messenger.clearSnackBars();
+          String syncMsg;
+          Color? bgColor;
 
-      messenger.clearSnackBars();
-      String syncMsg;
-      Color? bgColor;
+          if (syncResult == 'restored') {
+            syncMsg = '✓ Vault restored successfully!';
+            bgColor = AppTheme.safeGreen;
+          } else if (syncResult == 'uploaded') {
+            syncMsg = '✓ Local data secured in your cloud!';
+            bgColor = AppTheme.primaryAction;
+          } else if (syncResult == 'empty' && items.isEmpty) {
+            syncMsg = '✓ Vault ready!';
+            bgColor = null;
+          } else {
+            syncMsg = '✓ Vault ready!';
+            bgColor = AppTheme.primaryAction;
+          }
 
-      if (syncResult == 'restored') {
-        syncMsg = '✓ Vault restored successfully!';
-        bgColor = AppTheme.safeGreen;
-      } else if (syncResult == 'uploaded') {
-        syncMsg = '✓ Local data secured in your cloud!';
-        bgColor = AppTheme.primaryAction;
-      } else {
-        syncMsg = '✓ Vault ready!';
-        bgColor = null;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(syncMsg),
+              backgroundColor: bgColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        logger.e('Error during onboarding login sync', error: e);
       }
 
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(syncMsg),
-          backgroundColor: bgColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // Pop loading indicator
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
-      // Complete onboarding last so navigation triggers after all sync operations are done
+      // Complete onboarding immediately to trigger navigation to MainNavigation
       await _completeOnboarding();
     } else {
+      // Pop loading indicator
+      if (mounted) {
+        Navigator.pop(context);
+      }
       messenger.showSnackBar(
         const SnackBar(content: Text('Google Sign-in failed')),
       );

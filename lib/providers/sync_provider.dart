@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'database_provider.dart';
 import '../models/app_config.dart';
 import 'package:isar/isar.dart';
+import 'auth_provider.dart';
+import 'premium_provider.dart';
 
 enum SyncStatus { idle, syncing, success, error }
 
@@ -60,11 +62,17 @@ final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
 // Auto Sync Provider
 class AutoSyncNotifier extends StateNotifier<bool> {
   final Isar isar;
-  AutoSyncNotifier(this.isar) : super(true) {
+  final bool forceTrue;
+
+  AutoSyncNotifier(this.isar, {required this.forceTrue}) : super(true) {
     _init();
   }
 
   void _init() {
+    if (forceTrue) {
+      state = true;
+      return;
+    }
     final config = isar.appConfigs.getSync(0);
     if (config != null) {
       state = config.autoSync;
@@ -72,6 +80,10 @@ class AutoSyncNotifier extends StateNotifier<bool> {
   }
 
   Future<void> toggleAutoSync(bool value) async {
+    if (forceTrue) {
+      state = true;
+      return;
+    }
     state = value;
     await isar.writeTxn(() async {
       final config = await isar.appConfigs.get(0) ?? AppConfig();
@@ -83,7 +95,10 @@ class AutoSyncNotifier extends StateNotifier<bool> {
 
 final autoSyncProvider = StateNotifierProvider<AutoSyncNotifier, bool>((ref) {
   final isar = ref.watch(isarProvider);
-  return AutoSyncNotifier(isar);
+  final isPremium = ref.watch(isPremiumProvider);
+  final isSignedIn = ref.watch(authStateProvider).valueOrNull != null;
+  final forceTrue = isPremium && isSignedIn;
+  return AutoSyncNotifier(isar, forceTrue: forceTrue);
 });
 
 // WiFi Only Provider

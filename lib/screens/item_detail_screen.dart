@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vault_item.dart';
@@ -293,9 +294,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               SecondaryButton(
                 label: 'Move to Archive',
                 icon: Icons.archive_outlined,
-                onPressed: () async {
+                onPressed: () {
                   final notifier = ref.read(vaultProvider.notifier);
-                  await notifier.toggleArchiveStatus(currentItem.id, true);
+                  unawaited(notifier.toggleArchiveStatus(currentItem.id, true));
 
                   VaultSnackBar.show(
                     message: 'Moved to History',
@@ -305,16 +306,16 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         notifier.toggleArchiveStatus(currentItem.id, false),
                   );
 
-                  if (context.mounted) Navigator.pop(context);
+                  Navigator.pop(context);
                 },
               )
             else
               SecondaryButton(
                 label: 'Restore to Active',
                 icon: Icons.unarchive_outlined,
-                onPressed: () async {
+                onPressed: () {
                   final notifier = ref.read(vaultProvider.notifier);
-                  await notifier.toggleArchiveStatus(currentItem.id, false);
+                  unawaited(notifier.toggleArchiveStatus(currentItem.id, false));
 
                   VaultSnackBar.show(
                     message: 'Restored to Vault',
@@ -325,7 +326,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         .toggleArchiveStatus(currentItem.id, true),
                   );
 
-                  if (context.mounted) Navigator.pop(context);
+                  Navigator.pop(context);
                 },
               ),
             const SizedBox(height: 12),
@@ -353,7 +354,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final confirm = await ItemDetailDialogs.showDeleteItemDialog(context, title);
 
     if (confirm == true) {
-      await ref.read(vaultProvider.notifier).deleteItem(currentItem.id);
+      unawaited(ref.read(vaultProvider.notifier).deleteItem(currentItem.id));
       if (context.mounted) Navigator.pop(context);
     }
   }

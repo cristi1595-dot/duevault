@@ -33,8 +33,9 @@ class AttachmentPickerHelper {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 1600,
-        imageQuality: 80,
+        maxWidth: 1920.0,
+        maxHeight: 1920.0,
+        imageQuality: 70,
       );
       if (pickedFile == null) return;
 
@@ -81,7 +82,7 @@ class AttachmentPickerHelper {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg'],
+        allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg', 'heic', 'heif', 'webp'],
         allowMultiple: true,
       );
       if (result == null) return;
@@ -118,10 +119,15 @@ class AttachmentPickerHelper {
       if (useOcr) {
         // OCR Support for first uploaded image
         final firstImagePath = pathsToAdd.firstWhere(
-          (path) =>
-              path.toLowerCase().endsWith('.jpg') ||
-              path.toLowerCase().endsWith('.jpeg') ||
-              path.toLowerCase().endsWith('.png'),
+          (path) {
+            final lower = path.toLowerCase();
+            return lower.endsWith('.jpg') ||
+                lower.endsWith('.jpeg') ||
+                lower.endsWith('.png') ||
+                lower.endsWith('.heic') ||
+                lower.endsWith('.heif') ||
+                lower.endsWith('.webp');
+          },
           orElse: () => '',
         );
 

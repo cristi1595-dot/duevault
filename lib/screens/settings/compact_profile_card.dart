@@ -146,8 +146,13 @@ class CompactProfileCard extends ConsumerWidget {
                       await isar.writeTxn(() async {
                         final config =
                             await isar.collection<AppConfig>().get(0) ?? AppConfig();
-                        config.isGuest =
-                            true; // Switch back to guest mode automatically
+                        config.isGuest = true; // Switch back to guest mode automatically
+                        config.lastCloudSync = null;
+                        config.lastLocalChange = null;
+                        config.lastSyncCheck = null;
+                        config.localDatabaseChecksum = null;
+                        config.needsBackup = false;
+                        config.guestDataMigrated = false;
                         await isar.appConfigs.put(config);
                       });
 

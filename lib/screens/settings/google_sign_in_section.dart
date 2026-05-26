@@ -38,6 +38,18 @@ class GoogleSignInSection extends ConsumerWidget {
         final messenger = ScaffoldMessenger.of(context);
         try {
           ref.read(isProcessingAuthSyncProvider.notifier).state = true;
+
+          // Show loading indicator
+          unawaited(
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryAction),
+              ),
+            ),
+          );
+
           final result = await ref.read(authServiceProvider).signInWithGoogle();
           if (!context.mounted) return;
 
@@ -59,6 +71,12 @@ class GoogleSignInSection extends ConsumerWidget {
                 .hasRealGuestData();
 
             if (hasGuestData && context.mounted) {
+              // Pop loading indicator temporarily so user can see migration dialog
+              Navigator.pop(context);
+
+              await Future.delayed(const Duration(milliseconds: 500));
+              if (!context.mounted) return;
+
               final shouldMigrate = await showDialog<bool>(
                 context: context,
                 barrierDismissible: false,
@@ -94,6 +112,19 @@ class GoogleSignInSection extends ConsumerWidget {
                 ),
               );
 
+              // Re-show loading indicator after dialog decision
+              if (context.mounted) {
+                unawaited(
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(color: AppTheme.primaryAction),
+                    ),
+                  ),
+                );
+              }
+
               if (shouldMigrate == true) {
                 await ref.read(vaultProvider.notifier).migrateGuestData(uid);
                 if (context.mounted) {
@@ -121,54 +152,75 @@ class GoogleSignInSection extends ConsumerWidget {
               );
             }
 
-            // Intelligent sync
-            final syncResult = await ref
-                .read(autoSyncServiceProvider)
-                .syncAfterLogin();
+            // Run synchronization synchronously
+            try {
+              // Intelligent sync
+              final syncResult = await ref
+                  .read(autoSyncServiceProvider)
+                  .syncAfterLogin();
 
-            // Also trigger Firebase Firestore sync immediately after settings login to pull user items
-            await ref.read(firebaseSyncServiceProvider).sync();
+              // Also trigger Firebase Firestore sync immediately after settings login to pull user items
+              await ref.read(firebaseSyncServiceProvider).sync(force: true);
 
-            // Refresh UI state to load the newly downloaded items from Isar
-            await ref.read(vaultProvider.notifier).refreshVault();
+              // Refresh UI state to load the newly downloaded items from Isar
+              await ref.read(vaultProvider.notifier).refreshVault();
 
-            if (!context.mounted) return;
+              if (context.mounted) {
+                final items = ref.read(vaultProvider);
+                messenger.clearSnackBars();
+                String message;
+                Color? bgColor;
 
-            messenger.clearSnackBars();
-            String message;
-            Color? bgColor;
+                if (syncResult == 'restored') {
+                  message = '✓ Your vault data has been restored!';
+                  bgColor = AppTheme.safeGreen;
+                } else if (syncResult == 'uploaded') {
+                  message = '✓ Local data synced with your account!';
+                  bgColor = AppTheme.primaryAction;
+                } else if (syncResult == 'empty' && items.isEmpty) {
+                  message = 'No backup found. Starting fresh.';
+                  bgColor = null;
+                } else {
+                  message = '✓ Local data synced with your account!';
+                  bgColor = AppTheme.primaryAction;
+                }
 
-            if (syncResult == 'restored') {
-              message = '✓ Your vault data has been restored!';
-              bgColor = AppTheme.safeGreen;
-            } else if (syncResult == 'uploaded') {
-              message = '✓ Local data synced with your account!';
-              bgColor = AppTheme.primaryAction;
-            } else {
-              message = 'No backup found. Starting fresh.';
-              bgColor = null;
+                messenger.showSnackBar(
+                  SnackBar(content: Text(message), backgroundColor: bgColor),
+                );
+              }
+            } catch (e) {
+              logger.e('Error during background settings login sync', error: e);
             }
-
-            messenger.showSnackBar(
-              SnackBar(content: Text(message), backgroundColor: bgColor),
-            );
 
             // Turn off processing state BEFORE navigating so MainNavigation shows immediately
             ref.read(isProcessingAuthSyncProvider.notifier).state = false;
 
-            unawaited(
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const MainNavigation()),
-                (route) => false,
-              ),
-            );
+            // Pop loading indicator
+            if (context.mounted) {
+              Navigator.pop(context);
+              unawaited(
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MainNavigation()),
+                  (route) => false,
+                ),
+              );
+            }
           } else {
+            // Pop loading indicator
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
             messenger.showSnackBar(
               const SnackBar(content: Text('Sign in canceled.')),
             );
           }
         } catch (e) {
+          // Pop loading indicator
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
           logger.e('Sign in error', error: e);
           if (context.mounted) {
             messenger.showSnackBar(

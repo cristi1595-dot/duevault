@@ -34,14 +34,14 @@ class FirebaseSyncService {
     _connectivitySubscription?.cancel();
   }
 
-  Future<void> sync() async {
+  Future<void> sync({bool force = false}) async {
     if (_isSyncing) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     // Check if we are processing a critical auth/migration sync
     final isProcessing = _ref.read(isProcessingAuthSyncProvider);
-    if (isProcessing) {
+    if (isProcessing && !force) {
       logger.i(
         'FirebaseSyncService: Sync skipped because isProcessingAuthSync is active.',
       );

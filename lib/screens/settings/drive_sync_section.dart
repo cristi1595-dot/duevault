@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
-import '../../models/app_config.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/database_provider.dart';
 import '../../providers/sync_provider.dart';
-import '../../services/drive_service.dart';
-import 'settings_dialogs.dart';
 import '../paywall_screen.dart';
 import '../../providers/premium_provider.dart';
 
@@ -24,156 +19,68 @@ class DriveSyncSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final autoSync = ref.watch(autoSyncProvider);
     final wifiOnly = ref.watch(wifiOnlyProvider);
-    final userEmail = FirebaseAuth.instance.currentUser?.email ?? 'your account';
 
     final syncTimestamp = ref.watch(lastSyncTimestampProvider);
     final syncState = ref.watch(syncProvider);
 
-    String lastSyncText = 'Never';
-    if (syncTimestamp.valueOrNull != null) {
-      lastSyncText = DateFormat('MMM dd, HH:mm').format(syncTimestamp.valueOrNull!.toLocal());
+    String subtitleText = 'Active & Up to date';
+    if (syncState.status == SyncStatus.syncing) {
+      subtitleText = 'Syncing...';
+    } else if (syncTimestamp.valueOrNull != null) {
+      final formatted = DateFormat('MMM dd, HH:mm').format(syncTimestamp.valueOrNull!.toLocal());
+      subtitleText = 'Last sync: $formatted';
     }
 
     return Column(
       children: [
-        // --- 1. Auto Sync Toggle ---
+        // --- 1. Automated Cloud Sync (Read-only) ---
         _buildSettingItem(
           context: context,
-          icon: Icons.sync,
-          title: 'Automated Vault Backup',
-          subtitle: autoSync ? 'Last sync: $lastSyncText' : 'Backup after changes',
-          trailing: SizedBox(
-            height: 24,
-            child: (syncState.status == SyncStatus.syncing)
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Switch(
-                    value: autoSync,
-                    onChanged: (v) async {
-                      final isPremium = ref.read(isPremiumProvider);
-                      if (!isPremium) {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                        );
-                        return;
-                      }
-                      await ref.read(autoSyncProvider.notifier).toggleAutoSync(v);
-                    },
-                    activeThumbColor: Colors.greenAccent,
-                    activeTrackColor: Colors.greenAccent.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-          ),
+          icon: Icons.cloud_done,
+          iconColor: Colors.greenAccent,
+          title: 'Automated Cloud Sync',
+          subtitle: subtitleText,
+          trailing: (syncState.status == SyncStatus.syncing)
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const SizedBox.shrink(),
         ),
 
-        // --- 2. WiFi Only (Conditional) ---
-        if (autoSync) ...[
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-            height: 1,
-            indent: 56,
-          ),
-          _buildSettingItem(
-            context: context,
-            icon: Icons.wifi_outlined,
-            title: 'Optimize Mobile Data',
-            subtitle: 'Save mobile data',
-            trailing: SizedBox(
-              height: 24,
-              child: Switch(
-                value: wifiOnly,
-                onChanged: (v) async {
-                  final isPremium = ref.read(isPremiumProvider);
-                  if (!isPremium) {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                    );
-                    return;
-                  }
-                  await ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v);
-                },
-                activeThumbColor: Colors.greenAccent,
-                activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
-              ),
+        // --- 2. WiFi Only ---
+        Divider(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+          height: 1,
+          indent: 56,
+        ),
+        _buildSettingItem(
+          context: context,
+          icon: Icons.wifi_outlined,
+          title: 'Optimize Mobile Data',
+          subtitle: 'Save mobile data',
+          trailing: SizedBox(
+            height: 24,
+            child: Switch(
+              value: wifiOnly,
+              onChanged: (v) async {
+                final isPremium = ref.read(isPremiumProvider);
+                if (!isPremium) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  );
+                  return;
+                }
+                await ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v);
+              },
+              activeThumbColor: Colors.greenAccent,
+              activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
             ),
           ),
-        ],
-
-        // --- 3. Manual Backup Trigger (if auto is off or forced) ---
-        if (!autoSync) ...[
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-            height: 1,
-            indent: 56,
-          ),
-          _buildSettingItem(
-            context: context,
-            icon: Icons.cloud_upload_outlined,
-            title: 'Backup Now',
-            subtitle: 'Manual push to cloud',
-            onTap: () async {
-              final isPremium = ref.read(isPremiumProvider);
-              if (!isPremium) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                );
-                return;
-              }
-              final confirm = await SettingsDialogs.showBackupNowDialog(context, userEmail);
-
-              if (confirm != true) return;
-
-              if (!context.mounted) return;
-              final messenger = ScaffoldMessenger.of(context);
-              messenger.showSnackBar(
-                const SnackBar(content: Text('Backing up to Google Drive...')),
-              );
-
-              final authService = ref.read(authServiceProvider);
-              final token = await authService.getFreshAccessToken();
-
-              if (token != null) {
-                final authHeaders = {'Authorization': 'Bearer $token'};
-                final driveService = DriveService(
-                  GoogleAuthClient(authHeaders),
-                );
-                try {
-                  final success = await driveService.backupDatabase();
-
-                  // Update local config timestamp manually for manual backup
-                  if (success) {
-                    final isar = ref.read(isarProvider);
-                    await isar.writeTxn(() async {
-                      final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
-                      config.lastCloudSync = DateTime.now();
-                      await isar.collection<AppConfig>().put(config);
-                    });
-                  }
-
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        success ? '✓ Backup saved to Google Drive!' : 'Backup failed. Please try again.',
-                      ),
-                      backgroundColor: success ? AppTheme.safeGreen : AppTheme.urgentRed,
-                    ),
-                  );
-                } finally {
-                  driveService.dispose();
-                }
-              }
-            },
-          ),
-        ],
+        ),
       ],
     );
   }

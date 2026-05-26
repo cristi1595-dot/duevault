@@ -63,7 +63,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
     if (widget.item != null) {
       _itemType = widget.item!.itemType ?? 'Bill';
-      _category = widget.item!.category;
+      _category = _isEdit ? widget.item!.category : AppCategories.billCategories.first.name;
       _recurrence = widget.item!.recurrence;
       _directDebit = widget.item!.directDebit;
       _dueDate = widget.item!.dueDate;

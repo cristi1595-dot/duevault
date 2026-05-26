@@ -126,6 +126,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             DueVaultLogo(size: 34, showGlow: false),
             SizedBox(width: 12),
             Text('Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+            SizedBox(width: 8),
+            SyncStatusIndicator(),
           ],
         ),
         actions: [
