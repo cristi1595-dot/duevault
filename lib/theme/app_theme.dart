@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
@@ -73,6 +74,27 @@ class AppTheme {
       scaffoldBackgroundColor: background,
       primaryColor: primaryAction,
       dividerColor: border,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textPrimary),
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+        ),
+        systemOverlayStyle: brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light,
+                statusBarBrightness: Brightness.dark,
+              )
+            : SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+              ),
+      ),
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: primaryAction,
@@ -181,6 +203,12 @@ class AppTheme {
 
   static Color getMintGreen(BuildContext context) {
     return const Color(0xFF34D399);
+  }
+
+  static Color getSettingsAccent(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.greenAccent
+        : Colors.teal.shade700;
   }
 
   static TextStyle labelCapsStyle(BuildContext context) {

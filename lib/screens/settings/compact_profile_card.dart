@@ -28,6 +28,7 @@ class CompactProfileCard extends ConsumerWidget {
         });
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final accentColor = AppTheme.getSettingsAccent(context);
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
@@ -47,8 +48,8 @@ class CompactProfileCard extends ConsumerWidget {
             ),
             border: Border.all(
               color: isDark
-                  ? Colors.greenAccent.withValues(alpha: 0.15)
-                  : Colors.greenAccent.withValues(alpha: 0.25),
+                  ? accentColor.withValues(alpha: 0.15)
+                  : accentColor.withValues(alpha: 0.25),
               width: 1.5,
             ),
             boxShadow: [
@@ -67,8 +68,8 @@ class CompactProfileCard extends ConsumerWidget {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      Colors.greenAccent.withValues(alpha: 0.8),
-                      Colors.greenAccent.withValues(alpha: 0.2),
+                      accentColor.withValues(alpha: 0.8),
+                      accentColor.withValues(alpha: 0.2),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,

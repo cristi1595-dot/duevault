@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/analytics_service.dart';
+import '../../theme/app_theme.dart';
 import 'settings_list_tile.dart';
 
 class InterfaceCustomizationSection extends ConsumerWidget {
@@ -37,8 +38,8 @@ class InterfaceCustomizationSection extends ConsumerWidget {
                       themeMode == ThemeMode.dark ? 'light' : 'dark',
                     );
               },
-              activeThumbColor: Colors.greenAccent,
-              activeTrackColor: Colors.greenAccent.withValues(
+              activeThumbColor: AppTheme.getSettingsAccent(context),
+              activeTrackColor: AppTheme.getSettingsAccent(context).withValues(
                 alpha: 0.3,
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/security_provider.dart';
 import '../../services/analytics_service.dart';
+import '../../theme/app_theme.dart';
 import 'settings_dialogs.dart';
 import 'settings_list_tile.dart';
 
@@ -39,8 +40,8 @@ class SecurityLockSection extends ConsumerWidget {
                   );
             }
           },
-          activeThumbColor: Colors.greenAccent,
-          activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+          activeThumbColor: AppTheme.getSettingsAccent(context),
+          activeTrackColor: AppTheme.getSettingsAccent(context).withValues(alpha: 0.3),
         ),
       ),
     );

@@ -30,6 +30,8 @@ class SmartAlertsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final globalEnabled = ref.watch(globalNotificationsProvider);
     final alertDays = ref.watch(alertDaysProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = AppTheme.getSettingsAccent(context);
 
     final isOptimizedActive = (isBatteryOptimizationDisabled == true &&
         isNotificationPermissionGranted &&
@@ -76,19 +78,26 @@ class SmartAlertsSection extends ConsumerWidget {
                           builder: (context, child) {
                             return Theme(
                               data: Theme.of(context).copyWith(
-                                timePickerTheme: const TimePickerThemeData(
-                                  backgroundColor: AppTheme.background,
-                                  hourMinuteTextColor: Colors.white,
-                                  dialBackgroundColor: AppTheme.surface,
-                                  dialTextColor: Colors.white,
-                                  dayPeriodTextColor: Colors.white,
+                                timePickerTheme: TimePickerThemeData(
+                                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                  hourMinuteTextColor: Theme.of(context).textTheme.bodyLarge?.color,
+                                  dialBackgroundColor: Theme.of(context).cardTheme.color,
+                                  dialTextColor: Theme.of(context).textTheme.bodyLarge?.color,
+                                  dayPeriodTextColor: Theme.of(context).textTheme.bodyLarge?.color,
                                 ),
-                                colorScheme: const ColorScheme.dark(
-                                  primary: Colors.greenAccent,
-                                  onPrimary: Colors.black,
-                                  surface: AppTheme.background,
-                                  onSurface: Colors.white,
-                                ),
+                                colorScheme: isDark
+                                    ? const ColorScheme.dark(
+                                        primary: Colors.greenAccent,
+                                        onPrimary: Colors.black,
+                                        surface: AppTheme.background,
+                                        onSurface: Colors.white,
+                                      )
+                                    : ColorScheme.light(
+                                        primary: accentColor,
+                                        onPrimary: Colors.white,
+                                        surface: Colors.white,
+                                        onSurface: const Color(0xFF0F172A),
+                                      ),
                               ),
                               child: child!,
                             );
@@ -99,22 +108,22 @@ class SmartAlertsSection extends ConsumerWidget {
                           await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                         }
                       },
-                      icon: const Icon(Icons.access_time_rounded, size: 16, color: Colors.greenAccent),
+                      icon: Icon(Icons.access_time_rounded, size: 16, color: accentColor),
                       label: Consumer(
                         builder: (context, ref, _) {
                           final time = ref.watch(notificationTimeProvider);
                           return Text(
                             time.format(context),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: Colors.greenAccent,
+                              color: accentColor,
                               fontSize: 13,
                             ),
                           );
                         },
                       ),
                       style: TextButton.styleFrom(
-                        backgroundColor: Colors.greenAccent.withValues(alpha: 0.1),
+                        backgroundColor: accentColor.withValues(alpha: 0.1),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -132,8 +141,8 @@ class SmartAlertsSection extends ConsumerWidget {
                         await onAttemptActivation(targetState: v);
                         await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                       },
-                      activeThumbColor: Colors.greenAccent,
-                      activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+                      activeThumbColor: accentColor,
+                      activeTrackColor: accentColor.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -174,7 +183,7 @@ class SmartAlertsSection extends ConsumerWidget {
                                     : 'Early warning for upcoming bills',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: firstReminderEnabled ? Colors.greenAccent : Colors.grey,
+                                  color: firstReminderEnabled ? accentColor : Colors.grey,
                                   fontWeight: firstReminderEnabled ? FontWeight.w500 : FontWeight.normal,
                                 ),
                               ),
@@ -190,8 +199,8 @@ class SmartAlertsSection extends ConsumerWidget {
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_enabled', val);
                             },
-                            activeThumbColor: Colors.greenAccent,
-                            activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+                            activeThumbColor: accentColor,
+                            activeTrackColor: accentColor.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
@@ -208,10 +217,10 @@ class SmartAlertsSection extends ConsumerWidget {
                             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                             overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                             valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                            valueIndicatorColor: Colors.greenAccent,
-                            activeTrackColor: Colors.greenAccent,
-                            inactiveTrackColor: Colors.greenAccent.withValues(alpha: 0.1),
-                            thumbColor: Colors.greenAccent,
+                            valueIndicatorColor: accentColor,
+                            activeTrackColor: accentColor,
+                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            thumbColor: accentColor,
                           ),
                           child: Slider(
                             value: alertDays.toDouble().clamp(3, 14),
@@ -269,7 +278,7 @@ class SmartAlertsSection extends ConsumerWidget {
                                     : 'Urgent alert right before due date',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: finalEnabled ? Colors.greenAccent : Colors.grey,
+                                  color: finalEnabled ? accentColor : Colors.grey,
                                   fontWeight: finalEnabled ? FontWeight.w500 : FontWeight.normal,
                                 ),
                               ),
@@ -285,8 +294,8 @@ class SmartAlertsSection extends ConsumerWidget {
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_enabled', val);
                             },
-                            activeThumbColor: Colors.greenAccent,
-                            activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+                            activeThumbColor: accentColor,
+                            activeTrackColor: accentColor.withValues(alpha: 0.3),
                           ),
                         ),
                       ],
@@ -303,10 +312,10 @@ class SmartAlertsSection extends ConsumerWidget {
                             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                             overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                             valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                            valueIndicatorColor: Colors.greenAccent,
-                            activeTrackColor: Colors.greenAccent,
-                            inactiveTrackColor: Colors.greenAccent.withValues(alpha: 0.1),
-                            thumbColor: Colors.greenAccent,
+                            valueIndicatorColor: accentColor,
+                            activeTrackColor: accentColor,
+                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            thumbColor: accentColor,
                           ),
                           child: Slider(
                             value: finalDays.toDouble().clamp(0, 2),

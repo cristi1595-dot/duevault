@@ -38,7 +38,7 @@ class DriveSyncSection extends ConsumerWidget {
         _buildSettingItem(
           context: context,
           icon: Icons.cloud_done,
-          iconColor: Colors.greenAccent,
+          iconColor: AppTheme.getSettingsAccent(context),
           title: 'Automated Cloud Sync',
           subtitle: subtitleText,
           trailing: (syncState.status == SyncStatus.syncing)
@@ -76,8 +76,8 @@ class DriveSyncSection extends ConsumerWidget {
                 }
                 await ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v);
               },
-              activeThumbColor: Colors.greenAccent,
-              activeTrackColor: Colors.greenAccent.withValues(alpha: 0.3),
+              activeThumbColor: AppTheme.getSettingsAccent(context),
+              activeTrackColor: AppTheme.getSettingsAccent(context).withValues(alpha: 0.3),
             ),
           ),
         ),
