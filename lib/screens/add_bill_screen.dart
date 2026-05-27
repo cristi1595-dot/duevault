@@ -11,6 +11,7 @@ import '../providers/currency_provider.dart';
 import '../services/encryption_service.dart';
 import 'package:flutter/services.dart';
 import '../utils/validation_helper.dart';
+import '../utils/amount_formatter.dart';
 import '../services/analytics_service.dart';
 import '../services/ocr_service.dart';
 import '../constants/app_categories.dart';
@@ -68,7 +69,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       _directDebit = widget.item!.directDebit;
       _dueDate = widget.item!.dueDate;
       _titleController.text = widget.item!.title;
-      _amountController.text = widget.item!.amount?.toString() ?? '';
+      _amountController.text = widget.item!.amount?.formatAmount() ?? '';
       _attachedFiles = List.from(widget.item!.attachedFiles);
 
       // Decrypt notes asynchronously to keep the UI perfectly responsive
@@ -97,7 +98,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
   void _handleOcrResult(OcrResult result) {
     if (result.probableAmount != null && _amountController.text.isEmpty) {
-      final valStr = result.probableAmount!.toStringAsFixed(2);
+      final valStr = result.probableAmount!.formatAmount();
       if (ValidationHelper.isAmountValid(valStr, isRequired: false)) {
         _amountController.text = valStr;
       }

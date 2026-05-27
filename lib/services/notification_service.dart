@@ -5,6 +5,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../utils/logger.dart';
+import '../utils/amount_formatter.dart';
 
 class NotificationService {
   static const int _firstReminderOffset = 100000;
@@ -149,7 +150,7 @@ class NotificationService {
 
       final now = DateTime.now();
       if (scheduledDate.isAfter(now)) {
-        final amountText = amount != null ? ' ($amount)' : '';
+        final amountText = amount != null ? ' (${amount.formatAmount()})' : '';
         await _scheduleSingle(
           id: billId + _firstReminderOffset,
           title: 'Upcoming $itemType: $billTitle$amountText',
@@ -177,7 +178,7 @@ class NotificationService {
 
       final now = DateTime.now();
       if (scheduledDate.isAfter(now)) {
-        final amountText = amount != null ? ' ($amount)' : '';
+        final amountText = amount != null ? ' (${amount.formatAmount()})' : '';
         await _scheduleSingle(
           id: billId + _finalReminderOffset,
           title: 'URGENT: $itemType Due!$amountText',

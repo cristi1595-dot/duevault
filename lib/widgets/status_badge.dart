@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class StatusBadge extends StatelessWidget {
   final String label;
@@ -19,15 +20,15 @@ class StatusBadge extends StatelessWidget {
     Color textColor;
 
     if (isPaid) {
-      textColor = const Color(0xFF34D399); // Elegant Mint Sage
+      textColor = AppTheme.getMintGreen(context); // Elegant Mint Sage
     } else if (label == 'EXPIRED' || (daysLeft != null && daysLeft! <= 3)) {
       textColor = const Color(0xFFE11D48); // Crimson Coral
     } else if (daysLeft != null && daysLeft! <= 7) {
       textColor = const Color(0xFFF59E0B); // Warm Amber
     } else if (label == 'PERMANENT' || label == 'RENEWED') {
-      textColor = const Color(0xFF34D399); // Valid Green
+      textColor = AppTheme.getMintGreen(context); // Valid Green
     } else {
-      textColor = const Color(0xFF10B981); // Green (safe zone > 7 days)
+      textColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
     }
 
     final Color bgColor = textColor.withValues(alpha: 0.12);

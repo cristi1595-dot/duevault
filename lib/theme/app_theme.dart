@@ -166,6 +166,18 @@ class AppTheme {
   static Color getTextSecondary(BuildContext context) =>
       Theme.of(context).textTheme.bodyMedium!.color!;
 
+  static Color getSafeGreen(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF10B981)
+        : Colors.green.shade700;
+  }
+
+  static Color getMintGreen(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF34D399)
+        : Colors.teal;
+  }
+
   static TextStyle labelCapsStyle(BuildContext context) {
     return GoogleFonts.inter(
       fontSize: 12,

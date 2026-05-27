@@ -109,20 +109,6 @@ class StorageResetSheet extends ConsumerWidget {
 
           const SizedBox(height: 28),
 
-          // Option 1: Clear Local Cache
-          _StorageOptionTile(
-            title: isPro ? 'Clear Local Cache (Cloud safe)' : 'Clear Local Cache',
-            subtitle: isPro
-                ? 'Deletes local temporary items only. Cloud backup stays safe.'
-                : 'Deletes local temporary items only.',
-            icon: Icons.phonelink_erase_rounded,
-            iconColor: AppTheme.primaryAction,
-            iconBgColor: AppTheme.primaryAction.withValues(alpha: 0.1),
-            onTap: () => _handleClearCache(context, ref, isPro),
-          ),
-
-          const SizedBox(height: 16),
-
           // Option 2: Erase All Data
           _StorageOptionTile(
             title: isPro ? 'Erase All Data (Cloud & Local)' : 'Erase All Data (Local)',
@@ -189,45 +175,31 @@ class StorageResetSheet extends ConsumerWidget {
       // 4. Run database/cloud tasks
       await onExecute();
 
-      if (parentContext.mounted) {
-        Navigator.pop(parentContext); // Close progress dialog
-        ScaffoldMessenger.of(parentContext).showSnackBar(
-          SnackBar(
-            content: Text(successMessage),
-            backgroundColor: successMessage.contains('wiped') || successMessage.contains('deleted')
-                ? AppTheme.urgentRed
-                : null,
-          ),
-        );
-        onSuccess?.call();
-      }
-    } catch (e) {
-      if (parentContext.mounted) {
-        Navigator.pop(parentContext); // Close progress dialog
-        ScaffoldMessenger.of(parentContext).showSnackBar(
-          SnackBar(
-            content: Text('$errorMessagePrefix: $e'),
-            backgroundColor: AppTheme.urgentRed,
-          ),
-        );
-      }
-    }
-  }
+      if (!parentContext.mounted) return;
+      Navigator.pop(parentContext); // Close progress dialog
 
-  Future<void> _handleClearCache(
-    BuildContext context,
-    WidgetRef ref,
-    bool isPro,
-  ) async {
-    await _runAction(
-      context: context,
-      onConfirm: () => showClearCacheConfirmDialog(parentContext, isPro),
-      onExecute: () => ref.read(vaultProvider.notifier).clearLocalCache(),
-      successMessage: !isPro
-          ? 'Local attachments cache cleared.'
-          : 'Local attachments cache cleared. Attachments will download on demand.',
-      errorMessagePrefix: 'Failed',
-    );
+      if (!parentContext.mounted) return;
+      ScaffoldMessenger.of(parentContext).showSnackBar(
+        SnackBar(
+          content: Text(successMessage),
+          backgroundColor: successMessage.contains('wiped') || successMessage.contains('deleted')
+              ? AppTheme.urgentRed
+              : null,
+        ),
+      );
+      onSuccess?.call();
+    } catch (e) {
+      if (!parentContext.mounted) return;
+      Navigator.pop(parentContext); // Close progress dialog
+
+      if (!parentContext.mounted) return;
+      ScaffoldMessenger.of(parentContext).showSnackBar(
+        SnackBar(
+          content: Text('$errorMessagePrefix: $e'),
+          backgroundColor: AppTheme.urgentRed,
+        ),
+      );
+    }
   }
 
   Future<void> _handleEraseAllData(
@@ -235,15 +207,17 @@ class StorageResetSheet extends ConsumerWidget {
     WidgetRef ref,
     bool isPro,
   ) async {
+    final vaultNotifier = ref.read(vaultProvider.notifier);
     await _runAction(
       context: context,
       onConfirm: () => showWipeEverythingConfirmDialog(parentContext, isPro),
-      onExecute: () => ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: isPro),
+      onExecute: () => vaultNotifier.clearAllData(alsoDeleteCloud: isPro),
       successMessage: isPro
           ? 'All data has been wiped from device and cloud.'
           : 'All local data has been wiped.',
       errorMessagePrefix: 'Wipe failed',
       onSuccess: () {
+        if (!parentContext.mounted) return;
         unawaited(
           Navigator.pushAndRemoveUntil(
             parentContext,
@@ -261,30 +235,35 @@ class StorageResetSheet extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final authService = ref.read(authServiceProvider);
+    final vaultNotifier = ref.read(vaultProvider.notifier);
+    final securityNotifier = ref.read(securityProvider.notifier);
+    final guestProviderNotifier = ref.read(isGuestProvider.notifier);
+    final isar = ref.read(isarProvider);
+
     await _runAction(
       context: context,
       onConfirm: () => showDeleteAccountConfirmDialog(parentContext),
       onExecute: () async {
         // 1. Reauthenticate first
-        await ref.read(authServiceProvider).reauthenticate();
+        await authService.reauthenticate();
 
         // 2. Wipe database & cloud
-        await ref.read(vaultProvider.notifier).clearAllData(alsoDeleteCloud: true);
+        await vaultNotifier.clearAllData(alsoDeleteCloud: true);
 
         // 3. Reset local PIN state
-        await ref.read(securityProvider.notifier).reset();
+        await securityNotifier.reset();
 
         // 4. Delete registration
-        await ref.read(authServiceProvider).deleteAccount();
+        await authService.deleteAccount();
 
         // 5. Sign out
-        await ref.read(authServiceProvider).signOut();
+        await authService.signOut();
 
         // 6. Set guest state
-        ref.read(isGuestProvider.notifier).state = true;
+        guestProviderNotifier.state = true;
 
         // 7. Reset Isar config
-        final isar = ref.read(isarProvider);
         await isar.writeTxn(() async {
           final config = AppConfig()..isGuest = true;
           await isar.appConfigs.put(config);
@@ -293,6 +272,7 @@ class StorageResetSheet extends ConsumerWidget {
       successMessage: 'Account and all data deleted successfully.',
       errorMessagePrefix: 'Account deletion failed',
       onSuccess: () {
+        if (!parentContext.mounted) return;
         unawaited(
           Navigator.pushAndRemoveUntil(
             parentContext,

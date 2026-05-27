@@ -7,6 +7,7 @@ import '../providers/vault_provider.dart';
 import '../constants/app_categories.dart';
 import 'status_badge.dart';
 import 'vault_snackbar.dart';
+import '../theme/app_theme.dart';
 
 class CategoryUtils {
   static IconData getIcon(String category) {
@@ -38,17 +39,17 @@ class VaultItemTile extends ConsumerWidget {
     final bool isBill = item.itemType == 'Bill';
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
-    final itemColor = isBill ? const Color(0xFF6366F1) : const Color(0xFF34D399);
+    final itemColor = isBill ? const Color(0xFF6366F1) : AppTheme.getMintGreen(context);
 
     final Color statusColor;
     if (item.isPaid) {
-      statusColor = const Color(0xFF34D399); // Mint Sage
+      statusColor = AppTheme.getMintGreen(context); // Mint Sage
     } else if (isOverdue || (daysLeft <= 3)) {
       statusColor = const Color(0xFFE11D48); // Red
     } else if (daysLeft <= 7) {
       statusColor = const Color(0xFFF59E0B); // Amber
     } else {
-      statusColor = const Color(0xFF10B981); // Green (safe zone > 7 days)
+      statusColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
     }
 
     Color cardBg = Theme.of(context).brightness == Brightness.dark
@@ -398,11 +399,11 @@ class VaultItemTile extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: item.isPaid
-                                    ? const Color(0xFF10B981)
+                                    ? AppTheme.getSafeGreen(context)
                                     : const Color(0xFF6366F1).withValues(alpha: 0.06),
                                 border: Border.all(
                                   color: item.isPaid
-                                      ? const Color(0xFF10B981)
+                                      ? AppTheme.getSafeGreen(context)
                                       : const Color(0xFF6366F1).withValues(alpha: 0.25),
                                   width: 1.3,
                                 ),

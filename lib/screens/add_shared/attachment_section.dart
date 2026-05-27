@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/global_components.dart';
 import 'bento_input_wrapper.dart';
 import '../../providers/premium_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class AttachmentSection extends ConsumerWidget {
   final List<String> attachedFiles;
@@ -160,6 +161,10 @@ class AttachmentSection extends ConsumerWidget {
   }
 
   Widget _buildCameraCardWithOcrToggle(BuildContext context, WidgetRef ref) {
+    final isGuest = ref.watch(isGuestProvider);
+    final isPremium = ref.watch(isPremiumProvider);
+    final isPro = !isGuest && isPremium;
+
     return GestureDetector(
       onTap: isProcessingOcr ? null : onPickImage,
       child: Container(
@@ -201,7 +206,7 @@ class AttachmentSection extends ConsumerWidget {
                   )
                 else
                   Icon(
-                    Icons.auto_awesome,
+                    isPro ? Icons.auto_awesome : Icons.photo_camera_outlined,
                     color: useOcr
                         ? AppTheme.primaryAction
                         : AppTheme.lightTextSecondary,
@@ -212,7 +217,7 @@ class AttachmentSection extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      isProcessingOcr ? 'Scanning...' : 'Smart Scan',
+                      isProcessingOcr ? 'Scanning...' : (isPro ? 'Smart Scan' : 'Take a picture'),
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyLarge?.color,
                         fontWeight: FontWeight.bold,
