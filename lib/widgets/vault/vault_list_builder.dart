@@ -6,12 +6,14 @@ import '../global_components.dart';
 class VaultListBuilder extends StatelessWidget {
   final List<VaultItem> items;
   final Currency currency;
+  final ScrollController? scrollController;
   final Function(int id, bool isPaid, String title, String actionText) onPaidStatusToggle;
 
   const VaultListBuilder({
     super.key,
     required this.items,
     required this.currency,
+    this.scrollController,
     required this.onPaidStatusToggle,
   });
 
@@ -22,6 +24,7 @@ class VaultListBuilder extends StatelessWidget {
     }
 
     return ListView.builder(
+      controller: scrollController,
       padding: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 100),
       itemCount: items.length,
       itemBuilder: (context, index) {

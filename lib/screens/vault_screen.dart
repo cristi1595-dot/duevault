@@ -10,6 +10,7 @@ import '../widgets/vault/vault_list_builder.dart';
 import '../theme/app_theme.dart';
 import '../models/vault_item.dart';
 import 'settings_screen.dart';
+import '../providers/navigation_provider.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   const VaultScreen({super.key});
@@ -27,11 +28,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   String _searchQuery = '';
   SortOption _sortBy = SortOption.date;
   bool _sortAscending = true;
+  final List<ScrollController> _scrollControllers = List.generate(4, (_) => ScrollController());
 
   @override
   void dispose() {
     _pageController.dispose();
     _searchController.dispose();
+    for (final controller in _scrollControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -118,6 +123,20 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget build(BuildContext context) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
+
+    ref.listen(bottomNavIndexProvider, (previous, next) {
+      if (next == 1) {
+        for (final controller in _scrollControllers) {
+          if (controller.hasClients) {
+            controller.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        }
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -212,6 +231,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 return VaultListBuilder(
                   items: items,
                   currency: currency,
+                  scrollController: _scrollControllers[tabIndex],
                   onPaidStatusToggle: _togglePaidStatus,
                 );
               },

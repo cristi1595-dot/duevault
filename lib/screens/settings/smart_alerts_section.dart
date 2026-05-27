@@ -41,7 +41,7 @@ class SmartAlertsSection extends ConsumerWidget {
       children: [
         // 1. Smart Reminder Service Toggle Row
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -152,11 +152,6 @@ class SmartAlertsSection extends ConsumerWidget {
         ),
 
         if (globalEnabled) ...[
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-            height: 1,
-            indent: 16,
-          ),
           // 2. Early Alert Row
           Consumer(
             builder: (context, ref, _) {
@@ -165,7 +160,7 @@ class SmartAlertsSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -208,7 +203,7 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (firstReminderEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
@@ -243,12 +238,6 @@ class SmartAlertsSection extends ConsumerWidget {
               );
             },
           ),
-
-          Divider(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-            height: 1,
-            indent: 16,
-          ),
           // 3. SOS Urgent Alert Row
           Consumer(
             builder: (context, ref, _) {
@@ -260,7 +249,7 @@ class SmartAlertsSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -303,7 +292,7 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (finalEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
@@ -339,15 +328,9 @@ class SmartAlertsSection extends ConsumerWidget {
             },
           ),
         ],
-
-        Divider(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-          height: 1,
-          indent: 16,
-        ),
         // 4. Background Restrictions Row
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           child: GestureDetector(
             onTap: () async {
               final isAndroid = Platform.isAndroid;

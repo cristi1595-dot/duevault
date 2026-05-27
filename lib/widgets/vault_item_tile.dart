@@ -76,6 +76,9 @@ class VaultItemTile extends ConsumerWidget {
     final rawTitle = item.title.isEmpty ? item.category : item.title;
     final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
     final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
+    final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
+        ? ' • ${item.recurrence}'
+        : '';
 
     final textPainter = TextPainter(
       text: TextSpan(
@@ -94,7 +97,7 @@ class VaultItemTile extends ConsumerWidget {
     final gapHeight = isTwoLines ? 2.0 : 10.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: Dismissible(
@@ -263,7 +266,7 @@ class VaultItemTile extends ConsumerWidget {
                     // Left Icon Box: occupies full height
                     Container(
                       width: 57,
-                      constraints: const BoxConstraints(minHeight: 66),
+                      constraints: const BoxConstraints(minHeight: 60),
                       decoration: const BoxDecoration(
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(18),
@@ -282,9 +285,9 @@ class VaultItemTile extends ConsumerWidget {
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
                           13,
-                          5,
+                          2,
                           (onCheckPressed != null) ? 3 : 13,
-                          5,
+                          2,
                         ),
                         child: Row(
                           children: [
@@ -312,8 +315,8 @@ class VaultItemTile extends ConsumerWidget {
                                   SizedBox(height: gapHeight),
                                   Text(
                                     item.dueDate != null
-                                        ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}'
-                                        : (isBill ? 'Bill • No due date' : 'Doc • Permanent'),
+                                        ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
+                                        : '${isBill ? "Bill • No due date" : "Doc • Permanent"}$recurrenceSuffix',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                           fontSize: 13,
                                           color: Theme.of(context).brightness == Brightness.dark

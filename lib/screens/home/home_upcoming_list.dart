@@ -16,7 +16,7 @@ class HomeUpcomingList extends ConsumerWidget {
 
   Widget _buildGroupHeader(String title, int count, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 5, 4, 5),
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -114,36 +114,33 @@ class HomeUpcomingList extends ConsumerWidget {
                   : AppTheme.warningYellow,
             ),
             ...upcoming7Days.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: VaultItemTile(
-                  item: item,
-                  currency: currency,
-                  isHomeScreen: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ItemDetailScreen(item: item),
-                      ),
-                    );
-                  },
-                  onCheckPressed: () {
-                    final notifier = ref.read(vaultProvider.notifier);
-                    final nextPaidState = !item.isPaid;
-                    notifier.updatePaidStatus(item.id, nextPaidState);
-                    final name = item.title.isEmpty ? item.category : item.title;
-                    final actionText = nextPaidState
-                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                    VaultSnackBar.show(
-                      message: '$name $actionText',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                    );
-                  },
-                ),
+              (item) => VaultItemTile(
+                item: item,
+                currency: currency,
+                isHomeScreen: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(item: item),
+                    ),
+                  );
+                },
+                onCheckPressed: () {
+                  final notifier = ref.read(vaultProvider.notifier);
+                  final nextPaidState = !item.isPaid;
+                  notifier.updatePaidStatus(item.id, nextPaidState);
+                  final name = item.title.isEmpty ? item.category : item.title;
+                  final actionText = nextPaidState
+                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                  VaultSnackBar.show(
+                    message: '$name $actionText',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.safeGreen,
+                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                  );
+                },
               ),
             ),
           ],
@@ -154,36 +151,33 @@ class HomeUpcomingList extends ConsumerWidget {
               AppTheme.safeGreen,
             ),
             ...upcoming30Days.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: VaultItemTile(
-                  item: item,
-                  currency: currency,
-                  isHomeScreen: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ItemDetailScreen(item: item),
-                      ),
-                    );
-                  },
-                  onCheckPressed: () {
-                    final notifier = ref.read(vaultProvider.notifier);
-                    final nextPaidState = !item.isPaid;
-                    notifier.updatePaidStatus(item.id, nextPaidState);
-                    final name = item.title.isEmpty ? item.category : item.title;
-                    final actionText = nextPaidState
-                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                    VaultSnackBar.show(
-                      message: '$name $actionText',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                    );
-                  },
-                ),
+              (item) => VaultItemTile(
+                item: item,
+                currency: currency,
+                isHomeScreen: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(item: item),
+                    ),
+                  );
+                },
+                onCheckPressed: () {
+                  final notifier = ref.read(vaultProvider.notifier);
+                  final nextPaidState = !item.isPaid;
+                  notifier.updatePaidStatus(item.id, nextPaidState);
+                  final name = item.title.isEmpty ? item.category : item.title;
+                  final actionText = nextPaidState
+                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                  VaultSnackBar.show(
+                    message: '$name $actionText',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.safeGreen,
+                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                  );
+                },
               ),
             ),
           ],
@@ -194,36 +188,33 @@ class HomeUpcomingList extends ConsumerWidget {
               AppTheme.safeGreen,
             ),
             ...upcomingLater.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: VaultItemTile(
-                  item: item,
-                  currency: currency,
-                  isHomeScreen: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ItemDetailScreen(item: item),
-                      ),
-                    );
-                  },
-                  onCheckPressed: () {
-                    final notifier = ref.read(vaultProvider.notifier);
-                    final nextPaidState = !item.isPaid;
-                    notifier.updatePaidStatus(item.id, nextPaidState);
-                    final name = item.title.isEmpty ? item.category : item.title;
-                    final actionText = nextPaidState
-                        ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                        : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                    VaultSnackBar.show(
-                      message: '$name $actionText',
-                      actionLabel: 'UNDO',
-                      backgroundColor: AppTheme.safeGreen,
-                      onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                    );
-                  },
-                ),
+              (item) => VaultItemTile(
+                item: item,
+                currency: currency,
+                isHomeScreen: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(item: item),
+                    ),
+                  );
+                },
+                onCheckPressed: () {
+                  final notifier = ref.read(vaultProvider.notifier);
+                  final nextPaidState = !item.isPaid;
+                  notifier.updatePaidStatus(item.id, nextPaidState);
+                  final name = item.title.isEmpty ? item.category : item.title;
+                  final actionText = nextPaidState
+                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                  VaultSnackBar.show(
+                    message: '$name $actionText',
+                    actionLabel: 'UNDO',
+                    backgroundColor: AppTheme.safeGreen,
+                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                  );
+                },
               ),
             ),
           ],

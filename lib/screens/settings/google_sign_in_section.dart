@@ -175,13 +175,13 @@ class GoogleSignInSection extends ConsumerWidget {
                   message = '✓ Your vault data has been restored!';
                   bgColor = AppTheme.safeGreen;
                 } else if (syncResult == 'uploaded') {
-                  message = '✓ Local data synced with your account!';
+                  message = '✓ Cloud data synced with your account!';
                   bgColor = AppTheme.primaryAction;
                 } else if (syncResult == 'empty' && items.isEmpty) {
                   message = 'No backup found. Starting fresh.';
                   bgColor = null;
                 } else {
-                  message = '✓ Local data synced with your account!';
+                  message = '✓ Cloud data synced with your account!';
                   bgColor = AppTheme.primaryAction;
                 }
 

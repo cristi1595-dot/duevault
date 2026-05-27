@@ -9,12 +9,12 @@ class SettingsSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 2, top: 2),
+      padding: const EdgeInsets.only(left: 4, bottom: 1.6, top: 1.6),
       child: Text(
         title,
         style: AppTheme.labelCapsStyle(context).copyWith(
           color: Theme.of(context).textTheme.bodySmall?.color,
-          fontSize: 12,
+          fontSize: 14.4,
           letterSpacing: 1.1,
         ),
       ),

@@ -89,7 +89,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Widget _buildCategoryCard(BuildContext context, {required Widget child}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
@@ -137,13 +137,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Profile Header
             const CompactProfileCard(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // 1.1 Sign In Option (Only for Guests) - Directly under Guest User
             Consumer(
@@ -163,7 +163,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // 1.5 Biometric Lock (Security)
             const SettingsSectionHeader(title: 'SECURITY'),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             _buildCategoryCard(
               context,
               child: const SecurityLockSection(),
@@ -171,7 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // 3. Preferences (Interface) Section
             const SettingsSectionHeader(title: 'INTERFACE'),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             _buildCategoryCard(
               context,
               child: const InterfaceCustomizationSection(),
@@ -179,7 +179,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // 4. Alerts & Notifications Section
             const SettingsSectionHeader(title: 'SMART ALERTS'),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             _buildCategoryCard(
               context,
               child: SmartAlertsSection(
@@ -192,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // 5. Storage & Cloud Sync Section
             const SettingsSectionHeader(title: 'STORAGE'),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             Consumer(
               builder: (context, ref, child) {
                 final authState = ref.watch(authStateProvider);
@@ -204,11 +204,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     children: [
                       if (!isGuest) ...[
                         const DriveSyncSection(),
-                        Divider(
-                          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-                          height: 1,
-                          indent: 56,
-                        ),
                       ],
                       const StorageIntegritySection(),
                     ],
@@ -219,7 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             if (_isDevModeEnabled) ...[
               const SettingsSectionHeader(title: 'DEVELOPER'),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
               _buildCategoryCard(
                 context,
                 child: const DeveloperOptionsSection(),

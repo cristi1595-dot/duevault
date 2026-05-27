@@ -190,9 +190,9 @@ class FinancialBentoCard extends ConsumerWidget {
     final Color borderColor = statusColor.withValues(alpha: borderOpacity);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         decoration: BoxDecoration(
           gradient: cardGradient,
           borderRadius: BorderRadius.circular(16.0),
@@ -278,7 +278,7 @@ class FinancialBentoCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 3),
 
             // Hero bills amount
             Row(
@@ -326,7 +326,7 @@ class FinancialBentoCard extends ConsumerWidget {
                 ],
               ),
             ],
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
 
             // Subtle document status row
             Row(
@@ -371,7 +371,7 @@ class FinancialBentoCard extends ConsumerWidget {
             ),
             
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
               child: Divider(
                 color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
                 height: 1,

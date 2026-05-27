@@ -51,11 +51,6 @@ class DriveSyncSection extends ConsumerWidget {
         ),
 
         // --- 2. WiFi Only ---
-        Divider(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-          height: 1,
-          indent: 56,
-        ),
         _buildSettingItem(
           context: context,
           icon: Icons.wifi_outlined,

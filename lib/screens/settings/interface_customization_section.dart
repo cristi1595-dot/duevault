@@ -17,11 +17,6 @@ class InterfaceCustomizationSection extends ConsumerWidget {
     return Column(
       children: [
         _buildCurrencyItem(context, ref, currentCurrency),
-        Divider(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-          height: 1,
-          indent: 56,
-        ),
         SettingsListTile(
           icon: themeMode == ThemeMode.dark
               ? Icons.dark_mode_outlined
