@@ -135,33 +135,36 @@ class VaultItemTile extends ConsumerWidget {
               // ARCHIVE / RESTORE Logic (Swipe Right)
               if (isInHistory) {
                 // If it's in history, "Restore to Vault" means unarchive AND unpay (if it was paid/expired)
-                if (item.isArchived) {
-                  notifier.toggleArchiveStatus(item.id, false);
-                }
-                if (item.isPaid) {
-                  notifier.updatePaidStatus(item.id, false);
-                }
+                // toggleArchiveStatus(item.id, false) now handles both atomically.
+                notifier.toggleArchiveStatus(item.id, false);
+                
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
                   backgroundColor: const Color(0xFF6366F1),
-                  onAction: () {
+                  onAction: () async {
                     if (item.isArchived) {
-                      notifier.toggleArchiveStatus(item.id, true);
+                      await notifier.toggleArchiveStatus(item.id, true);
                     }
                     if (item.isPaid) {
-                      notifier.updatePaidStatus(item.id, true);
+                      await notifier.updatePaidStatus(item.id, true);
                     }
                   },
                 );
               } else {
                 // Normal Archive
+                final wasPaid = item.isPaid;
                 notifier.toggleArchiveStatus(item.id, true);
                 VaultSnackBar.show(
                   message: 'Moved to History',
                   actionLabel: 'UNDO',
                   backgroundColor: const Color(0xFF34D399),
-                  onAction: () => notifier.toggleArchiveStatus(item.id, false),
+                  onAction: () async {
+                    await notifier.toggleArchiveStatus(item.id, false);
+                    if (wasPaid) {
+                      await notifier.updatePaidStatus(item.id, true);
+                    }
+                  },
                 );
               }
             } else {

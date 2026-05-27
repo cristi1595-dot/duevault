@@ -19,7 +19,7 @@ class FinancialBentoCard extends ConsumerWidget {
     final next30Days = today.add(const Duration(days: 30));
 
     final overdueBills = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.dueDate == null) {
+      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
         return false;
       }
       return item.dueDate!.isBefore(today);
@@ -35,7 +35,7 @@ class FinancialBentoCard extends ConsumerWidget {
     }).toList();
 
     final upcomingBills = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.dueDate == null) {
+      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
         return false;
       }
       final due = DateTime(
@@ -57,7 +57,7 @@ class FinancialBentoCard extends ConsumerWidget {
         totalDueOverdue;
 
     final items30Days = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.dueDate == null) {
+      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
         return false;
       }
       final due = DateTime(

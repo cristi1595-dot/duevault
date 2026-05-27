@@ -295,6 +295,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 label: 'Move to Archive',
                 icon: Icons.archive_outlined,
                 onPressed: () {
+                  final wasPaid = currentItem.isPaid;
                   final notifier = ref.read(vaultProvider.notifier);
                   unawaited(notifier.toggleArchiveStatus(currentItem.id, true));
 
@@ -302,8 +303,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     message: 'Moved to History',
                     actionLabel: 'UNDO',
                     backgroundColor: AppTheme.safeGreen,
-                    onAction: () =>
-                        notifier.toggleArchiveStatus(currentItem.id, false),
+                    onAction: () async {
+                      await notifier.toggleArchiveStatus(currentItem.id, false);
+                      if (wasPaid) {
+                        await notifier.updatePaidStatus(currentItem.id, true);
+                      }
+                    },
                   );
 
                   Navigator.pop(context);
@@ -314,6 +319,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 label: 'Restore to Active',
                 icon: Icons.unarchive_outlined,
                 onPressed: () {
+                  final wasArchived = currentItem.isArchived;
+                  final wasPaid = currentItem.isPaid;
                   final notifier = ref.read(vaultProvider.notifier);
                   unawaited(notifier.toggleArchiveStatus(currentItem.id, false));
 
@@ -321,9 +328,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     message: 'Restored to Vault',
                     actionLabel: 'UNDO',
                     backgroundColor: AppTheme.primaryAction,
-                    onAction: () => ref
-                        .read(vaultProvider.notifier)
-                        .toggleArchiveStatus(currentItem.id, true),
+                    onAction: () async {
+                      if (wasArchived) {
+                        await notifier.toggleArchiveStatus(currentItem.id, true);
+                      }
+                      if (wasPaid) {
+                        await notifier.updatePaidStatus(currentItem.id, true);
+                      }
+                    },
                   );
 
                   Navigator.pop(context);

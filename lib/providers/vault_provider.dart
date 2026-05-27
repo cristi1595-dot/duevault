@@ -79,10 +79,21 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
   User? _lastLoadedUser;
   bool _lastLoadedUserSet = false;
+  bool _hasPendingLoad = false;
 
   Future<void> _loadItems(User? initialUser) async {
     final user = _currentUser;
     if (_isLoading && _lastLoadedUserSet && _lastLoadedUser?.uid == user?.uid) {
+      if (_hasPendingLoad) {
+        // A reload is already scheduled, we can wait for the current one
+        await _loadCompleter?.future;
+        return;
+      }
+      _hasPendingLoad = true;
+      await _loadCompleter?.future;
+      _hasPendingLoad = false;
+      // Re-run loadItems once the current one has finished
+      await _loadItems(initialUser);
       return;
     }
     _isLoading = true;
@@ -260,14 +271,28 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
   }
 
   Future<void> toggleArchiveStatus(int id, bool archived) async {
-    // 1. Immediate UI update to satisfy Slidable/Dismissible requirements
-    state = state.where((item) => item.id != id).toList();
+    // 1. Immediate UI update
+    state = state.map((item) {
+      if (item.id == id) {
+        final updated = VaultItem.fromMap(item.toMap())
+          ..id = item.id
+          ..isArchived = archived;
+        if (!archived) {
+          updated.isPaid = false;
+        }
+        return updated;
+      }
+      return item;
+    }).toList();
 
     // 2. Persistent update
     final isar = ref.read(isarProvider);
     final item = await isar.collection<VaultItem>().get(id);
     if (item != null) {
       item.isArchived = archived;
+      if (!archived) {
+        item.isPaid = false;
+      }
       item.lastModified = DateTime.now();
       await isar.writeTxn(() async {
         await isar.collection<VaultItem>().put(item);
