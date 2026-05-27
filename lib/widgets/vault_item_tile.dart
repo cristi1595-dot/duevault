@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/vault_item.dart';
+import 'encrypted_image.dart';
 import '../screens/item_detail_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/vault_provider.dart';
@@ -271,23 +274,10 @@ class VaultItemTile extends ConsumerWidget {
                         ),
                       ),
                       child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: itemColor.withValues(alpha: 0.08),
-                            shape: isBill ? BoxShape.circle : BoxShape.rectangle,
-                            borderRadius: isBill
-                                ? null
-                                : BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              CategoryUtils.getIcon(item.category),
-                              color: itemColor,
-                              size: 24,
-                            ),
-                          ),
+                        child: _VaultItemThumbnail(
+                          item: item,
+                          itemColor: itemColor,
+                          isBill: isBill,
                         ),
                       ),
                     ),
@@ -457,5 +447,85 @@ class VaultItemTile extends ConsumerWidget {
       'Dec',
     ];
     return months[month - 1];
+  }
+}
+
+class _VaultItemThumbnail extends StatelessWidget {
+  final VaultItem item;
+  final Color itemColor;
+  final bool isBill;
+
+  const _VaultItemThumbnail({
+    required this.item,
+    required this.itemColor,
+    required this.isBill,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final firstImage = item.attachedFiles.firstWhere(
+      (file) {
+        final lower = file.toLowerCase();
+        return lower.endsWith('.jpg') ||
+            lower.endsWith('.jpeg') ||
+            lower.endsWith('.png') ||
+            lower.endsWith('.heic') ||
+            lower.endsWith('.heif') ||
+            lower.endsWith('.webp');
+      },
+      orElse: () => '',
+    );
+
+    if (firstImage.isEmpty) {
+      return _buildDefaultIcon();
+    }
+
+    return FutureBuilder<Directory>(
+      future: getApplicationDocumentsDirectory(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return _buildDefaultIcon();
+        }
+        final absolutePath = '${snapshot.data!.path}/attachments/$firstImage';
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: isBill ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: isBill ? null : BorderRadius.circular(10),
+          ),
+          child: ClipRRect(
+            borderRadius: isBill
+                ? BorderRadius.circular(20)
+                : BorderRadius.circular(10),
+            child: EncryptedImage(
+              path: absolutePath,
+              fit: BoxFit.cover,
+              cacheWidth: 80, // Tiny cache size for tile thumbnails
+              errorWidget: _buildDefaultIcon(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDefaultIcon() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: itemColor.withValues(alpha: 0.08),
+        shape: isBill ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: isBill ? null : BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: Icon(
+          CategoryUtils.getIcon(item.category),
+          color: itemColor,
+          size: 24,
+        ),
+      ),
+    );
   }
 }

@@ -8,6 +8,8 @@ class EncryptedImage extends StatefulWidget {
   final double? width;
   final double? height;
   final Widget? errorWidget;
+  final int? cacheWidth;
+  final int? cacheHeight;
 
   const EncryptedImage({
     super.key,
@@ -16,6 +18,8 @@ class EncryptedImage extends StatefulWidget {
     this.width,
     this.height,
     this.errorWidget,
+    this.cacheWidth,
+    this.cacheHeight,
   });
 
   @override
@@ -28,7 +32,7 @@ class _EncryptedImageState extends State<EncryptedImage> {
   @override
   void initState() {
     super.initState();
-    _imageFuture = EncryptionService.decryptFileToBytes(widget.path);
+    _imageFuture = EncryptionService.decryptFileToMemory(widget.path);
   }
 
   @override
@@ -36,7 +40,7 @@ class _EncryptedImageState extends State<EncryptedImage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.path != widget.path) {
       setState(() {
-        _imageFuture = EncryptionService.decryptFileToBytes(widget.path);
+        _imageFuture = EncryptionService.decryptFileToMemory(widget.path);
       });
     }
   }
@@ -60,6 +64,8 @@ class _EncryptedImageState extends State<EncryptedImage> {
           fit: widget.fit,
           width: widget.width,
           height: widget.height,
+          cacheWidth: widget.cacheWidth,
+          cacheHeight: widget.cacheHeight,
           errorBuilder: (context, error, stackTrace) {
             return widget.errorWidget ??
                 const Center(child: Icon(Icons.error_outline));

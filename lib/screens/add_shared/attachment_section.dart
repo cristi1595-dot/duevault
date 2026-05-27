@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -290,11 +289,6 @@ class AttachmentSection extends ConsumerWidget {
       return _buildFileIcon(path, isPdf: true);
     }
 
-    final isStored = path.contains('app_flutter/attachments') ||
-        path.contains('/attachments/') ||
-        (!path.contains('/') && !path.contains('\\')) ||
-        lowerPath.endsWith('.enc');
-
     final cleanPath = lowerPath.replaceAll('.enc', '');
     final isImage = cleanPath.endsWith('.jpg') ||
         cleanPath.endsWith('.jpeg') ||
@@ -303,34 +297,19 @@ class AttachmentSection extends ConsumerWidget {
         cleanPath.endsWith('.heif') ||
         cleanPath.endsWith('.webp');
 
-    if (isStored) {
-      if (isImage) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: EncryptedImage(
-            path: path,
-            fit: BoxFit.cover,
-            errorWidget: _buildFileIcon(path, isPdf: false),
-          ),
-        );
-      } else {
-        return _buildFileIcon(path, isPdf: false);
-      }
-    } else {
-      if (isImage) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            File(path),
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) =>
-                _buildFileIcon(path, isPdf: false),
-          ),
-        );
-      } else {
-        return _buildFileIcon(path, isPdf: false);
-      }
+    if (isImage) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: EncryptedImage(
+          path: path,
+          fit: BoxFit.cover,
+          cacheWidth: 150, // Downscale image in memory to protect UI thread
+          errorWidget: _buildFileIcon(path, isPdf: false),
+        ),
+      );
     }
+
+    return _buildFileIcon(path, isPdf: false);
   }
 
   Widget _buildFileIcon(String path, {required bool isPdf}) {

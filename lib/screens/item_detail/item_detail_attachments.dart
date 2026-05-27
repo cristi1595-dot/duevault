@@ -203,6 +203,7 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
         child: EncryptedImage(
           path: path,
           fit: BoxFit.cover,
+          cacheWidth: 300, // Optimize memory for detail preview thumbnails
           errorWidget: _buildFileIcon(path, isPdf: false),
         ),
       );

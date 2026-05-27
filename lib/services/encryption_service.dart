@@ -165,6 +165,12 @@ class EncryptionService {
     }
   }
 
+  /// Decrypts a file directly into memory.
+  /// If the file is not encrypted (or decryption fails), returns the raw file bytes.
+  static Future<Uint8List?> decryptFileToMemory(String path) async {
+    return decryptFileToBytes(path);
+  }
+
   /// Wipes the encryption key and IV from secure storage
   static Future<void> deleteKey() async {
     await _storage.delete(key: _keyName);
