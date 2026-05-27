@@ -1,11 +1,12 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
 import 'bento_input_wrapper.dart';
 import '../../providers/premium_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/encryption_service.dart';
 
 class AttachmentSection extends ConsumerWidget {
   final List<String> attachedFiles;
@@ -282,34 +283,122 @@ class AttachmentSection extends ConsumerWidget {
     );
   }
 
+  bool _isImageBytes(Uint8List bytes) {
+    if (bytes.length < 4) return false;
+    // JPEG
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+      return true;
+    }
+    // PNG
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+      return true;
+    }
+    // GIF
+    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) {
+      return true;
+    }
+    // WEBP
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
+        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
+      return true;
+    }
+    // HEIC/HEIF
+    if (bytes.length >= 12 &&
+        bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) {
+      final brand = String.fromCharCodes(bytes.sublist(8, 12));
+      if (brand == 'heic' || brand == 'heix' || brand == 'hevc' || brand == 'mif1' || brand == 'msf1') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String _detectExtension(List<int> bytes) {
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46) {
+      return '.pdf';
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return '.jpg';
+    }
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A) {
+      return '.png';
+    }
+    if (bytes.length >= 4 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38) {
+      return '.gif';
+    }
+    return '';
+  }
+
   Widget _buildAttachmentIcon(String path) {
-    final lowerPath = path.toLowerCase();
-    final isPdf = lowerPath.endsWith('.pdf');
-    if (isPdf) {
-      return _buildFileIcon(path, isPdf: true);
-    }
+    return FutureBuilder<Uint8List?>(
+      future: EncryptionService.decryptFileToMemory(path),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
 
-    final cleanPath = lowerPath.replaceAll('.enc', '');
-    final isImage = cleanPath.endsWith('.jpg') ||
-        cleanPath.endsWith('.jpeg') ||
-        cleanPath.endsWith('.png') ||
-        cleanPath.endsWith('.heic') ||
-        cleanPath.endsWith('.heif') ||
-        cleanPath.endsWith('.webp');
+        final bytes = snapshot.data;
+        if (snapshot.hasError || bytes == null || bytes.isEmpty) {
+          return _buildFileIcon(path, isPdf: path.toLowerCase().endsWith('.pdf'));
+        }
 
-    if (isImage) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: EncryptedImage(
-          path: path,
-          fit: BoxFit.cover,
-          cacheWidth: 150, // Downscale image in memory to protect UI thread
-          errorWidget: _buildFileIcon(path, isPdf: false),
-        ),
-      );
-    }
+        final isPdf = path.toLowerCase().endsWith('.pdf') || _detectExtension(bytes) == '.pdf';
+        if (isPdf) {
+          return _buildFileIcon(path, isPdf: true);
+        }
 
-    return _buildFileIcon(path, isPdf: false);
+        final cleanPath = path.toLowerCase().replaceAll('.enc', '');
+        final isImage = _isImageBytes(bytes) ||
+            cleanPath.endsWith('.jpg') ||
+            cleanPath.endsWith('.jpeg') ||
+            cleanPath.endsWith('.png') ||
+            cleanPath.endsWith('.heic') ||
+            cleanPath.endsWith('.heif') ||
+            cleanPath.endsWith('.webp');
+
+        if (isImage) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              cacheWidth: 150,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildFileIcon(path, isPdf: false);
+              },
+            ),
+          );
+        }
+
+        return _buildFileIcon(path, isPdf: false);
+      },
+    );
   }
 
   Widget _buildFileIcon(String path, {required bool isPdf}) {

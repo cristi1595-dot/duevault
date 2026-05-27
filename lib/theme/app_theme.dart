@@ -47,6 +47,15 @@ class AppTheme {
       border: lightBorder,
       textPrimary: lightTextPrimary,
       textSecondary: lightTextSecondary,
+    ).copyWith(
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal : null),
+        trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal.withValues(alpha: 0.5) : null),
+      ),
+      sliderTheme: const SliderThemeData(
+        activeTrackColor: Colors.teal,
+        thumbColor: Colors.teal,
+      ),
     );
   }
 
@@ -167,15 +176,11 @@ class AppTheme {
       Theme.of(context).textTheme.bodyMedium!.color!;
 
   static Color getSafeGreen(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF10B981)
-        : Colors.green.shade700;
+    return const Color(0xFF10B981);
   }
 
   static Color getMintGreen(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF34D399)
-        : Colors.teal;
+    return const Color(0xFF34D399);
   }
 
   static TextStyle labelCapsStyle(BuildContext context) {

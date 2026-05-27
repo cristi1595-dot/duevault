@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
@@ -8,7 +9,6 @@ import '../../models/vault_item.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/drive_service.dart';
 import '../../services/encryption_service.dart';
-import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
 
 
@@ -182,34 +182,87 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
     }
   }
 
+  bool _isImageBytes(Uint8List bytes) {
+    if (bytes.length < 4) return false;
+    // JPEG
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+      return true;
+    }
+    // PNG
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+      return true;
+    }
+    // GIF
+    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) {
+      return true;
+    }
+    // WEBP
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
+        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
+      return true;
+    }
+    // HEIC/HEIF
+    if (bytes.length >= 12 &&
+        bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) {
+      final brand = String.fromCharCodes(bytes.sublist(8, 12));
+      if (brand == 'heic' || brand == 'heix' || brand == 'hevc' || brand == 'mif1' || brand == 'msf1') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Widget _buildAttachmentPreview(String path) {
-    final lowerPath = path.toLowerCase();
-    final isPdf = lowerPath.endsWith('.pdf');
+    return FutureBuilder<Uint8List?>(
+      future: EncryptionService.decryptFileToMemory(path),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
 
-    if (isPdf) {
-      return _buildFileIcon(path, isPdf: true);
-    }
+        final bytes = snapshot.data;
+        if (snapshot.hasError || bytes == null || bytes.isEmpty) {
+          return _buildFileIcon(path, isPdf: path.toLowerCase().endsWith('.pdf'));
+        }
 
-    final isImage = lowerPath.endsWith('.jpg') ||
-        lowerPath.endsWith('.jpeg') ||
-        lowerPath.endsWith('.png') ||
-        lowerPath.endsWith('.heic') ||
-        lowerPath.endsWith('.heif') ||
-        lowerPath.endsWith('.webp');
+        final isPdf = path.toLowerCase().endsWith('.pdf') || _detectExtension(bytes) == '.pdf';
+        if (isPdf) {
+          return _buildFileIcon(path, isPdf: true);
+        }
 
-    if (isImage) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: EncryptedImage(
-          path: path,
-          fit: BoxFit.cover,
-          cacheWidth: 300, // Optimize memory for detail preview thumbnails
-          errorWidget: _buildFileIcon(path, isPdf: false),
-        ),
-      );
-    }
+        final cleanPath = path.toLowerCase().replaceAll('.enc', '');
+        final isImage = _isImageBytes(bytes) ||
+            cleanPath.endsWith('.jpg') ||
+            cleanPath.endsWith('.jpeg') ||
+            cleanPath.endsWith('.png') ||
+            cleanPath.endsWith('.heic') ||
+            cleanPath.endsWith('.heif') ||
+            cleanPath.endsWith('.webp');
 
-    return _buildFileIcon(path, isPdf: false);
+        if (isImage) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              cacheWidth: 300,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildFileIcon(path, isPdf: false);
+              },
+            ),
+          );
+        }
+
+        return _buildFileIcon(path, isPdf: false);
+      },
+    );
   }
 
   Widget _buildFileIcon(String path, {required bool isPdf}) {
