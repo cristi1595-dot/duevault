@@ -21,7 +21,7 @@ class BillCategorySelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'CATEGORY',
+          'BILL CATEGORY',
           style: AppTheme.labelCapsStyle(
             context,
           ).copyWith(fontSize: 14, letterSpacing: 1.2),

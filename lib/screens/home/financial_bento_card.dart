@@ -192,68 +192,64 @@ class FinancialBentoCard extends ConsumerWidget {
       statusIcon = Icons.check_circle_outline_rounded;
     }
 
-    BoxDecoration buildCardDecoration(Color cardStatusColor) {
-      final Color cardBg;
-      final Gradient? cardGradient;
+    final Color startColor;
+    final Color endColor;
 
-      if (isDark) {
-        const Color baseStartColor = Color(0xFF1C2028);
-        const Color baseEndColor = Color(0xFF101217);
-        final Color startColor = Color.alphaBlend(
-          cardStatusColor.withValues(alpha: 0.08),
-          baseStartColor,
-        );
-        final Color endColor = Color.alphaBlend(
-          cardStatusColor.withValues(alpha: 0.02),
-          baseEndColor,
-        );
-        cardBg = Colors.transparent;
-        cardGradient = LinearGradient(
-          colors: [startColor, endColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      } else {
-        cardBg = Color.alphaBlend(
-          cardStatusColor.withValues(alpha: 0.03),
-          Colors.white,
-        );
-        cardGradient = null;
-      }
-
-      final double borderOpacity = isDark ? 0.15 : 0.10;
-      final Color borderColor = cardStatusColor.withValues(alpha: borderOpacity);
-
-      return BoxDecoration(
-        color: cardGradient == null ? cardBg : null,
-        gradient: cardGradient,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-          color: borderColor,
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? cardStatusColor.withValues(alpha: 0.04)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: isDark ? 16 : 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    if (isDark) {
+      const Color baseStartColor = Color(0xFF1C2028);
+      const Color baseEndColor = Color(0xFF101217);
+      startColor = Color.alphaBlend(
+        statusColor.withValues(alpha: 0.08),
+        baseStartColor,
       );
+      endColor = Color.alphaBlend(
+        statusColor.withValues(alpha: 0.02),
+        baseEndColor,
+      );
+    } else {
+      startColor = Color.alphaBlend(
+        statusColor.withValues(alpha: 0.05),
+        Colors.white,
+      );
+      endColor = Colors.white;
     }
+
+    final cardGradient = LinearGradient(
+      colors: [startColor, endColor],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    final double borderOpacity = isDark ? 0.15 : 0.22;
+    final Color borderColor = statusColor.withValues(alpha: borderOpacity);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header Row: Global Status & Title
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-            child: Row(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          gradient: cardGradient,
+          borderRadius: BorderRadius.circular(16.0),
+          border: Border.all(
+            color: borderColor,
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? statusColor.withValues(alpha: 0.04)
+                  : Colors.black.withValues(alpha: 0.05),
+              blurRadius: isDark ? 16 : 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header Row: Global Status & Title
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
@@ -318,238 +314,221 @@ class FinancialBentoCard extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 14),
 
-          // Bento Cards Row
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            // Bento Columns inside a Row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Card 1: Financial (Bills)
+                // Column 1: Financial (Bills)
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
-                    decoration: buildCardDecoration(billColor),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'BILLS',
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              fontSize: 11.0,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            size: 18,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          currency.formatAmount(totalDue7Days),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 32.0,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'due bills',
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (totalDueOverdue > 0)
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'FINANCIAL',
-                              style: TextStyle(
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                fontSize: 11.0,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 12,
+                              color: AppTheme.urgentRed,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Includes ${currency.formatAmount(totalDueOverdue)} overdue',
+                                style: const TextStyle(
+                                  color: AppTheme.urgentRed,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: billColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.analytics_outlined,
+                              size: 12,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
                               ),
-                              child: Icon(
-                                Icons.receipt_long_rounded,
-                                size: 16,
-                                color: billColor,
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                '30d: ${currency.formatAmount(totalDue30Days)}',
+                                style: TextStyle(
+                                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            currency.formatAmount(totalDue7Days),
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 27.0,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'due bills',
-                          style: TextStyle(
-                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                            fontSize: 13.0,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 10),
-                        if (totalDueOverdue > 0)
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                size: 12,
-                                color: AppTheme.urgentRed,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${currency.formatAmount(totalDueOverdue)} overdue',
-                                  style: const TextStyle(
-                                    color: AppTheme.urgentRed,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.analytics_outlined,
-                                size: 12,
-                                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '30d: ${currency.formatAmount(totalDue30Days)}',
-                                  style: TextStyle(
-                                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
 
-                // Card 2: Documents
-                Expanded(
+                // Vertical Divider
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
-                    decoration: buildCardDecoration(docColor),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    width: 1,
+                    height: 90,
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                  ),
+                ),
+
+                // Column 2: Documents
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'DOCUMENTS',
+                            style: TextStyle(
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              fontSize: 11.0,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Icon(
+                            Icons.description_rounded,
+                            size: 18,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '$totalDocs7Days',
+                          style: TextStyle(
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 32.0,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'expiring soon',
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                          fontSize: 13.0,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (expiredDocs.isNotEmpty)
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'DOCUMENTS',
-                              style: TextStyle(
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                fontSize: 11.0,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 12,
+                              color: AppTheme.urgentRed,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Includes ${expiredDocs.length} expired',
+                                style: const TextStyle(
+                                  color: AppTheme.urgentRed,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: docColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.description_rounded,
-                                size: 16,
-                                color: docColor,
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.analytics_outlined,
+                              size: 12,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                '30d: $totalDocs30Days expiring',
+                                style: TextStyle(
+                                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '$totalDocs7Days',
-                            style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 27.0,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'expiring soon',
-                          style: TextStyle(
-                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                            fontSize: 13.0,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 10),
-                        if (expiredDocs.isNotEmpty)
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                size: 12,
-                                color: AppTheme.urgentRed,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '${expiredDocs.length} expired',
-                                  style: const TextStyle(
-                                    color: AppTheme.urgentRed,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.analytics_outlined,
-                                size: 12,
-                                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  '30d: $totalDocs30Days expiring',
-                                  style: TextStyle(
-                                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
