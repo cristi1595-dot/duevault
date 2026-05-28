@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
 import '../../constants/app_categories.dart';
 import '../add_shared/category_selector.dart';
 
@@ -22,19 +21,16 @@ class BillCategorySelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'BILL CATEGORY',
+          'CATEGORY',
           style: AppTheme.labelCapsStyle(
             context,
           ).copyWith(fontSize: 14, letterSpacing: 1.2),
         ),
         const SizedBox(height: 6),
-        BentoCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: CategorySelector(
-            selectedCategory: selectedCategory,
-            categories: categories,
-            onCategorySelected: onCategorySelected,
-          ),
+        CategorySelector(
+          selectedCategory: selectedCategory,
+          categories: categories,
+          onCategorySelected: onCategorySelected,
         ),
       ],
     );

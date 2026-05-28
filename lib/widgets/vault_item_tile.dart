@@ -52,13 +52,13 @@ class VaultItemTile extends ConsumerWidget {
       statusColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
     }
 
-    Color cardBg = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF161A22)
-        : (Theme.of(context).cardTheme.color ?? Colors.white);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
 
     if (isHomeScreen && !isInHistory) {
+      final double tintOpacity = isDark ? 0.04 : 0.03;
       cardBg = Color.alphaBlend(
-        statusColor.withValues(alpha: 0.04),
+        statusColor.withValues(alpha: tintOpacity),
         cardBg,
       );
     }
@@ -71,7 +71,7 @@ class VaultItemTile extends ConsumerWidget {
         ((onCheckPressed != null) ? 3 : 13) - // Right padding of the middle section
         9 - // Gap between text and right columns
         110 - // Right column width
-        ((onCheckPressed != null) ? 48 : 0); // Right checkmark button
+        ((onCheckPressed != null) ? 56 : 0); // Right checkmark button
 
     final rawTitle = item.title.isEmpty ? item.category : item.title;
     final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
@@ -247,18 +247,29 @@ class VaultItemTile extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: cardBg,
                   borderRadius: BorderRadius.circular(18),
-                  border: isHomeScreen && !isInHistory
-                      ? Border.all(
-                        color: statusColor.withValues(alpha: 0.15),
-                        width: 1.2,
-                      )
-                    : (Theme.of(context).brightness == Brightness.light
-                        ? Border.all(
-                            color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-                            width: 1,
-                          )
-                        : null),
-              ),
+                  border: isDark
+                      ? (isHomeScreen && !isInHistory
+                          ? Border.all(
+                              color: statusColor.withValues(alpha: 0.15),
+                              width: 1.2,
+                            )
+                          : null)
+                      : Border.all(
+                          color: isHomeScreen && !isInHistory
+                              ? statusColor.withValues(alpha: 0.10)
+                              : const Color(0xFFE2E8F0),
+                          width: 1,
+                        ),
+                  boxShadow: !isDark
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
               child: IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -373,39 +384,38 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                     // Right Checkmark Button: occupies full height, flush to edge
                     if (onCheckPressed != null)
-                      GestureDetector(
-                        onTap: onCheckPressed,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 48,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.only(
-                              topRight: Radius.circular(18),
-                              bottomRight: Radius.circular(18),
-                            ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onCheckPressed,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(18),
+                            bottomRight: Radius.circular(18),
                           ),
-                          child: Center(
-                            child: Container(
-                              width: 33,
-                              height: 33,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: item.isPaid
-                                    ? AppTheme.getSafeGreen(context)
-                                    : const Color(0xFF6366F1).withValues(alpha: 0.06),
-                                border: Border.all(
+                          child: SizedBox(
+                            width: 56,
+                            child: Center(
+                              child: Container(
+                                width: 33,
+                                height: 33,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
                                   color: item.isPaid
                                       ? AppTheme.getSafeGreen(context)
-                                      : const Color(0xFF6366F1).withValues(alpha: 0.25),
-                                  width: 1.3,
+                                      : const Color(0xFF6366F1).withValues(alpha: 0.06),
+                                  border: Border.all(
+                                    color: item.isPaid
+                                        ? AppTheme.getSafeGreen(context)
+                                        : const Color(0xFF6366F1).withValues(alpha: 0.25),
+                                    width: 1.3,
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.check_rounded,
-                                  color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
-                                  size: 23,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.check_rounded,
+                                    color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
+                                    size: 23,
+                                  ),
                                 ),
                               ),
                             ),

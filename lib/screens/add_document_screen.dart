@@ -329,23 +329,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'DOCUMENT CATEGORY',
-                style: AppTheme.labelCapsStyle(
-                  context,
-                ).copyWith(fontSize: 14, letterSpacing: 1.2),
-              ),
-              const SizedBox(height: 6),
-              BentoCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: CategorySelector(
-                  selectedCategory: _category,
-                  categories: _categories,
-                  onCategorySelected: (cat) => setState(() => _category = cat),
-                ),
-              ),
-              const SizedBox(height: 8),
-
               BentoInputWrapper(
                 label: 'DOCUMENT TITLE',
                 child: TextFormField(
@@ -369,6 +352,20 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     ),
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+
+              Text(
+                'CATEGORY',
+                style: AppTheme.labelCapsStyle(
+                  context,
+                ).copyWith(fontSize: 14, letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 6),
+              CategorySelector(
+                selectedCategory: _category,
+                categories: _categories,
+                onCategorySelected: (cat) => setState(() => _category = cat),
               ),
               const SizedBox(height: 10),
 

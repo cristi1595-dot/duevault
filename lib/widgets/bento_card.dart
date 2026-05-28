@@ -18,17 +18,29 @@ class BentoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? Theme.of(context).cardTheme.color,
+        color: color ?? (isDark ? Theme.of(context).cardTheme.color : Colors.white),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color:
               borderColor ??
-              Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              (isDark
+                  ? Theme.of(context).dividerColor.withValues(alpha: 0.5)
+                  : const Color(0xFFE2E8F0)),
           width: 1,
         ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: child,
     );

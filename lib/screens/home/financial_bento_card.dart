@@ -111,37 +111,66 @@ class FinancialBentoCard extends ConsumerWidget {
     final totalDocs30Days = expiredDocs.length + expiredDocs30Days.length;
 
     // Calculate days remaining across active unpaid items to determine status
-    final activeItems = vaultItems.where((item) {
-      if (item.dueDate == null) return false;
-      if (item.itemType == 'Bill') {
-        return !item.isPaid;
-      } else if (item.itemType == 'Document') {
-        return !item.isArchived && !item.isPaid;
-      }
-      return false;
+    final activeBills = vaultItems.where((item) {
+      return item.itemType == 'Bill' && !item.isPaid && !item.isArchived && item.dueDate != null;
     }).toList();
 
-    int minDaysLeft = 99999;
-    for (final item in activeItems) {
+    int billMinDaysLeft = 99999;
+    for (final item in activeBills) {
       final due = DateTime(
         item.dueDate!.year,
         item.dueDate!.month,
         item.dueDate!.day,
       );
       final days = due.difference(today).inDays;
-      if (days < minDaysLeft) {
-        minDaysLeft = days;
+      if (days < billMinDaysLeft) {
+        billMinDaysLeft = days;
       }
     }
 
-    final hasOverdueOrExpired = overdueBills.isNotEmpty || expiredDocs.isNotEmpty;
+    final bool billUrgent = overdueBills.isNotEmpty || billMinDaysLeft <= 3;
+    final bool billWarning = !billUrgent && billMinDaysLeft <= 7;
 
-    // Boundary logic:
-    // Red (Urgent): 3 days or fewer (minDaysLeft <= 3), or has overdue/expired items.
-    // Yellow (Warning): 7 days or fewer (minDaysLeft <= 7), and no Red items.
-    // Green (Safe): over 7 days (minDaysLeft > 7), or no items due.
-    final bool isUrgentRed = hasOverdueOrExpired || minDaysLeft <= 3;
-    final bool isWarningYellow = !isUrgentRed && minDaysLeft <= 7;
+    final Color billColor;
+    if (billUrgent) {
+      billColor = AppTheme.urgentRed;
+    } else if (billWarning) {
+      billColor = AppTheme.warningYellow;
+    } else {
+      billColor = AppTheme.safeGreen;
+    }
+
+    final activeDocs = vaultItems.where((item) {
+      return item.itemType == 'Document' && !item.isArchived && !item.isPaid && item.dueDate != null;
+    }).toList();
+
+    int docMinDaysLeft = 99999;
+    for (final item in activeDocs) {
+      final due = DateTime(
+        item.dueDate!.year,
+        item.dueDate!.month,
+        item.dueDate!.day,
+      );
+      final days = due.difference(today).inDays;
+      if (days < docMinDaysLeft) {
+        docMinDaysLeft = days;
+      }
+    }
+
+    final bool docUrgent = expiredDocs.isNotEmpty || docMinDaysLeft <= 3;
+    final bool docWarning = !docUrgent && docMinDaysLeft <= 7;
+
+    final Color docColor;
+    if (docUrgent) {
+      docColor = AppTheme.urgentRed;
+    } else if (docWarning) {
+      docColor = AppTheme.warningYellow;
+    } else {
+      docColor = AppTheme.safeGreen;
+    }
+
+    final bool isUrgentRed = billUrgent || docUrgent;
+    final bool isWarningYellow = !isUrgentRed && (billWarning || docWarning);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -163,57 +192,68 @@ class FinancialBentoCard extends ConsumerWidget {
       statusIcon = Icons.check_circle_outline_rounded;
     }
 
-    // Premium dynamic background tinting
-    final Color baseStartColor = isDark ? const Color(0xFF1C2028) : Colors.white;
-    final Color baseEndColor = isDark ? const Color(0xFF101217) : const Color(0xFFF8FAFC);
+    BoxDecoration buildCardDecoration(Color cardStatusColor) {
+      final Color cardBg;
+      final Gradient? cardGradient;
 
-    final double blendStartOpacity = isDark ? 0.08 : 0.05;
-    final double blendEndOpacity = isDark ? 0.02 : 0.02;
+      if (isDark) {
+        const Color baseStartColor = Color(0xFF1C2028);
+        const Color baseEndColor = Color(0xFF101217);
+        final Color startColor = Color.alphaBlend(
+          cardStatusColor.withValues(alpha: 0.08),
+          baseStartColor,
+        );
+        final Color endColor = Color.alphaBlend(
+          cardStatusColor.withValues(alpha: 0.02),
+          baseEndColor,
+        );
+        cardBg = Colors.transparent;
+        cardGradient = LinearGradient(
+          colors: [startColor, endColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      } else {
+        cardBg = Color.alphaBlend(
+          cardStatusColor.withValues(alpha: 0.03),
+          Colors.white,
+        );
+        cardGradient = null;
+      }
 
-    final Color startColor = Color.alphaBlend(
-      statusColor.withValues(alpha: blendStartOpacity),
-      baseStartColor,
-    );
-    final Color endColor = Color.alphaBlend(
-      statusColor.withValues(alpha: blendEndOpacity),
-      baseEndColor,
-    );
+      final double borderOpacity = isDark ? 0.15 : 0.10;
+      final Color borderColor = cardStatusColor.withValues(alpha: borderOpacity);
 
-    final cardGradient = LinearGradient(
-      colors: [startColor, endColor],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
-    final double borderOpacity = isDark ? 0.15 : 0.22;
-    final double shadowOpacity = isDark ? 0.04 : 0.06;
-    final Color borderColor = statusColor.withValues(alpha: borderOpacity);
+      return BoxDecoration(
+        color: cardGradient == null ? cardBg : null,
+        gradient: cardGradient,
+        borderRadius: BorderRadius.circular(16.0),
+        border: Border.all(
+          color: borderColor,
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? cardStatusColor.withValues(alpha: 0.04)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: isDark ? 16 : 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        decoration: BoxDecoration(
-          gradient: cardGradient,
-          borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(
-            color: borderColor,
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: statusColor.withValues(alpha: shadowOpacity),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header Row: Status & Title
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Row: Global Status & Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
@@ -278,177 +318,238 @@ class FinancialBentoCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 3),
+          ),
+          const SizedBox(height: 8),
 
-            // Hero bills amount
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+          // Bento Cards Row
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  currency.formatAmount(totalDue7Days),
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 37.4,
-                    letterSpacing: -1.0,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'due bills',
-                  style: TextStyle(
-                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                    fontSize: 15.6,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            if (totalDueOverdue > 0) ...[
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    size: 15.6,
-                    color: AppTheme.urgentRed,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Includes ${currency.formatAmount(totalDueOverdue)} overdue',
-                    style: const TextStyle(
-                      color: AppTheme.urgentRed,
-                      fontSize: 14.4,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 3),
-
-            // Subtle document status row
-            Row(
-              children: [
-                Icon(
-                  Icons.description_outlined,
-                  size: 15.6,
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
-                ),
-                const SizedBox(width: 5),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
-                      fontSize: 14.4,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: totalDocs7Days == 1
-                            ? '1 document expiring soon'
-                            : '$totalDocs7Days documents expiring soon',
-                      ),
-                      if (expiredDocs.isNotEmpty) ...[
-                        const TextSpan(text: ' ('),
-                        TextSpan(
-                          text: expiredDocs.length == 1
-                              ? '1 expired'
-                              : '${expiredDocs.length} expired',
-                          style: const TextStyle(
-                            color: AppTheme.urgentRed,
-                            fontWeight: FontWeight.bold,
+                // Card 1: Financial (Bills)
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                    decoration: buildCardDecoration(billColor),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'FINANCIAL',
+                              style: TextStyle(
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                fontSize: 11.0,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: billColor.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.receipt_long_rounded,
+                                size: 16,
+                                color: billColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            currency.formatAmount(totalDue7Days),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 27.0,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
-                        const TextSpan(text: ')'),
+                        const SizedBox(height: 2),
+                        Text(
+                          'due bills',
+                          style: TextStyle(
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                            fontSize: 13.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        if (totalDueOverdue > 0)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 12,
+                                color: AppTheme.urgentRed,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${currency.formatAmount(totalDueOverdue)} overdue',
+                                  style: const TextStyle(
+                                    color: AppTheme.urgentRed,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.analytics_outlined,
+                                size: 12,
+                                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '30d: ${currency.formatAmount(totalDue30Days)}',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
-                    ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Card 2: Documents
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                    decoration: buildCardDecoration(docColor),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'DOCUMENTS',
+                              style: TextStyle(
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                fontSize: 11.0,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: docColor.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.description_rounded,
+                                size: 16,
+                                color: docColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '$totalDocs7Days',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 27.0,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'expiring soon',
+                          style: TextStyle(
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                            fontSize: 13.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        const SizedBox(height: 10),
+                        if (expiredDocs.isNotEmpty)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 12,
+                                color: AppTheme.urgentRed,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${expiredDocs.length} expired',
+                                  style: const TextStyle(
+                                    color: AppTheme.urgentRed,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.analytics_outlined,
+                                size: 12,
+                                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '30d: $totalDocs30Days expiring',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Divider(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                height: 1,
-              ),
-            ),
-
-            // Row 4: 30-Day Forecast Footer
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.analytics_outlined,
-                      size: 15.6,
-                      color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '30-DAY FORECAST',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                        fontSize: 12.6,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Bills: ',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                        fontSize: 14.4,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      currency.formatAmount(totalDue30Days),
-                      style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF090D16),
-                        fontSize: 15.6,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 3,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(
-                      Icons.description_outlined,
-                      size: 14.4,
-                      color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$totalDocs30Days',
-                      style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF090D16),
-                        fontSize: 15.6,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

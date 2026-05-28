@@ -33,30 +33,28 @@ class CompactProfileCard extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [
-                      const Color(0xFF1E222B),
-                      const Color(0xFF13171F),
-                    ]
-                  : [
-                      const Color(0xFFF8FAFC),
-                      const Color(0xFFE2E8F0),
+            color: isDark ? null : Colors.white,
+            gradient: isDark
+                ? const LinearGradient(
+                    colors: [
+                      Color(0xFF1E222B),
+                      Color(0xFF13171F),
                     ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
             border: Border.all(
               color: isDark
                   ? accentColor.withValues(alpha: 0.15)
-                  : accentColor.withValues(alpha: 0.25),
-              width: 1.5,
+                  : const Color(0xFFE2E8F0),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                blurRadius: isDark ? 10 : 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),

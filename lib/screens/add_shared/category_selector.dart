@@ -16,61 +16,59 @@ class CategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: EdgeInsets.zero, // Remove default grid padding
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 4, // Reduced spacing
-        crossAxisSpacing: 6, // Reduced spacing
-        childAspectRatio: 1.15, // Taller items
-      ),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final cat = categories[index];
-        final isSelected = selectedCategory == cat.name;
-        return GestureDetector(
-          onTap: () => onCategorySelected(cat.name),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primaryAction
-                  : Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final isSelected = selectedCategory == cat.name;
+          return GestureDetector(
+            onTap: () => onCategorySelected(cat.name),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.primaryAction
-                    : Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    : Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? AppTheme.primaryAction
+                      : Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                  width: isSelected ? 1.5 : 1.0,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    cat.icon,
+                    size: 18,
+                    color: isSelected ? Colors.white : AppTheme.primaryAction,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    cat.name,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  cat.icon,
-                  size: 32,
-                  color: isSelected ? Colors.white : AppTheme.primaryAction,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  cat.name,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

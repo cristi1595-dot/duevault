@@ -90,7 +90,7 @@ class HomeUpcomingList extends ConsumerWidget {
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 100),
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 140),
       children: [
         if (allUpcoming.isEmpty)
           const BentoCard(

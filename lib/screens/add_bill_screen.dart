@@ -332,28 +332,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BillCategorySelector(
-                selectedCategory: _category,
-                categories: _categories,
-                onCategorySelected: (catName) {
-                  setState(() {
-                    _category = catName;
-                    // Auto-set recurrence based on category
-                    if ([
-                      'Housing',
-                      'Utilities',
-                      'Subscription',
-                      'Telecom',
-                    ].contains(_category)) {
-                      _recurrence = 'Monthly';
-                    } else {
-                      _recurrence = 'None';
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 8),
-
               BentoInputWrapper(
                 label: 'TITLE',
                 child: TextFormField(
@@ -386,6 +364,28 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 currencyCode: currency.code,
                 onDateTap: _pickDate,
                 onAmountChanged: (val) => setState(() {}),
+              ),
+              const SizedBox(height: 10),
+
+              BillCategorySelector(
+                selectedCategory: _category,
+                categories: _categories,
+                onCategorySelected: (catName) {
+                  setState(() {
+                    _category = catName;
+                    // Auto-set recurrence based on category
+                    if ([
+                      'Housing',
+                      'Utilities',
+                      'Subscription',
+                      'Telecom',
+                    ].contains(_category)) {
+                      _recurrence = 'Monthly';
+                    } else {
+                      _recurrence = 'None';
+                    }
+                  });
+                },
               ),
               const SizedBox(height: 10),
 
