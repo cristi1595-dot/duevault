@@ -340,7 +340,7 @@ class FinancialBentoCard extends ConsumerWidget {
                           Icon(
                             Icons.receipt_long_rounded,
                             size: 18,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: billColor,
                           ),
                         ],
                       ),
@@ -448,7 +448,7 @@ class FinancialBentoCard extends ConsumerWidget {
                           Icon(
                             Icons.description_rounded,
                             size: 18,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: docColor,
                           ),
                         ],
                       ),
