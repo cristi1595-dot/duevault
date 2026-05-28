@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/global_components.dart';
 import '../../providers/vault_provider.dart';
 import '../../models/vault_item.dart';
-import '../../screens/home/home_header.dart';
 import '../../screens/home/financial_bento_card.dart';
 import '../../theme/app_theme.dart';
 import 'onboarding_header.dart';
@@ -80,7 +79,7 @@ class OnboardingTutorialPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HomeHeader(),
+                      _buildMockHeader(context),
                       const FinancialBentoCard(),
                       const SizedBox(height: 12),
                       Padding(
@@ -134,6 +133,83 @@ class OnboardingTutorialPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMockHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const DueVaultLogo(
+                size: 40, // scaled down to prevent overflows
+                showGlow: false,
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'DueVault',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 19,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    'Smart Bill Manager',
+                    style: TextStyle(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Profile Avatar Mockup
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Guest',
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.all(1.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF2D333D) : const Color(0xFFE2E8F0),
+                    width: 1.5,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 12, // scaled down
+                  backgroundColor: isDark ? const Color(0xFF1B1F26) : const Color(0xFFF1F5F9),
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 14,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
