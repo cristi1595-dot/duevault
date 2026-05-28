@@ -262,15 +262,18 @@ class AttachmentSection extends ConsumerWidget {
                             : Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     SizedBox(
                       height: 20,
-                      width: 32,
-                      child: Switch(
-                        value: useOcr,
-                        onChanged: onOcrToggleChanged,
-                        activeThumbColor: AppTheme.primaryAction,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      width: 40,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Switch(
+                          value: useOcr,
+                          onChanged: onOcrToggleChanged,
+                          activeThumbColor: AppTheme.primaryAction,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ),
                   ],
