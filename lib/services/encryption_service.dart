@@ -123,16 +123,28 @@ class EncryptionService {
       List.generate(16, (_) => random.nextInt(256)),
     );
 
-    final key = encrypt.Key(keyBytes);
-    final iv = encrypt.IV(ivBytes);
-    final encrypter = encrypt.Encrypter(encrypt.AES(key));
-
-    final encrypted = encrypter.encryptBytes(bytes, iv: iv);
+    // If file is larger than 50 KB, encrypt in a background isolate to keep UI smooth
+    final List<int> encryptedBytes;
+    if (bytes.length > 50 * 1024) {
+      encryptedBytes = await compute(
+        _encryptBytesIsolate,
+        EncryptParams(
+          bytes: bytes,
+          keyBytes: keyBytes,
+          ivBytes: ivBytes,
+        ),
+      );
+    } else {
+      final key = encrypt.Key(keyBytes);
+      final iv = encrypt.IV(ivBytes);
+      final encrypter = encrypt.Encrypter(encrypt.AES(key));
+      encryptedBytes = encrypter.encryptBytes(bytes, iv: iv).bytes;
+    }
 
     // Write IV + Ciphertext to file
-    final combined = Uint8List(ivBytes.length + encrypted.bytes.length);
+    final combined = Uint8List(ivBytes.length + encryptedBytes.length);
     combined.setAll(0, ivBytes);
-    combined.setAll(ivBytes.length, encrypted.bytes);
+    combined.setAll(ivBytes.length, encryptedBytes);
 
     await file.writeAsBytes(combined);
   }
@@ -150,14 +162,28 @@ class EncryptionService {
       final encryptedBytes = combined.sublist(16);
 
       final keyBytes = await _getOrCreateKey();
-      final key = encrypt.Key(keyBytes);
-      final iv = encrypt.IV(ivBytes);
-      final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
-      final decrypted = encrypter.decryptBytes(
-        encrypt.Encrypted(encryptedBytes),
-        iv: iv,
-      );
+      // If file is larger than 50 KB, decrypt in a background isolate to keep UI smooth
+      final List<int> decrypted;
+      if (encryptedBytes.length > 50 * 1024) {
+        decrypted = await compute(
+          _decryptBytesIsolate,
+          DecryptParams(
+            encryptedBytes: encryptedBytes,
+            keyBytes: keyBytes,
+            ivBytes: ivBytes,
+          ),
+        );
+      } else {
+        final key = encrypt.Key(keyBytes);
+        final iv = encrypt.IV(ivBytes);
+        final encrypter = encrypt.Encrypter(encrypt.AES(key));
+        decrypted = encrypter.decryptBytes(
+          encrypt.Encrypted(encryptedBytes),
+          iv: iv,
+        );
+      }
+
       return Uint8List.fromList(decrypted);
     } catch (e) {
       // Fallback for unencrypted files
@@ -212,4 +238,47 @@ class EncryptionService {
       return false;
     }
   }
+}
+
+// --- Background Isolate Parameter Classes and Helper Functions ---
+
+class DecryptParams {
+  final Uint8List encryptedBytes;
+  final Uint8List keyBytes;
+  final Uint8List ivBytes;
+
+  DecryptParams({
+    required this.encryptedBytes,
+    required this.keyBytes,
+    required this.ivBytes,
+  });
+}
+
+class EncryptParams {
+  final Uint8List bytes;
+  final Uint8List keyBytes;
+  final Uint8List ivBytes;
+
+  EncryptParams({
+    required this.bytes,
+    required this.keyBytes,
+    required this.ivBytes,
+  });
+}
+
+List<int> _decryptBytesIsolate(DecryptParams params) {
+  final key = encrypt.Key(params.keyBytes);
+  final iv = encrypt.IV(params.ivBytes);
+  final encrypter = encrypt.Encrypter(encrypt.AES(key));
+  return encrypter.decryptBytes(
+    encrypt.Encrypted(params.encryptedBytes),
+    iv: iv,
+  );
+}
+
+List<int> _encryptBytesIsolate(EncryptParams params) {
+  final key = encrypt.Key(params.keyBytes);
+  final iv = encrypt.IV(params.ivBytes);
+  final encrypter = encrypt.Encrypter(encrypt.AES(key));
+  return encrypter.encryptBytes(params.bytes, iv: iv).bytes;
 }

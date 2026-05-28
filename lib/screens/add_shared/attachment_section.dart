@@ -262,10 +262,10 @@ class AttachmentSection extends ConsumerWidget {
                             : Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 16),
                     SizedBox(
                       height: 20,
-                      width: 40,
+                      width: 44,
                       child: FittedBox(
                         fit: BoxFit.contain,
                         child: Switch(
