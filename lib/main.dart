@@ -254,9 +254,25 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
             },
             loading: () => Scaffold(
               backgroundColor: themeMode == ThemeMode.dark
-                  ? const Color(0xFF131313)
-                  : const Color(0xFFF8FAFC),
-              body: const Center(child: CircularProgressIndicator()),
+                  ? const Color(0xFF0F1115) // AppTheme.darkBackground
+                  : const Color(0xFFF1F5F9), // AppTheme.lightBackground
+              body: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    DueVaultLogo(size: 100),
+                    SizedBox(height: 32),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryAction),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             error: (err, stack) =>
                 Scaffold(body: Center(child: Text('Error: $err'))),

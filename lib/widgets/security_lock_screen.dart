@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/security_provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
+import 'duevault_logo.dart';
 // Force re-analysis
 
 class SecurityLockScreen extends ConsumerStatefulWidget {
@@ -87,10 +88,9 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen>
                           width: 2,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.lock_person_outlined,
-                        color: AppTheme.primaryAction,
+                      child: const DueVaultLogo(
                         size: 64,
+                        showGlow: false,
                       ),
                     ),
                     const SizedBox(height: 32),

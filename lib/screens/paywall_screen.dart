@@ -6,6 +6,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import '../providers/premium_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/logger.dart';
+import '../widgets/duevault_logo.dart';
 
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key});
@@ -176,21 +177,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
-                        // App Badge / Icon
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: Color(0xFF00E676),
-                            size: 48,
-                          ),
+                        const DueVaultLogo(
+                          size: 80,
+                          showGlow: true,
                         ),
                         const SizedBox(height: 24),
                         // Neon styled Title

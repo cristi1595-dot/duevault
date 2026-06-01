@@ -77,7 +77,8 @@ class AttachmentPickerHelper {
     required Function(OcrResult result) onOcrResult,
     required Function(String error) onError,
   }) async {
-    await PermissionHelper.requestGalleryPermission(context);
+    final granted = await PermissionHelper.requestGalleryPermission(context);
+    if (!granted) return;
 
     try {
       final result = await FilePicker.pickFiles(
