@@ -23,14 +23,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for tab changes to reset scroll position
+    // Listen for tab changes to reset scroll position and show nav bar
     ref.listen(bottomNavIndexProvider, (previous, next) {
-      if (next == 0 && _scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      if (next == 0) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+        ref.read(navBarVisibleProvider.notifier).state = true;
       }
     });
 
@@ -42,7 +45,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const HomeHeader(),
             const FinancialBentoCard(),
             Expanded(
-              child: HomeUpcomingList(scrollController: _scrollController),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollUpdateNotification) {
+                    final delta = notification.scrollDelta ?? 0;
+                    if (delta > 2) {
+                      // Scrolling down → hide
+                      ref.read(navBarVisibleProvider.notifier).state = false;
+                    } else if (delta < -2) {
+                      // Scrolling up → show
+                      ref.read(navBarVisibleProvider.notifier).state = true;
+                    }
+                  }
+                  if (notification is ScrollEndNotification) {
+                    // If at the very top, always show
+                    if (notification.metrics.pixels <= 0) {
+                      ref.read(navBarVisibleProvider.notifier).state = true;
+                    }
+                  }
+                  return false;
+                },
+                child: HomeUpcomingList(scrollController: _scrollController),
+              ),
             ),
           ],
         ),
@@ -50,3 +74,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+

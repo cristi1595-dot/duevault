@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/vault_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
 import '../widgets/global_components.dart';
@@ -10,7 +11,6 @@ import '../widgets/vault/vault_list_builder.dart';
 import '../theme/app_theme.dart';
 import '../models/vault_item.dart';
 import 'settings_screen.dart';
-import '../providers/navigation_provider.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
   const VaultScreen({super.key});
@@ -135,6 +135,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             );
           }
         }
+        ref.read(navBarVisibleProvider.notifier).state = true;
       }
     });
 
@@ -222,19 +223,41 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           ),
           const SizedBox(height: 4),
           Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => _currentPageIndex = index),
-              itemBuilder: (context, index) {
-                final tabIndex = index % 4;
-                final items = _getFilteredAndSortedItems(vaultItems, tabIndex);
-                return VaultListBuilder(
-                  items: items,
-                  currency: currency,
-                  scrollController: _scrollControllers[tabIndex],
-                  onPaidStatusToggle: _togglePaidStatus,
-                );
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                // Only react to vertical scroll, not horizontal page swipes
+                if (notification.metrics.axis != Axis.vertical) return false;
+                if (notification is ScrollUpdateNotification) {
+                  final delta = notification.scrollDelta ?? 0;
+                  if (delta > 2) {
+                    // Scrolling down → hide
+                    ref.read(navBarVisibleProvider.notifier).state = false;
+                  } else if (delta < -2) {
+                    // Scrolling up → show
+                    ref.read(navBarVisibleProvider.notifier).state = true;
+                  }
+                }
+                if (notification is ScrollEndNotification) {
+                  if (notification.metrics.pixels <= 0) {
+                    ref.read(navBarVisibleProvider.notifier).state = true;
+                  }
+                }
+                return false;
               },
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) => setState(() => _currentPageIndex = index),
+                itemBuilder: (context, index) {
+                  final tabIndex = index % 4;
+                  final items = _getFilteredAndSortedItems(vaultItems, tabIndex);
+                  return VaultListBuilder(
+                    items: items,
+                    currency: currency,
+                    scrollController: _scrollControllers[tabIndex],
+                    onPaidStatusToggle: _togglePaidStatus,
+                  );
+                },
+              ),
             ),
           ),
         ],

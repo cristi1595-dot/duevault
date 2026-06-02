@@ -284,73 +284,89 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
   }
 }
 
-class MainNavigation extends ConsumerWidget {
+class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
 
+  @override
+  ConsumerState<MainNavigation> createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends ConsumerState<MainNavigation> {
   final List<Widget> _screens = const [HomeScreen(), VaultScreen()];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
     final isVaultEmpty = ref.watch(vaultProvider).isEmpty;
+    final isNavBarVisible = ref.watch(navBarVisibleProvider);
 
     return Scaffold(
       extendBody: true,
       body: IndexedStack(index: currentIndex, children: _screens),
-      bottomNavigationBar: IntegratedBottomNavBar(
-        currentIndex: currentIndex,
-        isVaultEmpty: isVaultEmpty,
-        onTap: (index) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ref.read(bottomNavIndexProvider.notifier).state = index;
-        },
-        onAddPressed: () {
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Theme.of(context).cardTheme.color,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            builder: (context) => Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add New Item',
-                    style: Theme.of(context).textTheme.headlineMedium,
+      bottomNavigationBar: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        offset: isNavBarVisible ? Offset.zero : const Offset(0, 1),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: isNavBarVisible ? 1.0 : 0.0,
+          child: IntegratedBottomNavBar(
+            currentIndex: currentIndex,
+            isVaultEmpty: isVaultEmpty,
+            onTap: (index) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ref.read(bottomNavIndexProvider.notifier).state = index;
+            },
+            onAddPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Theme.of(context).cardTheme.color,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Add New Item',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Select the type of item you want to vault.',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildPopupItem(
+                        context,
+                        'Bill',
+                        'Track payments & due dates',
+                        Icons.receipt_long,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildPopupItem(
+                        context,
+                        'Document',
+                        'Store IDs, contracts & more',
+                        Icons.description,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Select the type of item you want to vault.',
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildPopupItem(
-                    context,
-                    'Bill',
-                    'Track payments & due dates',
-                    Icons.receipt_long,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPopupItem(
-                    context,
-                    'Document',
-                    'Store IDs, contracts & more',
-                    Icons.description,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
+
 
   Widget _buildPopupItem(
     BuildContext context,
