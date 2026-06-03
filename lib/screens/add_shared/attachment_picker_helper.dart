@@ -84,7 +84,6 @@ class AttachmentPickerHelper {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg', 'heic', 'heif', 'webp'],
-        allowMultiple: true,
       );
       if (result == null) return;
 
