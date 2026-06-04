@@ -1,4 +1,4 @@
-package com.example.duevault_app
+package com.duevault.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
