@@ -14,39 +14,18 @@
       },
       "oauth_client": [
         {
-          "client_id": "933555779274-babvkfn1rvfl7rufl386cgqq50u12fvl.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDRX9PulDC2kWEwjPGLFnIpzmprIouBa9o"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "933555779274-babvkfn1rvfl7rufl386cgqq50u12fvl.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:933555779274:android:964e24fd4451ad1d826633",
-        "android_client_info": {
-          "package_name": "com.example.duevault_app"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "933555779274-5onudqugu4mr5dv68sinl9nlv0i95eg9.apps.googleusercontent.com",
+          "client_id": "933555779274-o3gs7n8afqftvps6spve4bn3rbhatq99.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.duevault_app",
+            "package_name": "com.duevault.app",
+            "certificate_hash": "49c53f22f9bdacdb5b8d15eb5ebeb35e0802dd31"
+          }
+        },
+        {
+          "client_id": "933555779274-v2n216vssplf638grep5jma14k34efpv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.duevault.app",
             "certificate_hash": "8df1d8c18b6e79bfaebd8be3e95836f82efa0dfe"
           }
         },

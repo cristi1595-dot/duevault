@@ -238,9 +238,8 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   }
                 }
                 if (notification is ScrollEndNotification) {
-                  if (notification.metrics.pixels <= 0) {
-                    ref.read(navBarVisibleProvider.notifier).state = true;
-                  }
+                  // Always show nav bar when user lifts finger
+                  ref.read(navBarVisibleProvider.notifier).state = true;
                 }
                 return false;
               },

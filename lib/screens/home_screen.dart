@@ -58,10 +58,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     }
                   }
                   if (notification is ScrollEndNotification) {
-                    // If at the very top, always show
-                    if (notification.metrics.pixels <= 0) {
-                      ref.read(navBarVisibleProvider.notifier).state = true;
-                    }
+                    // Always show nav bar when user lifts finger
+                    ref.read(navBarVisibleProvider.notifier).state = true;
                   }
                   return false;
                 },
