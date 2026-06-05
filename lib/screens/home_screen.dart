@@ -49,12 +49,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onNotification: (notification) {
                   if (notification is ScrollUpdateNotification) {
                     final delta = notification.scrollDelta ?? 0;
-                    if (delta > 2) {
-                      // Scrolling down → hide
+                    if (delta.abs() > 2) {
+                      // Any scroll direction → hide
                       ref.read(navBarVisibleProvider.notifier).state = false;
-                    } else if (delta < -2) {
-                      // Scrolling up → show
-                      ref.read(navBarVisibleProvider.notifier).state = true;
                     }
                   }
                   if (notification is ScrollEndNotification) {
