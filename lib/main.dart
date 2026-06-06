@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
@@ -32,6 +33,7 @@ import 'services/firebase_sync_service.dart';
 import 'providers/sync_provider.dart';
 import 'providers/vault_provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'providers/premium_provider.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -208,6 +210,26 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
+
+    // Sync Firebase Auth state with RevenueCat user sessions
+    ref.listen<AsyncValue<fb.User?>>(authStateProvider, (previous, next) {
+      final user = next.valueOrNull;
+      if (user != null) {
+        logger.i('Syncing RevenueCat User ID: ${user.uid}');
+        Purchases.logIn(user.uid).then((createdCustomerInfo) {
+          ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(createdCustomerInfo.customerInfo);
+        }).catchError((e) {
+          logger.e('Failed to log in user to RevenueCat: $e');
+        });
+      } else {
+        logger.i('Logging out user from RevenueCat');
+        Purchases.logOut().then((customerInfo) {
+          ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
+        }).catchError((e) {
+          logger.e('Failed to log out user from RevenueCat: $e');
+        });
+      }
+    });
 
     return MaterialApp(
       scaffoldMessengerKey: scaffoldMessengerKey,

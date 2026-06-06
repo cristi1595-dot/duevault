@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:disable_battery_optimization/disable_battery_optimization.dart';
-import 'package:app_settings/app_settings.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/security_provider.dart';
 
@@ -38,17 +37,8 @@ class SettingsDialogs {
           ),
           ElevatedButton(
             onPressed: () async {
-              final isAndroid = Theme.of(context).platform == TargetPlatform.android;
               Navigator.pop(ctx);
-              await AppSettings.openAppSettings(type: AppSettingsType.notification);
-              
-              if (isAndroid) {
-                final isBatteryOptimizationDisabled = 
-                    await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false;
-                if (!isBatteryOptimizationDisabled) {
-                  await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
-                }
-              }
+              await openAppSettings();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryAction,

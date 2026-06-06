@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/vault_provider.dart';
@@ -13,16 +10,10 @@ import '../../services/analytics_service.dart';
 /// It displays controls for global reminders, time picking, early alert configuration,
 /// SOS urgent alerts, and background restrictions status checking/fixing.
 class SmartAlertsSection extends ConsumerWidget {
-  final bool? isBatteryOptimizationDisabled;
-  final bool isNotificationPermissionGranted;
-  final bool isExactAlarmGranted;
   final Future<void> Function({required bool targetState}) onAttemptActivation;
 
   const SmartAlertsSection({
     super.key,
-    required this.isBatteryOptimizationDisabled,
-    required this.isNotificationPermissionGranted,
-    required this.isExactAlarmGranted,
     required this.onAttemptActivation,
   });
 
@@ -32,10 +23,6 @@ class SmartAlertsSection extends ConsumerWidget {
     final alertDays = ref.watch(alertDaysProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = AppTheme.getSettingsAccent(context);
-
-    final isOptimizedActive = (isBatteryOptimizationDisabled == true &&
-        isNotificationPermissionGranted &&
-        isExactAlarmGranted);
 
     return Column(
       children: [
@@ -328,91 +315,6 @@ class SmartAlertsSection extends ConsumerWidget {
             },
           ),
         ],
-        // 4. Background Restrictions Row
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          child: GestureDetector(
-            onTap: () async {
-              final isAndroid = Platform.isAndroid;
-              final hasNotification = await Permission.notification.isGranted;
-              final hasBattery = !isAndroid ||
-                  (await DisableBatteryOptimization.isAllBatteryOptimizationDisabled ?? false);
-              final hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
-
-              if (hasNotification && hasBattery && hasExactAlarm) {
-                return;
-              }
-
-              await onAttemptActivation(targetState: true);
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Background Restrictions',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Allow app to run in background for alerts.',
-                        style: TextStyle(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: isOptimizedActive
-                        ? AppTheme.safeGreen.withValues(alpha: 0.1)
-                        : AppTheme.urgentRed.withValues(alpha: 0.1),
-                    border: Border.all(
-                      color: isOptimizedActive
-                          ? AppTheme.safeGreen
-                          : AppTheme.urgentRed.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isOptimizedActive) ...[
-                        const Icon(
-                          Icons.check_circle,
-                          color: AppTheme.safeGreen,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        isOptimizedActive ? 'Active' : 'Fix Now',
-                        style: TextStyle(
-                          color: isOptimizedActive ? AppTheme.safeGreen : AppTheme.urgentRed,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }

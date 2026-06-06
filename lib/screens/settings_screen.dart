@@ -25,16 +25,12 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
-  bool? _isBatteryOptimizationDisabled;
-  bool _isNotificationPermissionGranted = true;
-  bool _isExactAlarmGranted = true;
   bool _isDevModeEnabled = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _checkStatus();
   }
 
   @override
@@ -51,22 +47,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _checkStatusAndAutoEnable() async {
-    await _checkStatus();
     if (!mounted) return;
-
     await SettingsPermissionHelper.checkStatusAndAutoEnable(ref);
-    await _checkStatus();
-  }
-
-  Future<void> _checkStatus() async {
-    final status = await SettingsPermissionHelper.checkStatus();
-    if (mounted) {
-      setState(() {
-        _isBatteryOptimizationDisabled = status['batteryDisabled'];
-        _isNotificationPermissionGranted = status['notificationsGranted']!;
-        _isExactAlarmGranted = status['exactAlarmGranted']!;
-      });
-    }
   }
 
   Future<void> _attemptActivation({required bool targetState}) async {
@@ -74,15 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       targetState: targetState,
       ref: ref,
       context: context,
-      onStatusUpdated: (status) {
-        if (mounted) {
-          setState(() {
-            _isBatteryOptimizationDisabled = status['batteryDisabled'];
-            _isNotificationPermissionGranted = status['notificationsGranted']!;
-            _isExactAlarmGranted = status['exactAlarmGranted']!;
-          });
-        }
-      },
+      onStatusUpdated: (_) {},
     );
   }
 
@@ -183,9 +157,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             _buildCategoryCard(
               context,
               child: SmartAlertsSection(
-                isBatteryOptimizationDisabled: _isBatteryOptimizationDisabled,
-                isNotificationPermissionGranted: _isNotificationPermissionGranted,
-                isExactAlarmGranted: _isExactAlarmGranted,
                 onAttemptActivation: _attemptActivation,
               ),
             ),

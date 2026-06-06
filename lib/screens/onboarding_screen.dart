@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
@@ -13,7 +12,6 @@ import '../providers/vault_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'onboarding/onboarding_notifications_page.dart';
-import 'onboarding/onboarding_battery_page.dart';
 import 'onboarding/onboarding_sync_page.dart';
 import 'onboarding/onboarding_tutorial_page.dart';
 import 'paywall_screen.dart';
@@ -64,17 +62,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
         );
       }
-    } else if (_currentPage == 2) {
-      final isBatteryDisabled =
-          await DisableBatteryOptimization.isBatteryOptimizationDisabled ?? false;
-      if (isBatteryDisabled && mounted) {
-        unawaited(
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-          ),
-        );
-      }
     }
   }
 
@@ -90,40 +77,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       ref.read(isGuestProvider.notifier).state = true;
     }
     ref.read(hasSeenOnboardingProvider.notifier).state = true;
-  }
-
-  Future<void> _requestBatteryOptimization() async {
-    final isDisabledBefore =
-        await DisableBatteryOptimization.isBatteryOptimizationDisabled;
-    if (isDisabledBefore == false) {
-      await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
-      // Așteptăm scurt timp pentru ca sistemul să actualizeze starea la întoarcerea în aplicație
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-
-    final isNowDisabled =
-        await DisableBatteryOptimization.isBatteryOptimizationDisabled;
-    if (isNowDisabled == true) {
-      if (mounted) {
-        unawaited(
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-          ),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please disable battery optimization to proceed, or click "Skip for now".',
-            ),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _showAppSettingsDialog() async {
@@ -343,10 +296,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     onEnableNotifications: _requestNotificationPermission,
                     onDecideLater: _goToNextPage,
                   ),
-                  OnboardingBatteryPage(
-                    onGuaranteeAlerts: _requestBatteryOptimization,
-                    onSkipForNow: _goToNextPage,
-                  ),
                   OnboardingSyncPage(
                     onGoogleSignInPressed: _handleGoogleSignIn,
                     onGuestLoginPressed: () async {
@@ -368,7 +317,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       padding: const EdgeInsets.only(bottom: 32),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(4, (index) {
+        children: List.generate(3, (index) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             width: _currentPage == index ? 32 : 10,
