@@ -71,7 +71,6 @@ void main() async {
     };
 
     // Initialize RevenueCat for in-app purchases
-    // TODO: Înlocuiește cu cheia ta reală din RevenueCat Dashboard → API Keys
     await Purchases.configure(
       PurchasesConfiguration('goog_ZtWozrnvnKsNqsvpoPaZUInbwsw'),
     );
