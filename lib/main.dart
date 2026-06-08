@@ -73,7 +73,7 @@ void main() async {
     // Initialize RevenueCat for in-app purchases
     // TODO: Înlocuiește cu cheia ta reală din RevenueCat Dashboard → API Keys
     await Purchases.configure(
-      PurchasesConfiguration('test_JMXMgXfNnCRyhbUSrXggQnDkMOw'),
+      PurchasesConfiguration('goog_ZtWozrnvnKsNqsvpoPaZUInbwsw'),
     );
     logger.i('RevenueCat SDK configured successfully.');
 
@@ -216,18 +216,26 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
       final user = next.valueOrNull;
       if (user != null) {
         logger.i('Syncing RevenueCat User ID: ${user.uid}');
-        Purchases.logIn(user.uid).then((createdCustomerInfo) {
-          ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(createdCustomerInfo.customerInfo);
-        }).catchError((e) {
-          logger.e('Failed to log in user to RevenueCat: $e');
-        });
+        Purchases.logIn(user.uid)
+            .then((createdCustomerInfo) {
+              ref
+                  .read(isPremiumProvider.notifier)
+                  .updateFromCustomerInfo(createdCustomerInfo.customerInfo);
+            })
+            .catchError((e) {
+              logger.e('Failed to log in user to RevenueCat: $e');
+            });
       } else {
         logger.i('Logging out user from RevenueCat');
-        Purchases.logOut().then((customerInfo) {
-          ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
-        }).catchError((e) {
-          logger.e('Failed to log out user from RevenueCat: $e');
-        });
+        Purchases.logOut()
+            .then((customerInfo) {
+              ref
+                  .read(isPremiumProvider.notifier)
+                  .updateFromCustomerInfo(customerInfo);
+            })
+            .catchError((e) {
+              logger.e('Failed to log out user from RevenueCat: $e');
+            });
       }
     });
 
@@ -289,7 +297,9 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryAction),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppTheme.primaryAction,
+                        ),
                       ),
                     ),
                   ],
@@ -388,7 +398,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
       ),
     );
   }
-
 
   Widget _buildPopupItem(
     BuildContext context,
