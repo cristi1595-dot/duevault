@@ -7,19 +7,20 @@ final isPremiumProvider = StateNotifierProvider<PremiumNotifier, bool>((ref) {
 });
 
 class PremiumNotifier extends StateNotifier<bool> {
-  PremiumNotifier() : super(false) {
-    _checkPremiumStatus();
+  PremiumNotifier() : super(true) { // Set default to true for testing
+    // _checkPremiumStatus(); // Comment out to bypass RevenueCat checks
   }
 
   Future<void> _checkPremiumStatus() async {
-    try {
-      final customerInfo = await Purchases.getCustomerInfo();
-      state = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
-      logger.d('RevenueCat: Premium status checked. isPro: $state');
-    } catch (e) {
-      logger.w('RevenueCat: getCustomerInfo failed: $e');
-      state = false;
-    }
+    // try {
+    //   final customerInfo = await Purchases.getCustomerInfo();
+    //   state = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
+    //   logger.d('RevenueCat: Premium status checked. isPro: $state');
+    // } catch (e) {
+    //   logger.w('RevenueCat: getCustomerInfo failed: $e');
+    //   state = true;
+    // }
+    state = true;
   }
 
   /// Re-checks the premium status from RevenueCat.
