@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "933555779274-5770vtm6gsf1l8n1nt8j9ftpuq7bfg0i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.duevault.app",
+            "certificate_hash": "a2bc7fb56188cd58f857eb59bba56aec55b0b690"
+          }
+        },
+        {
           "client_id": "933555779274-o3gs7n8afqftvps6spve4bn3rbhatq99.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

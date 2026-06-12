@@ -70,7 +70,7 @@ class AuthService {
       return userCredential;
     } catch (e, stack) {
       logger.e('Error signing in with Google', error: e, stackTrace: stack);
-      return null;
+      rethrow;
     }
   }
 

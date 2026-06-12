@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
@@ -200,9 +201,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       ),
     );
 
-    final userCredential = await ref
-        .read(authServiceProvider)
-        .signInWithGoogle();
+    UserCredential? userCredential;
+    try {
+      userCredential = await ref
+          .read(authServiceProvider)
+          .signInWithGoogle();
+    } catch (e) {
+      logger.e('Google Sign-In failed during onboarding with exception', error: e);
+      if (mounted) {
+        Navigator.pop(context); // Pop loading indicator
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Sign in error: ${e.toString().split('\n').first}'),
+          backgroundColor: AppTheme.urgentRed,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
 
     if (userCredential != null) {
@@ -269,7 +286,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         Navigator.pop(context);
       }
       messenger.showSnackBar(
-        const SnackBar(content: Text('Google Sign-in failed')),
+        const SnackBar(content: Text('Sign in failed or was canceled')),
       );
     }
   }

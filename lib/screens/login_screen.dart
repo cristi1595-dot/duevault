@@ -140,9 +140,25 @@ class LoginScreen extends ConsumerWidget {
         // 0. Mark as processing sync to hold LoginScreen mounted
         ref.read(isProcessingAuthSyncProvider.notifier).state = true;
 
-        final userCredential = await ref
-            .read(authServiceProvider)
-            .signInWithGoogle();
+        UserCredential? userCredential;
+        try {
+          userCredential = await ref
+              .read(authServiceProvider)
+              .signInWithGoogle();
+        } catch (e) {
+          logger.e('Google Sign-In failed with exception', error: e);
+          if (context.mounted) {
+            Navigator.pop(context); // Pop loading indicator
+          }
+          ref.read(isProcessingAuthSyncProvider.notifier).state = false;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Sign in error: ${e.toString().split('\n').first}'),
+              backgroundColor: AppTheme.urgentRed,
+            ),
+          );
+          return;
+        }
 
         if (userCredential != null) {
           final uid = userCredential.user!.uid;
