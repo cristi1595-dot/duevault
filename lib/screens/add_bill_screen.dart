@@ -377,7 +377,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     if ([
                       'Housing',
                       'Utilities',
-                      'Subscription',
+                      'Subscriptions',
                       'Telecom',
                     ].contains(_category)) {
                       _recurrence = 'Monthly';
@@ -475,14 +475,14 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         return 'e.g. Electricity Bill';
       case 'Loans':
         return 'e.g. Bank Loan';
-      case 'Subscription':
-        return 'e.g. Netflix / Spotify';
+      case 'Subscriptions':
+        return 'e.g. Netflix';
       case 'Auto':
-        return 'e.g. Fuel / Repairs';
+        return 'e.g. Insurance';
       case 'Telecom':
         return 'e.g. Internet Bill';
-      case 'Insurance':
-        return 'e.g. Health Insurance';
+      case 'Health':
+        return 'e.g. Medical Bill';
       default:
         return 'e.g. Grocery Bill';
     }

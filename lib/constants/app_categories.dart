@@ -45,8 +45,8 @@ class AppCategories {
       color: Colors.teal,
     ),
     CategoryData(
-      name: 'Insurance',
-      icon: Icons.security_outlined,
+      name: 'Health',
+      icon: Icons.health_and_safety_outlined,
       color: Colors.green,
     ),
     CategoryData(
