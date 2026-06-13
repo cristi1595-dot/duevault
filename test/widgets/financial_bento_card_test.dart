@@ -84,7 +84,7 @@ void main() {
 
       // Verify Red Status properties
       expect(find.text('ACTION REQUIRED'), findsOneWidget);
-      expect(find.text('Includes £100 overdue'), findsOneWidget);
+      expect(find.text('30d: £100'), findsOneWidget);
 
       // Verify the container decoration has the correct status color
       final container = tester.widget<Container>(findMainCardContainer());
