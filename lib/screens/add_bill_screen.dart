@@ -186,8 +186,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
               brightness: Theme.of(context).brightness,
               primary: AppTheme.primaryAction,
               onPrimary: Colors.white,
-              surface: Theme.of(context).cardTheme.color!,
-              onSurface: Theme.of(context).textTheme.bodyLarge!.color!,
+              surface: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
+              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
               secondary: AppTheme.primaryAction,
               onSecondary: Colors.white,
               error: AppTheme.urgentRed,
@@ -305,6 +305,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   @override
   Widget build(BuildContext context) {
     final currency = ref.watch(currencyProvider);
+    final isFormValid = _titleController.text.trim().isNotEmpty &&
+        _amountController.text.trim().isNotEmpty &&
+        _dueDate != null;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -457,7 +460,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     ? 'Saving...'
                     : (!_isEdit ? 'Save Bill' : 'Update Bill'),
                 icon: _isSaving ? null : Icons.check_circle_outline,
-                onPressed: _isSaving ? null : _submit,
+                onPressed: (_isSaving || !isFormValid) ? null : _submit,
               ),
               const SizedBox(height: 40),
             ],

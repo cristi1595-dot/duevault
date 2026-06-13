@@ -192,8 +192,8 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               brightness: Theme.of(context).brightness,
               primary: AppTheme.primaryAction,
               onPrimary: Colors.white,
-              surface: Theme.of(context).cardTheme.color!,
-              onSurface: Theme.of(context).textTheme.bodyLarge!.color!,
+              surface: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
+              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
               secondary: AppTheme.primaryAction,
               onSecondary: Colors.white,
               error: AppTheme.urgentRed,
@@ -296,8 +296,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
   bool get _isFormValid =>
-      _titleController.text.trim().isNotEmpty ||
-      _attachedFiles.isNotEmpty ||
+      _titleController.text.trim().isNotEmpty &&
       _expiryDate != null;
 
   @override
