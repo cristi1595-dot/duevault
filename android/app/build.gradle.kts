@@ -56,8 +56,12 @@ android {
                 signingConfigs.getByName("debug")
             }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             ndk {
-                debugSymbolLevel = "none"
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
     }
