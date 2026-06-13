@@ -368,52 +368,36 @@ class FinancialBentoCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      if (totalDueOverdue > 0)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.warning_amber_rounded,
-                              size: 12,
-                              color: AppTheme.urgentRed,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                'Includes ${currency.formatAmount(totalDueOverdue)} overdue',
-                                style: const TextStyle(
-                                  color: AppTheme.urgentRed,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Icon(
+                            totalDueOverdue > 0
+                                ? Icons.warning_amber_rounded
+                                : Icons.analytics_outlined,
+                            size: 12,
+                            color: totalDueOverdue > 0
+                                ? AppTheme.urgentRed
+                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '30d: ${currency.formatAmount(totalDue30Days)}',
+                              style: TextStyle(
+                                color: totalDueOverdue > 0
+                                    ? AppTheme.urgentRed
+                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                fontSize: 11.5,
+                                fontWeight: totalDueOverdue > 0
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.analytics_outlined,
-                              size: 12,
-                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                              ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '30d: ${currency.formatAmount(totalDue30Days)}',
-                                style: TextStyle(
-                                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -476,52 +460,36 @@ class FinancialBentoCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      if (expiredDocs.isNotEmpty)
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.warning_amber_rounded,
-                              size: 12,
-                              color: AppTheme.urgentRed,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                'Includes ${expiredDocs.length} expired',
-                                style: const TextStyle(
-                                  color: AppTheme.urgentRed,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Icon(
+                            expiredDocs.isNotEmpty
+                                ? Icons.warning_amber_rounded
+                                : Icons.analytics_outlined,
+                            size: 12,
+                            color: expiredDocs.isNotEmpty
+                                ? AppTheme.urgentRed
+                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '30d: $totalDocs30Days expiring',
+                              style: TextStyle(
+                                color: expiredDocs.isNotEmpty
+                                    ? AppTheme.urgentRed
+                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                fontSize: 11.5,
+                                fontWeight: expiredDocs.isNotEmpty
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.analytics_outlined,
-                              size: 12,
-                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '30d: $totalDocs30Days expiring',
-                                style: TextStyle(
-                                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
