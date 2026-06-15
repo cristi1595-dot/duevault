@@ -45,7 +45,7 @@ void main() async {
 
     // Disable Google Fonts runtime network fetching to prevent Crashlytics errors
     // when network is unstable or blocked. Fallback to system fonts works gracefully.
-    GoogleFonts.config.allowRuntimeFetching = true;
+    GoogleFonts.config.allowRuntimeFetching = false;
 
     // Stability Fix for Android 15: Lock to Portrait to avoid memory crashes on rotation
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
