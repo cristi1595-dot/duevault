@@ -8,7 +8,6 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/vault_screen.dart';
@@ -42,10 +41,6 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-
-    // Disable Google Fonts runtime network fetching to prevent Crashlytics errors
-    // when network is unstable or blocked. Fallback to system fonts works gracefully.
-    GoogleFonts.config.allowRuntimeFetching = false;
 
     // Stability Fix for Android 15: Lock to Portrait to avoid memory crashes on rotation
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
