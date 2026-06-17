@@ -80,3 +80,15 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
+tasks.register<Copy>("copyOutputsToRootBuild") {
+    from(layout.buildDirectory.dir("outputs"))
+    into(rootProject.layout.projectDirectory.dir("../build/app/outputs"))
+    include("**/*.aab", "**/*.apk")
+}
+
+tasks.configureEach {
+    if (name.startsWith("bundle") || name.startsWith("assemble")) {
+        finalizedBy("copyOutputsToRootBuild")
+    }
+}
