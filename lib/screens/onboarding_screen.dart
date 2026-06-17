@@ -30,6 +30,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     with WidgetsBindingObserver {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _didOpenSettings = false;
+  bool _isRequestingPermission = false;
 
   @override
   void initState() {
@@ -52,7 +54,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _checkPermissionsOnResume() async {
-    if (_currentPage == 1) {
+    if (_currentPage == 1 && _didOpenSettings) {
+      _didOpenSettings = false;
       final isGranted = await Permission.notification.isGranted;
       if (isGranted && mounted) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
@@ -105,6 +108,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              setState(() {
+                _didOpenSettings = true;
+              });
               await AppSettings.openAppSettings(type: AppSettingsType.notification);
             },
             style: ElevatedButton.styleFrom(
@@ -122,53 +128,72 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _requestNotificationPermission() async {
-    final status = await Permission.notification.status;
-    
-    if (status.isGranted) {
-      await ref.read(globalNotificationsProvider.notifier).toggle(true);
-      if (mounted) {
-        unawaited(
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-          ),
-        );
-      }
-      return;
-    }
+    if (_isRequestingPermission) return;
+    setState(() {
+      _isRequestingPermission = true;
+    });
 
-    if (status.isPermanentlyDenied) {
-      if (mounted) {
-        await _showAppSettingsDialog();
-      }
-      return;
-    }
-
-    final requestStatus = await Permission.notification.request();
-    if (requestStatus.isGranted) {
-      await ref.read(globalNotificationsProvider.notifier).toggle(true);
-      if (mounted) {
-        unawaited(
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
-          ),
-        );
-      }
-    } else if (requestStatus.isPermanentlyDenied) {
-      if (mounted) {
-        await _showAppSettingsDialog();
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Notifications are highly recommended for bill alerts!',
+    try {
+      final status = await Permission.notification.status;
+      
+      if (status.isGranted) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
+        if (mounted) {
+          unawaited(
+            _pageController.nextPage(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
             ),
-            duration: Duration(seconds: 3),
-          ),
-        );
+          );
+        }
+        return;
+      }
+
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          await _showAppSettingsDialog();
+        }
+        return;
+      }
+
+      PermissionStatus requestStatus;
+      try {
+        requestStatus = await Permission.notification.request();
+      } catch (e) {
+        logger.w('OnboardingScreen: Permission request threw exception: $e');
+        requestStatus = await Permission.notification.status;
+      }
+      if (requestStatus.isGranted) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
+        if (mounted) {
+          unawaited(
+            _pageController.nextPage(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            ),
+          );
+        }
+      } else if (requestStatus.isPermanentlyDenied) {
+        if (mounted) {
+          await _showAppSettingsDialog();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Notifications are highly recommended for bill alerts!',
+              ),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRequestingPermission = false;
+        });
       }
     }
   }
@@ -310,6 +335,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     onContinue: _goToNextPage,
                   ),
                   OnboardingNotificationsPage(
+                    isLoading: _isRequestingPermission,
                     onEnableNotifications: _requestNotificationPermission,
                     onDecideLater: _goToNextPage,
                   ),

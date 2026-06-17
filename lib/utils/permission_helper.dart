@@ -1,53 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../theme/app_theme.dart';
+import 'logger.dart';
 
 class PermissionHelper {
+  static bool _isRequesting = false;
+
   /// Checks and requests camera permission.
   /// Returns true if granted, false otherwise.
   static Future<bool> requestCameraPermission(BuildContext context) async {
-    var status = await Permission.camera.status;
-
-    if (status.isGranted) return true;
-
-    if (status.isPermanentlyDenied) {
-      if (context.mounted) _showSettingsDialog(context, 'Camera');
-      return false;
+    if (_isRequesting) {
+      try {
+        return await Permission.camera.isGranted;
+      } catch (_) {
+        return false;
+      }
     }
+    _isRequesting = true;
 
-    status = await Permission.camera.request();
+    try {
+      var status = await Permission.camera.status;
 
-    if (status.isDenied) {
-      // User refused once, but not permanently
-      return false;
+      if (status.isGranted) return true;
+
+      if (status.isPermanentlyDenied) {
+        if (context.mounted) _showSettingsDialog(context, 'Camera');
+        return false;
+      }
+
+      try {
+        status = await Permission.camera.request();
+      } catch (e) {
+        logger.w('PermissionHelper: Camera request threw exception: $e');
+        status = await Permission.camera.status;
+      }
+
+      if (status.isDenied) {
+        // User refused once, but not permanently
+        return false;
+      }
+
+      if (status.isPermanentlyDenied) {
+        if (context.mounted) _showSettingsDialog(context, 'Camera');
+        return false;
+      }
+
+      return status.isGranted;
+    } finally {
+      _isRequesting = false;
     }
-
-    if (status.isPermanentlyDenied) {
-      if (context.mounted) _showSettingsDialog(context, 'Camera');
-      return false;
-    }
-
-    return status.isGranted;
   }
 
   /// Checks and requests photo/gallery permission.
   static Future<bool> requestGalleryPermission(BuildContext context) async {
-    // For Android 13+, we use photos, for older we use storage
     const permission = Permission.photos;
-
-    var status = await permission.status;
-    if (status.isRestricted || status.isDenied) {
-      status = await permission.request();
+    if (_isRequesting) {
+      try {
+        return await permission.isGranted;
+      } catch (_) {
+        return false;
+      }
     }
+    _isRequesting = true;
 
-    if (status.isGranted) return true;
+    try {
+      // For Android 13+, we use photos, for older we use storage
+      var status = await permission.status;
+      if (status.isRestricted || status.isDenied) {
+        try {
+          status = await permission.request();
+        } catch (e) {
+          logger.w('PermissionHelper: Gallery request threw exception: $e');
+          status = await permission.status;
+        }
+      }
 
-    if (status.isPermanentlyDenied) {
-      if (context.mounted) _showSettingsDialog(context, 'Gallery');
-      return false;
+      if (status.isGranted) return true;
+
+      if (status.isPermanentlyDenied) {
+        if (context.mounted) _showSettingsDialog(context, 'Gallery');
+        return false;
+      }
+
+      return status.isGranted;
+    } finally {
+      _isRequesting = false;
     }
-
-    return status.isGranted;
   }
 
   static void _showSettingsDialog(BuildContext context, String feature) {

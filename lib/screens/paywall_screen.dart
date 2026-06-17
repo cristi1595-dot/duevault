@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../providers/premium_provider.dart';
 import '../theme/app_theme.dart';
@@ -23,7 +24,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: Colors.white,
@@ -184,7 +185,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         // Neon styled Title
                         Text(
                           'DueVault PRO',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 38,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.5,
@@ -204,9 +205,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Get the ultimate organization & security layer',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             fontSize: 15,
                             color: Colors.white70,
                             fontWeight: FontWeight.w400,
@@ -280,9 +281,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     'Unlock PRO',
-                                    style: TextStyle(
+                                    style: GoogleFonts.outfit(
                                       color: Colors.white,
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -296,9 +297,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                       // Restore button
                       TextButton(
                         onPressed: _isLoading ? null : _handleRestorePurchases,
-                        child: const Text(
+                        child: Text(
                           'Restore Purchases',
-                          style: TextStyle(
+                          style: GoogleFonts.outfit(
                             color: Colors.white54,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -356,7 +357,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -365,7 +366,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: GoogleFonts.outfit(
                     color: Colors.grey[400],
                     fontSize: 12.5,
                     height: 1.4,

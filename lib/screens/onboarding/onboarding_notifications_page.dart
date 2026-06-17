@@ -7,11 +7,13 @@ import 'onboarding_ripple_illustration.dart';
 class OnboardingNotificationsPage extends StatelessWidget {
   final VoidCallback onEnableNotifications;
   final VoidCallback onDecideLater;
+  final bool isLoading;
 
   const OnboardingNotificationsPage({
     super.key,
     required this.onEnableNotifications,
     required this.onDecideLater,
+    this.isLoading = false,
   });
 
   @override
@@ -51,7 +53,8 @@ class OnboardingNotificationsPage extends StatelessWidget {
             PrimaryButton(
               label: 'Enable Notifications',
               icon: Icons.notifications_active,
-              onPressed: onEnableNotifications,
+              isLoading: isLoading,
+              onPressed: isLoading ? null : onEnableNotifications,
             ),
             const SizedBox(height: 16),
             TextButton(

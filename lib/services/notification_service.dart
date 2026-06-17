@@ -73,37 +73,91 @@ class NotificationService {
     }
   }
 
-  static Future<bool> requestPermissions() async {
-    // 1. Request Notification Permission (UI)
-    // This works fine for POST_NOTIFICATIONS on Android 13+
-    final status = await Permission.notification.request();
+  static bool _isRequesting = false;
 
-    // 2. Request Exact Alarm Permission (Required for Android 14+)
-    // Senior Fix: Do NOT call .request() on scheduleExactAlarm as it's not a runtime permission
-    // and causes "No requestable permission" error. Instead, we check and can guide to settings.
-    if (status.isGranted) {
-      final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-      if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
-        logger.i(
-          'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
-        );
-        // We don't force open here to avoid jarring UX,
-        // the "Fix Now" button in settings will handle the deep link.
+  static Future<bool> requestPermissions() async {
+    if (_isRequesting) {
+      try {
+        return await Permission.notification.isGranted;
+      } catch (_) {
+        return false;
       }
     }
+    _isRequesting = true;
 
-    // 3. Fallback to plugin-specific request for compatibility
-    final androidImplementation = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (androidImplementation != null) {
-      await androidImplementation.requestNotificationsPermission();
-      // requestExactAlarmsPermission() in the plugin handles the intent correctly
-      await androidImplementation.requestExactAlarmsPermission();
+    try {
+      // 1. Check if permission is already granted to prevent redundant requests
+      final currentStatus = await Permission.notification.status;
+      if (currentStatus.isGranted) {
+        try {
+          final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+          if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+            logger.i(
+              'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
+            );
+          }
+        } catch (e) {
+          logger.w('NotificationService: Error checking exact alarm status: $e');
+        }
+        return true;
+      }
+
+      // 2. Request Notification Permission (UI)
+      PermissionStatus status;
+      try {
+        status = await Permission.notification.request();
+      } catch (e) {
+        logger.w('NotificationService: Permission request threw exception: $e');
+        // Fallback to current status
+        status = await Permission.notification.status;
+      }
+
+      // 3. Request Exact Alarm Permission (Required for Android 14+)
+      if (status.isGranted) {
+        try {
+          final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+          if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+            logger.i(
+              'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
+            );
+          }
+        } catch (e) {
+          logger.w('NotificationService: Error checking exact alarm status: $e');
+        }
+      }
+
+      // 4. Fallback to plugin-specific request for compatibility ONLY if not already granted
+      if (!status.isGranted) {
+        final androidImplementation = _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+        if (androidImplementation != null) {
+          try {
+            await androidImplementation.requestNotificationsPermission();
+          } catch (e) {
+            logger.w('NotificationService: Failed requesting plugin notification permission: $e');
+          }
+          try {
+            await androidImplementation.requestExactAlarmsPermission();
+          } catch (e) {
+            logger.w('NotificationService: Failed requesting plugin exact alarm permission: $e');
+          }
+        }
+      }
+
+      final finalStatus = await Permission.notification.status;
+      return finalStatus.isGranted;
+    } catch (e, stack) {
+      logger.e('NotificationService: Error in requestPermissions', error: e, stackTrace: stack);
+      try {
+        return await Permission.notification.isGranted;
+      } catch (_) {
+        return false;
+      }
+    } finally {
+      _isRequesting = false;
     }
-
-    return status.isGranted;
   }
 
   static Future<void> requestExactAlarmPermission() async {

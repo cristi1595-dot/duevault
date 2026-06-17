@@ -5,8 +5,11 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/notification_service.dart';
 import 'settings_dialogs.dart';
+import '../../utils/logger.dart';
 
 class SettingsPermissionHelper {
+  static bool _isActivating = false;
+
   /// Checks status of required permissions.
   static Future<Map<String, bool>> checkStatus() async {
     final isAndroid = Platform.isAndroid;
@@ -40,54 +43,67 @@ class SettingsPermissionHelper {
     required BuildContext context,
     required Function(Map<String, bool> status) onStatusUpdated,
   }) async {
-    if (!targetState) {
-      await ref.read(globalNotificationsProvider.notifier).toggle(false);
-      final status = await checkStatus();
-      onStatusUpdated(status);
-      return;
-    }
+    if (_isActivating) return;
+    _isActivating = true;
 
-    final isAndroid = Platform.isAndroid;
-
-    bool hasNotification = await Permission.notification.isGranted;
-    bool hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
-
-    // 1. If notifications and exact alarm are already granted, just enable and return
-    if (hasNotification && hasExactAlarm) {
-      await ref.read(globalNotificationsProvider.notifier).toggle(true);
-      final status = await checkStatus();
-      onStatusUpdated(status);
-      return;
-    }
-
-    // 2. Otherwise, direct the user to the missing settings one by one
-    // Step A: Notifications
-    if (!hasNotification) {
-      final requestStatus = await Permission.notification.request();
-      if (requestStatus.isPermanentlyDenied && context.mounted) {
-        await SettingsDialogs.showAppSettingsDialog(context);
+    try {
+      if (!targetState) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(false);
+        final status = await checkStatus();
+        onStatusUpdated(status);
+        return;
       }
-      hasNotification = await Permission.notification.isGranted;
-    }
 
-    // Step B: Exact Alarm permission (Android only)
-    if (hasNotification && isAndroid && !hasExactAlarm) {
-      await NotificationService.requestExactAlarmPermission();
-      await Future.delayed(const Duration(seconds: 1));
-      hasExactAlarm = await Permission.scheduleExactAlarm.isGranted;
-    }
+      final isAndroid = Platform.isAndroid;
 
-    // 3. Final Recheck after returning
-    final status = await checkStatus();
-    onStatusUpdated(status);
+      bool hasNotification = await Permission.notification.isGranted;
+      bool hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
-    final finalNotification = status['notificationsGranted']!;
-    final finalExact = status['exactAlarmGranted']!;
+      // 1. If notifications and exact alarm are already granted, just enable and return
+      if (hasNotification && hasExactAlarm) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
+        final status = await checkStatus();
+        onStatusUpdated(status);
+        return;
+      }
 
-    if (finalNotification && finalExact) {
-      await ref.read(globalNotificationsProvider.notifier).toggle(true);
-      final finalStatus = await checkStatus();
-      onStatusUpdated(finalStatus);
+      // 2. Otherwise, direct the user to the missing settings one by one
+      // Step A: Notifications
+      if (!hasNotification) {
+        PermissionStatus requestStatus;
+        try {
+          requestStatus = await Permission.notification.request();
+        } catch (e) {
+          logger.w('SettingsPermissionHelper: Permission request threw exception: $e');
+          requestStatus = await Permission.notification.status;
+        }
+        if (requestStatus.isPermanentlyDenied && context.mounted) {
+          await SettingsDialogs.showAppSettingsDialog(context);
+        }
+        hasNotification = await Permission.notification.isGranted;
+      }
+
+      // Step B: Exact Alarm permission (Android only)
+      if (hasNotification && isAndroid && !hasExactAlarm) {
+        await NotificationService.requestExactAlarmPermission();
+        await Future.delayed(const Duration(seconds: 1));
+        hasExactAlarm = await Permission.scheduleExactAlarm.isGranted;
+      }
+
+      // 3. Final Recheck after returning
+      final status = await checkStatus();
+      onStatusUpdated(status);
+
+      final finalNotification = status['notificationsGranted']!;
+      final finalExact = status['exactAlarmGranted']!;
+
+      if (finalNotification && finalExact) {
+        await ref.read(globalNotificationsProvider.notifier).toggle(true);
+        final finalStatus = await checkStatus();
+        onStatusUpdated(finalStatus);
+      }
+    } finally {
+      _isActivating = false;
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // --- MASTER COLORS ---
@@ -77,7 +78,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: textPrimary),
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: textPrimary,
@@ -107,34 +108,34 @@ class AppTheme {
         outline: border,
         surfaceContainerLow: background, // M3 Container logic
       ),
-      textTheme: base.textTheme.copyWith(
-        displayLarge: TextStyle(
+      textTheme: GoogleFonts.outfitTextTheme(base.textTheme).copyWith(
+        displayLarge: GoogleFonts.outfit(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: textPrimary,
           letterSpacing: -0.64,
         ),
-        headlineLarge: TextStyle(
+        headlineLarge: GoogleFonts.outfit(
           fontSize: 24,
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.outfit(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: textPrimary,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.outfit(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: textSecondary,
         ),
-        labelSmall: TextStyle(
+        labelSmall: GoogleFonts.outfit(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: textSecondary,
@@ -158,7 +159,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30), // Pill-shaped M3 button
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -211,7 +212,7 @@ class AppTheme {
   }
 
   static TextStyle labelCapsStyle(BuildContext context) {
-    return TextStyle(
+    return GoogleFonts.inter(
       fontSize: 12,
       fontWeight: FontWeight.w600,
       color: getTextSecondary(context),
