@@ -12,6 +12,7 @@ import '../../models/app_config.dart';
 import '../../main.dart';
 import 'storage_reset_dialogs.dart';
 import '../../providers/premium_provider.dart';
+import '../../services/notification_service.dart';
 
 /// Shows the Storage & Reset bottom sheet allowing cache clearing, data wiping,
 /// and complete account deletion.
@@ -257,13 +258,16 @@ class StorageResetSheet extends ConsumerWidget {
         // 4. Delete registration
         await authService.deleteAccount();
 
-        // 5. Sign out
+        // 5. Cancel all notifications
+        await NotificationService.cancelAllNotifications();
+
+        // 6. Sign out
         await authService.signOut();
 
-        // 6. Set guest state
+        // 7. Set guest state
         guestProviderNotifier.state = true;
 
-        // 7. Reset Isar config
+        // 8. Reset Isar config
         await isar.writeTxn(() async {
           final config = AppConfig()..isGuest = true;
           await isar.appConfigs.put(config);

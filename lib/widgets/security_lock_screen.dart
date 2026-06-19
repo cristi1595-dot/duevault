@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/security_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'duevault_logo.dart';
 // Force re-analysis
@@ -170,6 +171,7 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen>
                     // Add a logout option for safety
                     TextButton(
                       onPressed: () async {
+                        await NotificationService.cancelAllNotifications();
                         await ref.read(authServiceProvider).signOut();
                         // Reset local states
                         ref.read(isGuestProvider.notifier).state = false;

@@ -296,4 +296,11 @@ class NotificationService {
     await _notificationsPlugin.cancel(id: billId + _finalReminderOffset);
     logger.i('Cancelled all reminders for bill ID: $billId');
   }
+
+  /// Cancel ALL scheduled notifications across all accounts.
+  /// Must be called on sign-out and before rescheduling for a new account.
+  static Future<void> cancelAllNotifications() async {
+    await _notificationsPlugin.cancelAll();
+    logger.i('Cancelled ALL scheduled notifications (account switch).');
+  }
 }

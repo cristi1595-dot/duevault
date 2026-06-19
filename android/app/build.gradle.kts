@@ -19,6 +19,12 @@ android {
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -79,7 +85,9 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.activity:activity-ktx:1.10.1")
 }
+
 
 tasks.register<Copy>("copyOutputsToRootBuild") {
     from(layout.buildDirectory.dir("outputs"))

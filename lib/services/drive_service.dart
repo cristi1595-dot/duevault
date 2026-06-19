@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:crypto/crypto.dart';
 import '../models/user.dart';
 

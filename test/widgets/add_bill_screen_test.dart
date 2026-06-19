@@ -9,7 +9,7 @@ import 'package:duevault_app/providers/database_provider.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:duevault_app/screens/add_bill_screen.dart';
 import 'package:duevault_app/widgets/primary_button.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 class MockIsar extends Mock implements Isar {}
 

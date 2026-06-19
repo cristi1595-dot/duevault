@@ -7,7 +7,7 @@ import 'package:duevault_app/models/vault_item.dart';
 import 'package:duevault_app/models/app_config.dart';
 import 'package:duevault_app/providers/database_provider.dart';
 import 'package:duevault_app/models/user.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:duevault_app/services/migration_service.dart';
 
 class MockVaultRepository extends Mock implements VaultRepository {}

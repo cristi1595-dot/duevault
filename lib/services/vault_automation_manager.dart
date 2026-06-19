@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import '../models/vault_item.dart';
 import '../utils/logger.dart';
 import '../utils/date_helper.dart';

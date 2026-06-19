@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'database_provider.dart';
 import '../models/app_config.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'auth_provider.dart';
 import 'premium_provider.dart';
 

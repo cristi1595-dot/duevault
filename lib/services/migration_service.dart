@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 import '../models/app_config.dart';
 import '../models/vault_item.dart';

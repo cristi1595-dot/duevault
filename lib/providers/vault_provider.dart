@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:path/path.dart' as p;
 import '../services/migration_service.dart';
 import '../models/vault_item.dart';
@@ -13,6 +13,7 @@ import '../providers/notification_provider.dart';
 import '../services/auto_sync_service.dart';
 import '../services/firebase_sync_service.dart';
 import '../services/vault_notification_helper.dart';
+import '../services/notification_service.dart';
 import '../services/vault_data_manager.dart';
 
 final vaultRepositoryProvider = Provider<VaultRepository>((ref) {
@@ -172,6 +173,10 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
       // Final fetch to ensure state is perfectly in sync with DB changes above
       state = await _repository.getItems(ownerId);
+
+      // Cancel ALL notifications before rescheduling for the current account.
+      // This prevents notification leakage when switching between Google accounts.
+      await NotificationService.cancelAllNotifications();
 
       // Reschedule all notifications to guarantee system alarms are strictly synchronized with the database
       unawaited(rescheduleAllNotifications());

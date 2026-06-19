@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:duevault_app/models/vault_item.dart';
 

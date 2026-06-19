@@ -9,6 +9,7 @@ import '../../providers/security_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../main.dart';
 import '../../services/analytics_service.dart';
+import '../../services/notification_service.dart';
 import 'settings_dialogs.dart';
 
 class CompactProfileCard extends ConsumerWidget {
@@ -155,7 +156,10 @@ class CompactProfileCard extends ConsumerWidget {
                         await isar.appConfigs.put(config);
                       });
 
-                      // 3. Perform logout
+                      // 3. Cancel all notifications from the current account
+                      await NotificationService.cancelAllNotifications();
+
+                      // 4. Perform logout
                       await ref.read(authServiceProvider).signOut();
                       ref.read(isGuestProvider.notifier).state = true;
 
