@@ -120,7 +120,7 @@ class OnboardingSyncPage extends ConsumerWidget {
                     'PRO',
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.bold,
                       color: AppTheme.safeGreen,
                       letterSpacing: 0.5,
                     ),

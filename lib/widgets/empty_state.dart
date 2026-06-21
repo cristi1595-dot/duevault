@@ -45,7 +45,7 @@ class EmptyState extends StatelessWidget {
             Text(
               'Your vault is empty',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.bold,
                     fontSize: 20,
                     letterSpacing: -0.2,
                     color: Theme.of(context).textTheme.bodyLarge?.color,

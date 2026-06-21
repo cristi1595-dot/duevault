@@ -305,7 +305,7 @@ class FinancialBentoCard extends ConsumerWidget {
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 10.8,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -352,7 +352,7 @@ class FinancialBentoCard extends ConsumerWidget {
                           currency.formatAmount(totalDue7Days),
                           style: TextStyle(
                             color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.bold,
                             fontSize: 32.0,
                             letterSpacing: -0.5,
                           ),
@@ -444,7 +444,7 @@ class FinancialBentoCard extends ConsumerWidget {
                           '$totalDocs7Days',
                           style: TextStyle(
                             color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.bold,
                             fontSize: 32.0,
                             letterSpacing: -0.5,
                           ),

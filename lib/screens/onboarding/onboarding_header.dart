@@ -17,7 +17,7 @@ class OnboardingHeader extends StatelessWidget {
             Text(
               'Due',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                     color: Colors.white,
                   ),
@@ -25,7 +25,7 @@ class OnboardingHeader extends StatelessWidget {
             Text(
               'Vault',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                     color: AppTheme.safeGreen,
                   ),

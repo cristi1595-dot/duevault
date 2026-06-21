@@ -171,7 +171,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       currency.formatAmount(currentItem.amount!),
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.bold,
                         letterSpacing: -1.0,
                       ),
                     ),

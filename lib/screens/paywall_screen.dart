@@ -187,7 +187,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                           'DueVault PRO',
                           style: GoogleFonts.outfit(
                             fontSize: 38,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                             color: Colors.white,
                             shadows: [

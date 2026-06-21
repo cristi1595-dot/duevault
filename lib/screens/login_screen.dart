@@ -65,7 +65,7 @@ class LoginScreen extends ConsumerWidget {
                       Text(
                         'Due',
                         style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
                               color: Colors.white,
                             ),
@@ -73,7 +73,7 @@ class LoginScreen extends ConsumerWidget {
                       Text(
                         'Vault',
                         style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
                               color: AppTheme.safeGreen,
                             ),
@@ -369,7 +369,7 @@ class LoginScreen extends ConsumerWidget {
                     'PRO',
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.bold,
                       color: AppTheme.safeGreen,
                       letterSpacing: 0.5,
                     ),

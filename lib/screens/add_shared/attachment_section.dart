@@ -240,7 +240,7 @@ class AttachmentSection extends ConsumerWidget {
                           'PRO',
                           style: TextStyle(
                             fontSize: 8,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.bold,
                             color: AppTheme.primaryAction,
                           ),
                         ),
