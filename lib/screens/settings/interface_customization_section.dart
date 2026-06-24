@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/analytics_service.dart';
-import '../../theme/app_theme.dart';
 import 'settings_list_tile.dart';
 
 class InterfaceCustomizationSection extends ConsumerWidget {
@@ -20,24 +19,55 @@ class InterfaceCustomizationSection extends ConsumerWidget {
         SettingsListTile(
           icon: themeMode == ThemeMode.dark
               ? Icons.dark_mode_outlined
-              : Icons.light_mode_outlined,
-          title: 'Light & Dark Mode',
-          trailing: SizedBox(
-            height: 24,
-            child: Switch(
-              value: themeMode == ThemeMode.dark,
-              onChanged: (v) {
-                ref.read(themeProvider.notifier).toggleTheme();
+              : themeMode == ThemeMode.light
+                  ? Icons.light_mode_outlined
+                  : Icons.settings_suggest_outlined,
+          title: 'App Theme',
+          trailing: DropdownButton<ThemeMode>(
+            value: themeMode,
+            underline: const SizedBox(),
+            icon: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              size: 16,
+            ),
+            onChanged: (ThemeMode? newValue) {
+              if (newValue != null) {
+                ref.read(themeProvider.notifier).setTheme(newValue);
                 ref.read(analyticsServiceProvider).logSettingsChanged(
                       'theme_mode',
-                      themeMode == ThemeMode.dark ? 'light' : 'dark',
+                      newValue.name,
                     );
-              },
-              activeThumbColor: AppTheme.getSettingsAccent(context),
-              activeTrackColor: AppTheme.getSettingsAccent(context).withValues(
-                alpha: 0.3,
-              ),
-            ),
+              }
+            },
+            items: ThemeMode.values.map<DropdownMenuItem<ThemeMode>>((
+              ThemeMode value,
+            ) {
+              String label;
+              switch (value) {
+                case ThemeMode.light:
+                  label = 'Light';
+                  break;
+                case ThemeMode.dark:
+                  label = 'Dark';
+                  break;
+                case ThemeMode.system:
+                  label = 'System';
+                  break;
+              }
+              return DropdownMenuItem<ThemeMode>(
+                value: value,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            }).toList(),
+            dropdownColor: Theme.of(context).cardTheme.color,
           ),
         ),
       ],

@@ -12,9 +12,13 @@ import 'settings/settings_section_header.dart';
 import 'settings/settings_version_footer.dart';
 import 'settings/smart_alerts_section.dart';
 import 'settings/storage_integrity_section.dart';
+import 'settings/settings_list_tile.dart';
+import '../services/app_review_service.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/sync_provider.dart';
+import '../providers/vault_provider.dart';
+import '../main.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -181,6 +185,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   ),
                 );
               },
+            ),
+
+            // 6. Support & Feedback Section
+            const SettingsSectionHeader(title: 'SUPPORT & FEEDBACK'),
+            const SizedBox(height: 5),
+            _buildCategoryCard(
+              context,
+              child: Column(
+                children: [
+                  SettingsListTile(
+                    icon: Icons.star_rate_rounded,
+                    title: 'Rate DueVault',
+                    subtitle: 'Love the app? Let us know or suggest updates',
+                    onTap: () {
+                      ref.read(appReviewServiceProvider).showRatingDialog(context);
+                    },
+                  ),
+                  SettingsListTile(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Replay Tutorial',
+                    subtitle: 'Take a quick guided tour of key features',
+                    onTap: () async {
+                      ref.read(showWalkthroughProvider.notifier).state = true;
+                      
+                      final repository = ref.read(vaultRepositoryProvider);
+                      final config = await repository.getConfig();
+                      config.hasSeenWalkthrough = false;
+                      await repository.updateConfig(config);
+
+                      if (context.mounted) {
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
 
             if (_isDevModeEnabled) ...[

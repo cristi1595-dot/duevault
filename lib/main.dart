@@ -35,6 +35,7 @@ import 'providers/sync_provider.dart';
 import 'providers/vault_provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'providers/premium_provider.dart';
+import 'widgets/walkthrough_overlay.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -320,6 +321,8 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
   }
 }
 
+final showWalkthroughProvider = StateProvider<bool>((ref) => false);
+
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
 
@@ -331,12 +334,27 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   final List<Widget> _screens = const [HomeScreen(), VaultScreen()];
 
   @override
+  void initState() {
+    super.initState();
+    _initWalkthrough();
+  }
+
+  Future<void> _initWalkthrough() async {
+    try {
+      final repository = ref.read(vaultRepositoryProvider);
+      final config = await repository.getConfig();
+      ref.read(showWalkthroughProvider.notifier).state = !config.hasSeenWalkthrough;
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(bottomNavIndexProvider);
     final isVaultEmpty = ref.watch(vaultProvider).isEmpty;
     final isNavBarVisible = ref.watch(navBarVisibleProvider);
+    final showWalkthrough = ref.watch(showWalkthroughProvider);
 
-    return Scaffold(
+    final mainScaffold = Scaffold(
       extendBody: true,
       body: IndexedStack(index: currentIndex, children: _screens),
       bottomNavigationBar: AnimatedSlide(
@@ -400,6 +418,34 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
           ),
         ),
       ),
+    );
+
+    if (!showWalkthrough) {
+      return mainScaffold;
+    }
+
+    return Stack(
+      children: [
+        mainScaffold,
+        Positioned.fill(
+          child: WalkthroughOverlay(
+            onFinished: () async {
+              ref.read(showWalkthroughProvider.notifier).state = false;
+              final repository = ref.read(vaultRepositoryProvider);
+              final config = await repository.getConfig();
+              config.hasSeenWalkthrough = true;
+              await repository.updateConfig(config);
+            },
+            onSkipped: () async {
+              ref.read(showWalkthroughProvider.notifier).state = false;
+              final repository = ref.read(vaultRepositoryProvider);
+              final config = await repository.getConfig();
+              config.hasSeenWalkthrough = true;
+              await repository.updateConfig(config);
+            },
+          ),
+        ),
+      ],
     );
   }
 

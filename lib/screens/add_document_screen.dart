@@ -19,6 +19,7 @@ import 'add_shared/attachment_picker_helper.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
+import '../services/app_review_service.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -273,8 +274,14 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       await ref.read(vaultProvider.notifier).addItem(item);
       await ref.read(analyticsServiceProvider).logItemAdded('Document');
       if (mounted) {
+        final rootContext = Navigator.of(context).context;
         // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (rootContext.mounted) {
+            ref.read(appReviewServiceProvider).incrementActionCounter(ref, rootContext);
+          }
+        });
       }
     } catch (e) {
       setState(() => _isSaving = false);

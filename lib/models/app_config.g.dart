@@ -58,74 +58,99 @@ const AppConfigSchema = CollectionSchema(
       name: r'hasAcceptedPrivacyPolicy',
       type: IsarType.bool,
     ),
-    r'hasSeenDemo': PropertySchema(
+    r'hasRatedApp': PropertySchema(
       id: 9,
+      name: r'hasRatedApp',
+      type: IsarType.bool,
+    ),
+    r'hasSeenDemo': PropertySchema(
+      id: 10,
       name: r'hasSeenDemo',
       type: IsarType.bool,
     ),
     r'hasSeenOnboarding': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'hasSeenOnboarding',
       type: IsarType.bool,
     ),
+    r'hasSeenWalkthrough': PropertySchema(
+      id: 12,
+      name: r'hasSeenWalkthrough',
+      type: IsarType.bool,
+    ),
     r'isDarkMode': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'isDarkMode',
       type: IsarType.bool,
     ),
-    r'isGuest': PropertySchema(id: 12, name: r'isGuest', type: IsarType.bool),
+    r'isGuest': PropertySchema(id: 14, name: r'isGuest', type: IsarType.bool),
     r'isSecurityEnabled': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'isSecurityEnabled',
       type: IsarType.bool,
     ),
     r'lastCloudSync': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'lastCloudSync',
       type: IsarType.dateTime,
     ),
     r'lastLocalChange': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'lastLocalChange',
       type: IsarType.dateTime,
     ),
+    r'lastPromptedDate': PropertySchema(
+      id: 18,
+      name: r'lastPromptedDate',
+      type: IsarType.dateTime,
+    ),
     r'lastSyncCheck': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'lastSyncCheck',
       type: IsarType.dateTime,
     ),
     r'localDatabaseChecksum': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'localDatabaseChecksum',
       type: IsarType.string,
     ),
     r'lockOnBackground': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'lockOnBackground',
       type: IsarType.bool,
     ),
     r'needsBackup': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'needsBackup',
       type: IsarType.bool,
     ),
     r'notificationHour': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'notificationHour',
       type: IsarType.long,
     ),
     r'notificationMinute': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'notificationMinute',
       type: IsarType.long,
     ),
+    r'successfulActionsCount': PropertySchema(
+      id: 25,
+      name: r'successfulActionsCount',
+      type: IsarType.long,
+    ),
     r'syncOnWifiOnly': PropertySchema(
-      id: 22,
+      id: 26,
       name: r'syncOnWifiOnly',
       type: IsarType.bool,
     ),
+    r'themeModeString': PropertySchema(
+      id: 27,
+      name: r'themeModeString',
+      type: IsarType.string,
+    ),
     r'threeDayAlertEnabled': PropertySchema(
-      id: 23,
+      id: 28,
       name: r'threeDayAlertEnabled',
       type: IsarType.bool,
     ),
@@ -159,6 +184,12 @@ int _appConfigEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.themeModeString;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -177,21 +208,26 @@ void _appConfigSerialize(
   writer.writeBool(offsets[6], object.globalNotificationsEnabled);
   writer.writeBool(offsets[7], object.guestDataMigrated);
   writer.writeBool(offsets[8], object.hasAcceptedPrivacyPolicy);
-  writer.writeBool(offsets[9], object.hasSeenDemo);
-  writer.writeBool(offsets[10], object.hasSeenOnboarding);
-  writer.writeBool(offsets[11], object.isDarkMode);
-  writer.writeBool(offsets[12], object.isGuest);
-  writer.writeBool(offsets[13], object.isSecurityEnabled);
-  writer.writeDateTime(offsets[14], object.lastCloudSync);
-  writer.writeDateTime(offsets[15], object.lastLocalChange);
-  writer.writeDateTime(offsets[16], object.lastSyncCheck);
-  writer.writeString(offsets[17], object.localDatabaseChecksum);
-  writer.writeBool(offsets[18], object.lockOnBackground);
-  writer.writeBool(offsets[19], object.needsBackup);
-  writer.writeLong(offsets[20], object.notificationHour);
-  writer.writeLong(offsets[21], object.notificationMinute);
-  writer.writeBool(offsets[22], object.syncOnWifiOnly);
-  writer.writeBool(offsets[23], object.threeDayAlertEnabled);
+  writer.writeBool(offsets[9], object.hasRatedApp);
+  writer.writeBool(offsets[10], object.hasSeenDemo);
+  writer.writeBool(offsets[11], object.hasSeenOnboarding);
+  writer.writeBool(offsets[12], object.hasSeenWalkthrough);
+  writer.writeBool(offsets[13], object.isDarkMode);
+  writer.writeBool(offsets[14], object.isGuest);
+  writer.writeBool(offsets[15], object.isSecurityEnabled);
+  writer.writeDateTime(offsets[16], object.lastCloudSync);
+  writer.writeDateTime(offsets[17], object.lastLocalChange);
+  writer.writeDateTime(offsets[18], object.lastPromptedDate);
+  writer.writeDateTime(offsets[19], object.lastSyncCheck);
+  writer.writeString(offsets[20], object.localDatabaseChecksum);
+  writer.writeBool(offsets[21], object.lockOnBackground);
+  writer.writeBool(offsets[22], object.needsBackup);
+  writer.writeLong(offsets[23], object.notificationHour);
+  writer.writeLong(offsets[24], object.notificationMinute);
+  writer.writeLong(offsets[25], object.successfulActionsCount);
+  writer.writeBool(offsets[26], object.syncOnWifiOnly);
+  writer.writeString(offsets[27], object.themeModeString);
+  writer.writeBool(offsets[28], object.threeDayAlertEnabled);
 }
 
 AppConfig _appConfigDeserialize(
@@ -210,22 +246,27 @@ AppConfig _appConfigDeserialize(
   object.globalNotificationsEnabled = reader.readBool(offsets[6]);
   object.guestDataMigrated = reader.readBool(offsets[7]);
   object.hasAcceptedPrivacyPolicy = reader.readBool(offsets[8]);
-  object.hasSeenDemo = reader.readBool(offsets[9]);
-  object.hasSeenOnboarding = reader.readBool(offsets[10]);
+  object.hasRatedApp = reader.readBool(offsets[9]);
+  object.hasSeenDemo = reader.readBool(offsets[10]);
+  object.hasSeenOnboarding = reader.readBool(offsets[11]);
+  object.hasSeenWalkthrough = reader.readBool(offsets[12]);
   object.id = id;
-  object.isDarkMode = reader.readBool(offsets[11]);
-  object.isGuest = reader.readBool(offsets[12]);
-  object.isSecurityEnabled = reader.readBool(offsets[13]);
-  object.lastCloudSync = reader.readDateTimeOrNull(offsets[14]);
-  object.lastLocalChange = reader.readDateTimeOrNull(offsets[15]);
-  object.lastSyncCheck = reader.readDateTimeOrNull(offsets[16]);
-  object.localDatabaseChecksum = reader.readStringOrNull(offsets[17]);
-  object.lockOnBackground = reader.readBool(offsets[18]);
-  object.needsBackup = reader.readBool(offsets[19]);
-  object.notificationHour = reader.readLong(offsets[20]);
-  object.notificationMinute = reader.readLong(offsets[21]);
-  object.syncOnWifiOnly = reader.readBool(offsets[22]);
-  object.threeDayAlertEnabled = reader.readBool(offsets[23]);
+  object.isDarkMode = reader.readBool(offsets[13]);
+  object.isGuest = reader.readBool(offsets[14]);
+  object.isSecurityEnabled = reader.readBool(offsets[15]);
+  object.lastCloudSync = reader.readDateTimeOrNull(offsets[16]);
+  object.lastLocalChange = reader.readDateTimeOrNull(offsets[17]);
+  object.lastPromptedDate = reader.readDateTimeOrNull(offsets[18]);
+  object.lastSyncCheck = reader.readDateTimeOrNull(offsets[19]);
+  object.localDatabaseChecksum = reader.readStringOrNull(offsets[20]);
+  object.lockOnBackground = reader.readBool(offsets[21]);
+  object.needsBackup = reader.readBool(offsets[22]);
+  object.notificationHour = reader.readLong(offsets[23]);
+  object.notificationMinute = reader.readLong(offsets[24]);
+  object.successfulActionsCount = reader.readLong(offsets[25]);
+  object.syncOnWifiOnly = reader.readBool(offsets[26]);
+  object.themeModeString = reader.readStringOrNull(offsets[27]);
+  object.threeDayAlertEnabled = reader.readBool(offsets[28]);
   return object;
 }
 
@@ -265,24 +306,34 @@ P _appConfigDeserializeProp<P>(
     case 13:
       return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 18:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 19:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 20:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 22:
       return (reader.readBool(offset)) as P;
     case 23:
+      return (reader.readLong(offset)) as P;
+    case 24:
+      return (reader.readLong(offset)) as P;
+    case 25:
+      return (reader.readLong(offset)) as P;
+    case 26:
+      return (reader.readBool(offset)) as P;
+    case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -751,6 +802,16 @@ extension AppConfigQueryFilter
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition> hasRatedAppEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'hasRatedApp', value: value),
+      );
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition> hasSeenDemoEqualTo(
     bool value,
   ) {
@@ -766,6 +827,15 @@ extension AppConfigQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'hasSeenOnboarding', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  hasSeenWalkthroughEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'hasSeenWalkthrough', value: value),
       );
     });
   }
@@ -995,6 +1065,79 @@ extension AppConfigQueryFilter
       return query.addFilterCondition(
         FilterCondition.between(
           property: r'lastLocalChange',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'lastPromptedDate'),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'lastPromptedDate'),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastPromptedDate', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastPromptedDate',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastPromptedDate',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  lastPromptedDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastPromptedDate',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -1369,10 +1512,227 @@ extension AppConfigQueryFilter
   }
 
   QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  successfulActionsCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'successfulActionsCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  successfulActionsCountGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'successfulActionsCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  successfulActionsCountLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'successfulActionsCount',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  successfulActionsCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'successfulActionsCount',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
   syncOnWifiOnlyEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'syncOnWifiOnly', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'themeModeString'),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'themeModeString'),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'themeModeString',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'themeModeString',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'themeModeString',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'themeModeString', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterFilterCondition>
+  themeModeStringIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'themeModeString', value: ''),
       );
     });
   }
@@ -1513,6 +1873,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByHasRatedApp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasRatedApp', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByHasRatedAppDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasRatedApp', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByHasSeenDemo() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasSeenDemo', Sort.asc);
@@ -1535,6 +1907,19 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
   sortByHasSeenOnboardingDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasSeenOnboarding', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByHasSeenWalkthrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasSeenWalkthrough', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  sortByHasSeenWalkthroughDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasSeenWalkthrough', Sort.desc);
     });
   }
 
@@ -1596,6 +1981,19 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByLastLocalChangeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLocalChange', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByLastPromptedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPromptedDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  sortByLastPromptedDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPromptedDate', Sort.desc);
     });
   }
 
@@ -1676,6 +2074,20 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  sortBySuccessfulActionsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'successfulActionsCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  sortBySuccessfulActionsCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'successfulActionsCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortBySyncOnWifiOnly() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnWifiOnly', Sort.asc);
@@ -1685,6 +2097,18 @@ extension AppConfigQuerySortBy on QueryBuilder<AppConfig, AppConfig, QSortBy> {
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortBySyncOnWifiOnlyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnWifiOnly', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByThemeModeString() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeModeString', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> sortByThemeModeStringDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeModeString', Sort.desc);
     });
   }
 
@@ -1821,6 +2245,18 @@ extension AppConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByHasRatedApp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasRatedApp', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByHasRatedAppDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasRatedApp', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByHasSeenDemo() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasSeenDemo', Sort.asc);
@@ -1843,6 +2279,19 @@ extension AppConfigQuerySortThenBy
   thenByHasSeenOnboardingDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'hasSeenOnboarding', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByHasSeenWalkthrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasSeenWalkthrough', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  thenByHasSeenWalkthroughDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasSeenWalkthrough', Sort.desc);
     });
   }
 
@@ -1916,6 +2365,19 @@ extension AppConfigQuerySortThenBy
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByLastLocalChangeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastLocalChange', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByLastPromptedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPromptedDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  thenByLastPromptedDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPromptedDate', Sort.desc);
     });
   }
 
@@ -1996,6 +2458,20 @@ extension AppConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  thenBySuccessfulActionsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'successfulActionsCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy>
+  thenBySuccessfulActionsCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'successfulActionsCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenBySyncOnWifiOnly() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnWifiOnly', Sort.asc);
@@ -2005,6 +2481,18 @@ extension AppConfigQuerySortThenBy
   QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenBySyncOnWifiOnlyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnWifiOnly', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByThemeModeString() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeModeString', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QAfterSortBy> thenByThemeModeStringDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeModeString', Sort.desc);
     });
   }
 
@@ -2084,6 +2572,12 @@ extension AppConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByHasRatedApp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasRatedApp');
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByHasSeenDemo() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'hasSeenDemo');
@@ -2093,6 +2587,12 @@ extension AppConfigQueryWhereDistinct
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByHasSeenOnboarding() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'hasSeenOnboarding');
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByHasSeenWalkthrough() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasSeenWalkthrough');
     });
   }
 
@@ -2123,6 +2623,12 @@ extension AppConfigQueryWhereDistinct
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByLastLocalChange() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastLocalChange');
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByLastPromptedDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastPromptedDate');
     });
   }
 
@@ -2166,9 +2672,27 @@ extension AppConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppConfig, AppConfig, QDistinct>
+  distinctBySuccessfulActionsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'successfulActionsCount');
+    });
+  }
+
   QueryBuilder<AppConfig, AppConfig, QDistinct> distinctBySyncOnWifiOnly() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncOnWifiOnly');
+    });
+  }
+
+  QueryBuilder<AppConfig, AppConfig, QDistinct> distinctByThemeModeString({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'themeModeString',
+        caseSensitive: caseSensitive,
+      );
     });
   }
 
@@ -2245,6 +2769,12 @@ extension AppConfigQueryProperty
     });
   }
 
+  QueryBuilder<AppConfig, bool, QQueryOperations> hasRatedAppProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasRatedApp');
+    });
+  }
+
   QueryBuilder<AppConfig, bool, QQueryOperations> hasSeenDemoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hasSeenDemo');
@@ -2254,6 +2784,12 @@ extension AppConfigQueryProperty
   QueryBuilder<AppConfig, bool, QQueryOperations> hasSeenOnboardingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hasSeenOnboarding');
+    });
+  }
+
+  QueryBuilder<AppConfig, bool, QQueryOperations> hasSeenWalkthroughProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasSeenWalkthrough');
     });
   }
 
@@ -2285,6 +2821,13 @@ extension AppConfigQueryProperty
   lastLocalChangeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastLocalChange');
+    });
+  }
+
+  QueryBuilder<AppConfig, DateTime?, QQueryOperations>
+  lastPromptedDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastPromptedDate');
     });
   }
 
@@ -2325,9 +2868,22 @@ extension AppConfigQueryProperty
     });
   }
 
+  QueryBuilder<AppConfig, int, QQueryOperations>
+  successfulActionsCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'successfulActionsCount');
+    });
+  }
+
   QueryBuilder<AppConfig, bool, QQueryOperations> syncOnWifiOnlyProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'syncOnWifiOnly');
+    });
+  }
+
+  QueryBuilder<AppConfig, String?, QQueryOperations> themeModeStringProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'themeModeString');
     });
   }
 

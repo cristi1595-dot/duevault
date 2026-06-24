@@ -24,6 +24,7 @@ import 'add_bill/bill_category_selector.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
+import '../services/app_review_service.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -280,8 +281,14 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       await ref.read(vaultProvider.notifier).addItem(item);
       await ref.read(analyticsServiceProvider).logItemAdded(item.itemType ?? 'Bill');
       if (mounted) {
+        final rootContext = Navigator.of(context).context;
         // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (rootContext.mounted) {
+            ref.read(appReviewServiceProvider).incrementActionCounter(ref, rootContext);
+          }
+        });
       }
     } catch (e) {
       setState(() => _isSaving = false);

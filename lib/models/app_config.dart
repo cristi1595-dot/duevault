@@ -30,4 +30,10 @@ class AppConfig {
   String? localDatabaseChecksum; // For efficient sync
   bool needsBackup = false; // Flag for interrupted backups
   bool guestDataMigrated = false; // Migration only happens once
+  
+  bool hasRatedApp = false;
+  int successfulActionsCount = 0;
+  DateTime? lastPromptedDate;
+  String? themeModeString;
+  bool hasSeenWalkthrough = false;
 }
