@@ -43,6 +43,8 @@ void callbackDispatcher() {
           .recurrenceEqualTo('None')
           .and()
           .isPaidEqualTo(true)
+          .and()
+          .isDeletedEqualTo(false)
           .findAll();
 
       final List<VaultItem> newInstances = [];

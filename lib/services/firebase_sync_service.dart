@@ -102,12 +102,8 @@ class FirebaseSyncService {
     // Mark as synced and clean up deleted items
     await isar.writeTxn(() async {
       for (var item in dirtyItems) {
-        if (item.isDeleted) {
-          await isar.vaultItems.delete(item.id);
-        } else {
-          item.wasSynced = true;
-          await isar.vaultItems.put(item);
-        }
+        item.wasSynced = true;
+        await isar.vaultItems.put(item);
       }
     });
 
@@ -149,7 +145,10 @@ class FirebaseSyncService {
           // Conflict Resolution: Only update if remote is newer
           if (remoteItem.lastModified.isAfter(localItem.lastModified)) {
             if (remoteItem.isDeleted) {
-              await isar.vaultItems.delete(localItem.id);
+              localItem.isDeleted = true;
+              localItem.wasSynced = true;
+              localItem.lastModified = remoteItem.lastModified;
+              await isar.vaultItems.put(localItem);
             } else {
               // Merge remote into local (preserving local ID)
               remoteItem.id = localItem.id;
