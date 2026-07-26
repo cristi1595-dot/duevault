@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'database_provider.dart';
 import '../models/app_config.dart';
 import '../services/notification_service.dart';
@@ -97,6 +99,48 @@ class GlobalNotificationsNotifier extends StateNotifier<bool> {
     // Request permissions when enabling
     if (enabled) {
       await NotificationService.requestPermissions();
+    }
+
+    await _ref.read(notificationHealthProvider.notifier).checkHealth();
+  }
+}
+
+/// Status enum for notification system health check
+enum NotificationHealthStatus {
+  healthy,
+  permissionRevoked,
+  disabledByUser,
+}
+
+/// Provider to check if OS system permissions match user notification intent
+final notificationHealthProvider =
+    StateNotifierProvider<NotificationHealthNotifier, NotificationHealthStatus>((ref) {
+  return NotificationHealthNotifier(ref);
+});
+
+class NotificationHealthNotifier extends StateNotifier<NotificationHealthStatus> {
+  final Ref _ref;
+
+  NotificationHealthNotifier(this._ref) : super(NotificationHealthStatus.healthy) {
+    checkHealth();
+  }
+
+  Future<void> checkHealth() async {
+    final globalEnabled = _ref.read(globalNotificationsProvider);
+    if (!globalEnabled) {
+      state = NotificationHealthStatus.disabledByUser;
+      return;
+    }
+
+    final isAndroid = Platform.isAndroid;
+    final bool notificationsGranted = await Permission.notification.isGranted;
+    final bool exactAlarmGranted =
+        !isAndroid || await Permission.scheduleExactAlarm.isGranted;
+
+    if (!notificationsGranted || !exactAlarmGranted) {
+      state = NotificationHealthStatus.permissionRevoked;
+    } else {
+      state = NotificationHealthStatus.healthy;
     }
   }
 }

@@ -25,6 +25,7 @@ class OnboardingTutorialPage extends StatelessWidget {
             Image.asset(
               'assets/images/dashboard_tutorial.png',
               height: 520,
+              cacheHeight: 1040,
               width: double.infinity,
               fit: BoxFit.contain,
             ),

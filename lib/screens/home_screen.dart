@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/notification_provider.dart';
+import '../widgets/notification_health_banner.dart';
 import 'home/home_header.dart';
 import 'home/financial_bento_card.dart';
 import 'home/home_upcoming_list.dart';
@@ -12,13 +14,35 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Initial health check on screen load
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(notificationHealthProvider.notifier).checkHealth();
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-check health when returning to app from settings or background
+      ref.read(notificationHealthProvider.notifier).checkHealth();
+    }
   }
 
   @override
@@ -43,6 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           children: [
             const HomeHeader(),
+            const NotificationHealthBanner(),
             const FinancialBentoCard(),
             Expanded(
               child: NotificationListener<ScrollNotification>(
@@ -69,4 +94,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+
 

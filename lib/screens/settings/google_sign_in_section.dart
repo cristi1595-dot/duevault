@@ -277,6 +277,7 @@ class GoogleSignInSection extends ConsumerWidget {
                   Image.network(
                     'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
                     height: 18,
+                    cacheHeight: 36,
                     errorBuilder: (ctx, err, st) => Icon(
                       Icons.account_circle_outlined,
                       color: Theme.of(context).textTheme.bodyLarge?.color,

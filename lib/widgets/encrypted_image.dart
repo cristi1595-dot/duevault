@@ -59,13 +59,25 @@ class _EncryptedImageState extends State<EncryptedImage> {
               const Center(child: Icon(Icons.error_outline));
         }
 
+        int? cWidth = widget.cacheWidth;
+        int? cHeight = widget.cacheHeight;
+        if (cWidth == null && cHeight == null) {
+          if (widget.width != null && widget.width!.isFinite) {
+            cWidth = (widget.width! * 2).toInt();
+          } else if (widget.height != null && widget.height!.isFinite) {
+            cHeight = (widget.height! * 2).toInt();
+          } else {
+            cWidth = 1280; // Downsample fallback to prevent uncompressed 4K RAM spikes
+          }
+        }
+
         return Image.memory(
           snapshot.data!,
           fit: widget.fit,
           width: widget.width,
           height: widget.height,
-          cacheWidth: widget.cacheWidth,
-          cacheHeight: widget.cacheHeight,
+          cacheWidth: cWidth,
+          cacheHeight: cHeight,
           errorBuilder: (context, error, stackTrace) {
             return widget.errorWidget ??
                 const Center(child: Icon(Icons.error_outline));

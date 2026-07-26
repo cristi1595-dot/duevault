@@ -336,6 +336,7 @@ class LoginScreen extends ConsumerWidget {
           Image.network(
             'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
             height: 24,
+            cacheHeight: 48,
             errorBuilder: (ctx, err, st) =>
                 const Icon(Icons.account_circle, size: 24),
           ),

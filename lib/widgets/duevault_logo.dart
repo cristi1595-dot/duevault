@@ -32,6 +32,8 @@ class DueVaultLogo extends StatelessWidget {
           'assets/images/app icon.png',
           width: size,
           height: size,
+          cacheWidth: (size * 2).toInt(),
+          cacheHeight: (size * 2).toInt(),
           fit: BoxFit.cover,
         ),
       ),
