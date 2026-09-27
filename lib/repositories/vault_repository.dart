@@ -109,8 +109,8 @@ class VaultRepository {
                   await file.delete();
                   logger.i('Local removed file deleted: $fileName');
                 }
-              } catch (e) {
-                logger.e('Failed to delete local removed file: $fileName', error: e);
+              } catch (e, stack) {
+                logger.e('Failed to delete local removed file: $fileName', error: e, stackTrace: stack);
               }
             }
           }
@@ -271,8 +271,8 @@ class VaultRepository {
     try {
       await driveService.deleteFile(fileId);
       logger.i('Cloud file deleted: $fileId');
-    } catch (e) {
-      logger.e('Failed to delete cloud file: $fileId', error: e);
+    } catch (e, stack) {
+      logger.e('Failed to delete cloud file: $fileId', error: e, stackTrace: stack);
     } finally {
       driveService.dispose();
     }
