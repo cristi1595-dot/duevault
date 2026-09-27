@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/drive_service.dart';
 import '../../services/encryption_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/logger.dart';
 
 
 class ItemDetailAttachments extends ConsumerStatefulWidget {
@@ -94,7 +95,8 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Error downloading attachment file', error: e, stackTrace: stack);
       setState(() {
         _downloadingPaths[fileName] = false;
       });
@@ -170,7 +172,8 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Error opening attachment file', error: e, stackTrace: stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
