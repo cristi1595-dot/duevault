@@ -125,21 +125,25 @@ class FirebaseSyncService {
 
     if (snapshot.docs.isEmpty) return;
 
+    // Optimize: Fetch all local items into a Map before processing remote changes
+    // to prevent N+1 queries inside the transaction loop.
+    final localItems = await isar.vaultItems.where().findAll();
+    final localItemMap = {for (var item in localItems) item.uuid: item};
+
     await isar.writeTxn(() async {
       for (var doc in snapshot.docs) {
         final remoteItem = VaultItem.fromMap(doc.data());
 
-        // Find local version by UUID
-        final localItem = await isar.vaultItems
-            .filter()
-            .uuidEqualTo(remoteItem.uuid)
-            .findFirst();
+        // Find local version by UUID using O(1) Map lookup
+        final localItem = localItemMap[remoteItem.uuid];
 
         if (localItem == null) {
           // New item from another device
           if (!remoteItem.isDeleted) {
             remoteItem.wasSynced = true;
-            await isar.vaultItems.put(remoteItem);
+            final id = await isar.vaultItems.put(remoteItem);
+            remoteItem.id = id;
+            localItemMap[remoteItem.uuid] = remoteItem;
           }
         } else {
           // Conflict Resolution: Only update if remote is newer
@@ -154,6 +158,7 @@ class FirebaseSyncService {
               remoteItem.id = localItem.id;
               remoteItem.wasSynced = true;
               await isar.vaultItems.put(remoteItem);
+              localItemMap[remoteItem.uuid] = remoteItem;
             }
           }
         }
