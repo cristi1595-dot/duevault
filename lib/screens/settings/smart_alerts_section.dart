@@ -62,7 +62,7 @@ class SmartAlertsSection extends ConsumerWidget {
                         final pickedTime = await showTimePicker(
                           context: context,
                           initialTime: initialTime,
-                          builder: (context, child) {
+                          builder: (BuildContext context, Widget? child) {
                             return Theme(
                               data: Theme.of(context).copyWith(
                                 timePickerTheme: TimePickerThemeData(
@@ -97,7 +97,7 @@ class SmartAlertsSection extends ConsumerWidget {
                       },
                       icon: Icon(Icons.access_time_rounded, size: 16, color: accentColor),
                       label: Consumer(
-                        builder: (context, ref, _) {
+                        builder: (BuildContext context, WidgetRef ref, Widget? child) {
                           final time = ref.watch(notificationTimeProvider);
                           return Text(
                             time.format(context),
@@ -124,7 +124,7 @@ class SmartAlertsSection extends ConsumerWidget {
                     height: 24,
                     child: Switch(
                       value: globalEnabled,
-                      onChanged: (v) async {
+                      onChanged: (bool v) async {
                         await onAttemptActivation(targetState: v);
                         await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                       },
@@ -141,7 +141,7 @@ class SmartAlertsSection extends ConsumerWidget {
         if (globalEnabled) ...[
           // 2. Early Alert Row
           Consumer(
-            builder: (context, ref, _) {
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
               final firstReminderEnabled = ref.watch(threeDayAlertEnabledProvider);
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +176,7 @@ class SmartAlertsSection extends ConsumerWidget {
                           height: 24,
                           child: Switch(
                             value: firstReminderEnabled,
-                            onChanged: (val) async {
+                            onChanged: (bool val) async {
                               await ref.read(threeDayAlertEnabledProvider.notifier).toggle(val);
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_enabled', val);
@@ -210,10 +210,10 @@ class SmartAlertsSection extends ConsumerWidget {
                             max: 14,
                             divisions: 11,
                             label: '$alertDays Days',
-                            onChanged: (val) {
+                            onChanged: (double val) {
                               ref.read(alertDaysProvider.notifier).setAlertDays(val.toInt());
                             },
-                            onChangeEnd: (val) async {
+                            onChangeEnd: (double val) async {
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_days', val.toInt());
                             },
@@ -227,7 +227,7 @@ class SmartAlertsSection extends ConsumerWidget {
           ),
           // 3. SOS Urgent Alert Row
           Consumer(
-            builder: (context, ref, _) {
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
               final finalEnabled = ref.watch(finalReminderEnabledProvider);
               final finalDays = ref.watch(finalReminderDaysProvider);
               final finalDaysText = finalDays == 0 ? 'Day of' : '$finalDays ${finalDays == 1 ? "day" : "days"} before';
@@ -265,7 +265,7 @@ class SmartAlertsSection extends ConsumerWidget {
                           height: 24,
                           child: Switch(
                             value: finalEnabled,
-                            onChanged: (val) async {
+                            onChanged: (bool val) async {
                               await ref.read(finalReminderEnabledProvider.notifier).toggle(val);
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_enabled', val);
@@ -299,10 +299,10 @@ class SmartAlertsSection extends ConsumerWidget {
                             max: 2,
                             divisions: 2,
                             label: finalDays == 0 ? 'Day of' : '$finalDays Days',
-                            onChanged: (val) {
+                            onChanged: (double val) {
                               ref.read(finalReminderDaysProvider.notifier).setFinalReminderDays(val.toInt());
                             },
-                            onChangeEnd: (val) async {
+                            onChangeEnd: (double val) async {
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_days', val.toInt());
                             },
