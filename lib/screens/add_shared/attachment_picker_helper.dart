@@ -61,8 +61,8 @@ class AttachmentPickerHelper {
         onOcrProcessingChanged(false);
         onOcrResult(result);
       }
-    } catch (e) {
-      logger.e('Error picking image', error: e);
+    } catch (e, stack) {
+      logger.e('Error picking image', error: e, stackTrace: stack);
     }
   }
 
@@ -138,8 +138,8 @@ class AttachmentPickerHelper {
           onOcrResult(ocrResult);
         }
       }
-    } catch (e) {
-      logger.e('Error picking files', error: e);
+    } catch (e, stack) {
+      logger.e('Error picking files', error: e, stackTrace: stack);
     }
   }
 }
