@@ -189,8 +189,8 @@ class GoogleSignInSection extends ConsumerWidget {
                   SnackBar(content: Text(message), backgroundColor: bgColor),
                 );
               }
-            } catch (e) {
-              logger.e('Error during background settings login sync', error: e);
+            } catch (e, stack) {
+              logger.e('Error during background settings login sync', error: e, stackTrace: stack);
             }
 
             // Turn off processing state BEFORE navigating so MainNavigation shows immediately
@@ -216,12 +216,12 @@ class GoogleSignInSection extends ConsumerWidget {
               const SnackBar(content: Text('Sign in canceled.')),
             );
           }
-        } catch (e) {
+        } catch (e, stack) {
           // Pop loading indicator
           if (context.mounted) {
             Navigator.pop(context);
           }
-          logger.e('Sign in error', error: e);
+          logger.e('Sign in error', error: e, stackTrace: stack);
           if (context.mounted) {
             messenger.showSnackBar(
               SnackBar(
