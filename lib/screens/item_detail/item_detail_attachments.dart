@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/drive_service.dart';
 import '../../services/encryption_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/logger.dart';
 
 
 class ItemDetailAttachments extends ConsumerStatefulWidget {
@@ -43,6 +44,15 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
     }
   }
 
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.urgentRed,
+      ),
+    );
+  }
+
   Future<void> _handleAttachmentTap(
     BuildContext context,
     String absolutePath,
@@ -56,11 +66,9 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
     }
 
     if (cloudId == null || cloudId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('File not found locally and has no cloud backup.'),
-          backgroundColor: AppTheme.urgentRed,
-        ),
+      _showErrorSnackBar(
+        context,
+        'File not found locally and has no cloud backup.',
       );
       return;
     }
@@ -94,16 +102,15 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Error downloading attachment', error: e, stackTrace: stack);
       setState(() {
         _downloadingPaths[fileName] = false;
       });
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download failed: $e'),
-            backgroundColor: AppTheme.urgentRed,
-          ),
+        _showErrorSnackBar(
+          context,
+          'Download failed: $e',
         );
       }
     }
@@ -162,21 +169,18 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
       
       if (result.type != ResultType.done) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open file: ${result.message}'),
-              backgroundColor: AppTheme.urgentRed,
-            ),
+          _showErrorSnackBar(
+            context,
+            'Could not open file: ${result.message}',
           );
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Error opening attachment file', error: e, stackTrace: stack);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening file: $e'),
-            backgroundColor: AppTheme.urgentRed,
-          ),
+        _showErrorSnackBar(
+          context,
+          'Error opening file: $e',
         );
       }
     }
