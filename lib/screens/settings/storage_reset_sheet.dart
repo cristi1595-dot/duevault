@@ -13,6 +13,7 @@ import '../../main.dart';
 import 'storage_reset_dialogs.dart';
 import '../../providers/premium_provider.dart';
 import '../../services/notification_service.dart';
+import '../../utils/logger.dart';
 
 /// Shows the Storage & Reset bottom sheet allowing cache clearing, data wiping,
 /// and complete account deletion.
@@ -189,7 +190,8 @@ class StorageResetSheet extends ConsumerWidget {
         ),
       );
       onSuccess?.call();
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Storage reset operation failed', error: e, stackTrace: stack);
       if (!parentContext.mounted) return;
       Navigator.pop(parentContext); // Close progress dialog
 
