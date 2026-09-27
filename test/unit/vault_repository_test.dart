@@ -3,8 +3,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:isar_community/isar.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:duevault_app/models/vault_item.dart';
+import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'package:flutter/services.dart';
+
+class MockFlutterLocalNotificationsPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements FlutterLocalNotificationsPlatform {}
 
 class MockIsar extends Mock implements Isar {
   @override
@@ -33,6 +39,10 @@ void main() {
             return '.';
           },
         );
+    final mockNotificationsPlatform = MockFlutterLocalNotificationsPlatform();
+    FlutterLocalNotificationsPlatform.instance = mockNotificationsPlatform;
+    when(() => mockNotificationsPlatform.cancel(id: any(named: 'id'))).thenAnswer((_) async {});
+
     registerFallbackValue(VaultItem());
   });
 
@@ -78,6 +88,56 @@ void main() {
       }
 
       // Verify that put was called (even if the method threw later due to other IO)
+      verify(() => mockCollection.put(any())).called(1);
+    });
+  });
+
+  group('VaultRepository.updatePaidStatus', () {
+    test('returns null when item is not found', () async {
+      when(() => mockCollection.get(1)).thenAnswer((_) async => null);
+
+      final result = await repository.updatePaidStatus(1, true);
+
+      expect(result, isNull);
+      verify(() => mockCollection.get(1)).called(1);
+      verifyNever(() => mockCollection.put(any()));
+    });
+
+    test('rethrows exception when writing to database fails', () async {
+      final existingItem = VaultItem()
+        ..id = 1
+        ..title = 'Test Bill'
+        ..isPaid = false
+        ..recurrence = 'None';
+
+      when(() => mockCollection.get(1)).thenAnswer((_) async => existingItem);
+      when(() => mockCollection.put(any())).thenThrow(Exception('Database error'));
+
+      await expectLater(
+        repository.updatePaidStatus(1, true),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(() => mockCollection.get(1)).called(1);
+      verify(() => mockCollection.put(any())).called(1);
+    });
+
+    test('updates paid status successfully when database put succeeds', () async {
+      final existingItem = VaultItem()
+        ..id = 1
+        ..title = 'Test Bill'
+        ..isPaid = false
+        ..recurrence = 'None';
+
+      when(() => mockCollection.get(1)).thenAnswer((_) async => existingItem);
+      when(() => mockCollection.put(any())).thenAnswer((_) async => 1);
+
+      final result = await repository.updatePaidStatus(1, true);
+
+      expect(result, isNotNull);
+      expect(result!.isPaid, isTrue);
+      expect(result.wasSynced, isFalse);
+      verify(() => mockCollection.get(1)).called(1);
       verify(() => mockCollection.put(any())).called(1);
     });
   });
