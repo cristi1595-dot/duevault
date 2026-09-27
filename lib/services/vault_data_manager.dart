@@ -34,8 +34,8 @@ class VaultDataManager {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (e) {
-      logger.e('Error deleting local file: $resolvedPath', error: e);
+    } catch (e, stack) {
+      logger.e('Error deleting local file: $resolvedPath', error: e, stackTrace: stack);
     }
 
     // 2. Identify and remove from cloud (Drive)
@@ -79,8 +79,8 @@ class VaultDataManager {
       try {
         await driveService.deleteFile(fileId);
         logger.i('Cloud file deleted: $fileId');
-      } catch (e) {
-        logger.e('Failed to delete cloud file: $fileId', error: e);
+      } catch (e, stack) {
+        logger.e('Failed to delete cloud file: $fileId', error: e, stackTrace: stack);
       } finally {
         driveService.dispose();
       }
@@ -98,8 +98,8 @@ class VaultDataManager {
         if (entity is File) {
           try {
             await entity.delete();
-          } catch (e) {
-            logger.e('Error deleting cached file: ${entity.path}', error: e);
+          } catch (e, stack) {
+            logger.e('Error deleting cached file: ${entity.path}', error: e, stackTrace: stack);
           }
         }
       }
