@@ -80,6 +80,10 @@ class VaultRepository {
       if (item.id != Isar.autoIncrement) {
         final oldItem = await isar.collection<VaultItem>().get(item.id);
         if (oldItem != null) {
+          final Set<String> newFileNames = item.attachedFiles
+              .map((newPath) => p.basename(newPath.replaceAll('\\', '/')))
+              .toSet();
+
           final List<String> removedFiles = [];
           final List<String> removedCloudIds = [];
 
@@ -88,8 +92,7 @@ class VaultRepository {
             final oldFileName = p.basename(oldPath.replaceAll('\\', '/'));
 
             // Check if this file is still present in the updated item's attachments
-            final stillExists = item.attachedFiles.any((newPath) =>
-                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+            final stillExists = newFileNames.contains(oldFileName);
 
             if (!stillExists) {
               removedFiles.add(oldFileName);
@@ -133,8 +136,7 @@ class VaultRepository {
           final List<String> newChecksums = [];
           for (int i = 0; i < oldItem.attachedFiles.length; i++) {
             final oldFileName = p.basename(oldItem.attachedFiles[i].replaceAll('\\', '/'));
-            final stillExists = item.attachedFiles.any((newPath) =>
-                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+            final stillExists = newFileNames.contains(oldFileName);
             if (stillExists) {
               if (i < oldItem.cloudFileIds.length) {
                 newCloudIds.add(oldItem.cloudFileIds[i]);
