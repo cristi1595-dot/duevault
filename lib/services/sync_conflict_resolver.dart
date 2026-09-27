@@ -127,8 +127,10 @@ class SyncConflictResolver {
       final appDir = await getApplicationDocumentsDirectory();
       final attachmentsDir = Directory('${appDir.path}/attachments');
 
+      final cloudUuids = cloudItems.map((i) => i.uuid).toSet();
+
       for (var localItem in localItems) {
-        final existsInCloud = cloudItems.any((i) => i.uuid == localItem.uuid);
+        final existsInCloud = cloudUuids.contains(localItem.uuid);
         if (!existsInCloud) {
           if (localItem.wasSynced && !isLoginSync) {
             // Item was in cloud before, but is gone now -> Deleted from another device
