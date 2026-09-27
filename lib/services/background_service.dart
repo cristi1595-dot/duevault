@@ -27,7 +27,7 @@ void callbackDispatcher() {
           );
         } catch (e) {
           logger.e('BackgroundService: Failed to open Isar', error: e);
-          return Future.value(false);
+          return false;
         }
       }
 
@@ -100,14 +100,14 @@ void callbackDispatcher() {
       }
 
       if (shouldClose) await db.close();
-      return Future.value(true);
+      return true;
     } catch (e, stack) {
       logger.e(
         'BackgroundService: Error executing task',
         error: e,
         stackTrace: stack,
       );
-      return Future.value(false);
+      return false;
     }
   });
 }
