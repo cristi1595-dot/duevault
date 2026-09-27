@@ -192,7 +192,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
           try {
             final dec = await EncryptionService.decryptText(titleEnc);
             title = dec ?? 'Empty';
-          } catch (e) {
+          } catch (e, stack) {
+            logger.w('Failed to decrypt Firestore title', error: e, stackTrace: stack);
             title = 'Encrypted (Decryption key missing)';
           }
         }
@@ -291,7 +292,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Cloud diagnostics failed', error: e, stackTrace: stack);
       if (context.mounted) {
         Navigator.pop(context); // Dismiss loading
       }
@@ -411,7 +413,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Force restore failed', error: e, stackTrace: stack);
       if (context.mounted) {
         Navigator.pop(context); // Close loading
         await showDialog(
