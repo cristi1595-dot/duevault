@@ -45,6 +45,17 @@ void main() {
     repository = VaultRepository(mockIsar);
   });
 
+  group('VaultRepository.getItems', () {
+    test('returns empty list when database throws an exception', () async {
+      when(() => mockIsar.collection<VaultItem>())
+          .thenThrow(Exception('Database error'));
+
+      final items = await repository.getItems('user123');
+
+      expect(items, isEmpty);
+    });
+  });
+
   group('VaultRepository.saveItem', () {
     test('Saving a new item calls put on Isar collection', () async {
       final item = VaultItem()
