@@ -210,7 +210,7 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
 
     final finalReminderDays = ref.read(finalReminderDaysProvider);
     final finalReminderEnabled = ref.read(finalReminderEnabledProvider);
-    
+
     final notificationTime = ref.read(notificationTimeProvider);
 
     // 1. Delete samples if adding real data
@@ -377,11 +377,13 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       state = state.map((item) {
         if (item.id == itemId) {
           final updatedFiles = List<String>.from(item.attachedFiles);
-          final idx = updatedFiles.indexWhere((path) => p.basename(path.replaceAll('\\', '/')) == fileName);
-          
+          final idx = updatedFiles.indexWhere(
+            (path) => p.basename(path.replaceAll('\\', '/')) == fileName,
+          );
+
           final updatedCloudIds = List<String>.from(item.cloudFileIds);
           final updatedChecksums = List<String>.from(item.cloudFileChecksums);
-          
+
           if (idx != -1) {
             updatedFiles.removeAt(idx);
             if (idx < updatedCloudIds.length) {

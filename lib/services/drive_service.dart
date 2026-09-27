@@ -352,9 +352,7 @@ class DriveService {
   /// Delete the backup file from Google Drive (AppData folder)
   Future<bool> deleteBackup() async {
     try {
-      final fileList = await driveApi.files.list(
-        spaces: 'appDataFolder',
-      );
+      final fileList = await driveApi.files.list(spaces: 'appDataFolder');
 
       if (fileList.files != null && fileList.files!.isNotEmpty) {
         for (var file in fileList.files!) {

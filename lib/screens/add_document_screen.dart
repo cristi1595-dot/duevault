@@ -131,14 +131,19 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
           // Auto-fill Title if empty
           if (_titleController.text.isEmpty && result.probableTitle != null) {
             final rawTitle = result.probableTitle!;
-            _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+            _titleController.text = rawTitle.length > 40
+                ? rawTitle.substring(0, 40)
+                : rawTitle;
           } else if (_titleController.text.isEmpty) {
             _titleController.text = 'Scanned Document';
           }
 
           // Auto-fill Expiry Date if found and not set
           if (result.probableDate != null && _expiryDate == null) {
-            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+            if (ValidationHelper.isDateValid(
+              result.probableDate,
+              isRequired: false,
+            )) {
               _expiryDate = result.probableDate;
             }
           }
@@ -164,12 +169,17 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         setState(() {
           if (_titleController.text.isEmpty && result.probableTitle != null) {
             final rawTitle = result.probableTitle!;
-            _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
+            _titleController.text = rawTitle.length > 40
+                ? rawTitle.substring(0, 40)
+                : rawTitle;
           } else if (_titleController.text.isEmpty) {
             _titleController.text = 'Scanned Document';
           }
           if (result.probableDate != null && _expiryDate == null) {
-            if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+            if (ValidationHelper.isDateValid(
+              result.probableDate,
+              isRequired: false,
+            )) {
               _expiryDate = result.probableDate;
             }
           }
@@ -193,8 +203,11 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               brightness: Theme.of(context).brightness,
               primary: AppTheme.primaryAction,
               onPrimary: Colors.white,
-              surface: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
-              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+              surface:
+                  Theme.of(context).cardTheme.color ??
+                  Theme.of(context).cardColor,
+              onSurface:
+                  Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
               secondary: AppTheme.primaryAction,
               onSecondary: Colors.white,
               error: AppTheme.urgentRed,
@@ -240,13 +253,18 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final rawTitle = _titleController.text.trim();
-    final titleError = ValidationHelper.validateTitle(rawTitle.isEmpty ? _category : rawTitle);
+    final titleError = ValidationHelper.validateTitle(
+      rawTitle.isEmpty ? _category : rawTitle,
+    );
     if (titleError != null) {
       _showValidationError(titleError);
       return;
     }
 
-    final dateError = ValidationHelper.validateDate(_expiryDate, isRequired: false);
+    final dateError = ValidationHelper.validateDate(
+      _expiryDate,
+      isRequired: false,
+    );
     if (dateError != null) {
       _showValidationError(dateError);
       return;
@@ -279,7 +297,9 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         Navigator.of(context).popUntil((route) => route.isFirst);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (rootContext.mounted) {
-            ref.read(appReviewServiceProvider).incrementActionCounter(ref, rootContext);
+            ref
+                .read(appReviewServiceProvider)
+                .incrementActionCounter(ref, rootContext);
           }
         });
       }
@@ -303,8 +323,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
   bool get _isFormValid =>
-      _titleController.text.trim().isNotEmpty &&
-      _expiryDate != null;
+      _titleController.text.trim().isNotEmpty && _expiryDate != null;
 
   @override
   Widget build(BuildContext context) {
@@ -381,9 +400,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   onTap: _pickDate,
                   child: Container(
                     height: 38,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

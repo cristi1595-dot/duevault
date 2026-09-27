@@ -48,12 +48,7 @@ class StorageResetSheet extends ConsumerWidget {
           width: 1,
         ),
       ),
-      padding: const EdgeInsets.only(
-        top: 10,
-        left: 20,
-        right: 20,
-        bottom: 32,
-      ),
+      padding: const EdgeInsets.only(top: 10, left: 20, right: 20, bottom: 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -62,7 +57,11 @@ class StorageResetSheet extends ConsumerWidget {
             width: 48,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ?? Colors.white24,
+              color:
+                  Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ??
+                  Colors.white24,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -90,17 +89,15 @@ class StorageResetSheet extends ConsumerWidget {
                   children: [
                     Text(
                       'Storage & Reset',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold, fontSize: 20),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Manage your database and cloud space',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 13,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(fontSize: 13),
                     ),
                   ],
                 ),
@@ -112,7 +109,9 @@ class StorageResetSheet extends ConsumerWidget {
 
           // Option 2: Erase All Data
           _StorageOptionTile(
-            title: isPro ? 'Erase All Data (Cloud & Local)' : 'Erase All Data (Local)',
+            title: isPro
+                ? 'Erase All Data (Cloud & Local)'
+                : 'Erase All Data (Local)',
             subtitle: isPro
                 ? 'WIPE EVERYTHING. Cloud and local data will be permanently deleted.'
                 : 'WIPE EVERYTHING. Local data will be permanently deleted.',
@@ -131,7 +130,8 @@ class StorageResetSheet extends ConsumerWidget {
             // Option 3: Delete Account & Cloud Data
             _StorageOptionTile(
               title: 'Delete Account & Data',
-              subtitle: 'Wipes all local & cloud data and permanently deletes your account registration.',
+              subtitle:
+                  'Wipes all local & cloud data and permanently deletes your account registration.',
               icon: Icons.no_accounts_rounded,
               iconColor: AppTheme.urgentRed,
               iconBgColor: AppTheme.urgentRed.withValues(alpha: 0.2),
@@ -183,7 +183,9 @@ class StorageResetSheet extends ConsumerWidget {
       ScaffoldMessenger.of(parentContext).showSnackBar(
         SnackBar(
           content: Text(successMessage),
-          backgroundColor: successMessage.contains('wiped') || successMessage.contains('deleted')
+          backgroundColor:
+              successMessage.contains('wiped') ||
+                  successMessage.contains('deleted')
               ? AppTheme.urgentRed
               : null,
         ),
@@ -222,9 +224,7 @@ class StorageResetSheet extends ConsumerWidget {
         unawaited(
           Navigator.pushAndRemoveUntil(
             parentContext,
-            MaterialPageRoute(
-              builder: (_) => const MainNavigation(),
-            ),
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
             (route) => false,
           ),
         );
@@ -232,10 +232,7 @@ class StorageResetSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleDeleteAccount(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _handleDeleteAccount(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
     final vaultNotifier = ref.read(vaultProvider.notifier);
     final securityNotifier = ref.read(securityProvider.notifier);
@@ -280,9 +277,7 @@ class StorageResetSheet extends ConsumerWidget {
         unawaited(
           Navigator.pushAndRemoveUntil(
             parentContext,
-            MaterialPageRoute(
-              builder: (_) => const MainNavigation(),
-            ),
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
             (route) => false,
           ),
         );
@@ -316,7 +311,9 @@ class _StorageOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultBorderColor = Theme.of(context).dividerColor.withValues(alpha: 0.5);
+    final defaultBorderColor = Theme.of(
+      context,
+    ).dividerColor.withValues(alpha: 0.5);
     final defaultBgColor = Theme.of(context).scaffoldBackgroundColor;
     final defaultTextColor = Theme.of(context).textTheme.bodyLarge?.color;
     final defaultSubtitleColor = Theme.of(context).textTheme.bodySmall?.color;
@@ -329,9 +326,7 @@ class _StorageOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor ?? defaultBgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor ?? defaultBorderColor,
-          ),
+          border: Border.all(color: borderColor ?? defaultBorderColor),
         ),
         child: Row(
           children: [
@@ -341,11 +336,7 @@ class _StorageOptionTile extends StatelessWidget {
                 color: iconBgColor,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 20,
-              ),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(

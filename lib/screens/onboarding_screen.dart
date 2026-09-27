@@ -88,9 +88,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Notifications Disabled'),
         content: const Text(
           'To enable notifications, please allow them for DueVault in your device settings.',
@@ -111,7 +109,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
               setState(() {
                 _didOpenSettings = true;
               });
-              await AppSettings.openAppSettings(type: AppSettingsType.notification);
+              await AppSettings.openAppSettings(
+                type: AppSettingsType.notification,
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryAction,
@@ -135,7 +135,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     try {
       final status = await Permission.notification.status;
-      
+
       if (status.isGranted) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
         if (mounted) {
@@ -228,11 +228,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     UserCredential? userCredential;
     try {
-      userCredential = await ref
-          .read(authServiceProvider)
-          .signInWithGoogle();
+      userCredential = await ref.read(authServiceProvider).signInWithGoogle();
     } catch (e) {
-      logger.e('Google Sign-In failed during onboarding with exception', error: e);
+      logger.e(
+        'Google Sign-In failed during onboarding with exception',
+        error: e,
+      );
       if (mounted) {
         Navigator.pop(context); // Pop loading indicator
       }
@@ -249,9 +250,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     if (userCredential != null) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Account secured. Syncing your vault...'),
-        ),
+        const SnackBar(content: Text('Account secured. Syncing your vault...')),
       );
 
       // Run synchronization synchronously
@@ -259,13 +258,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         final syncResult = await ref
             .read(autoSyncServiceProvider)
             .syncAfterLogin();
-        
+
         // Also trigger Firebase Firestore sync immediately after onboarding login to pull user items
         await ref.read(firebaseSyncServiceProvider).sync(force: true);
 
         // Refresh UI state to load the newly downloaded items from Isar
         await ref.read(vaultProvider.notifier).refreshVault();
-        
+
         if (mounted) {
           final items = ref.read(vaultProvider);
           messenger.clearSnackBars();
@@ -331,9 +330,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   setState(() => _currentPage = page);
                 },
                 children: [
-                  OnboardingTutorialPage(
-                    onContinue: _goToNextPage,
-                  ),
+                  OnboardingTutorialPage(onContinue: _goToNextPage),
                   OnboardingNotificationsPage(
                     isLoading: _isRequestingPermission,
                     onEnableNotifications: _requestNotificationPermission,

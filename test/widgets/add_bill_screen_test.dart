@@ -55,34 +55,38 @@ void main() {
     );
   }
 
-  testWidgets(
-    'AddBillScreen save button is disabled when date is missing',
-    (tester) async {
-      await tester.pumpWidget(createTestWidget());
+  testWidgets('AddBillScreen save button is disabled when date is missing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
 
-      // Fill in valid title and amount
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
-      await tester.enterText(find.byType(TextFormField).at(1), '100.00');
-      await tester.pumpAndSettle();
+    // Fill in valid title and amount
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'Electricity Bill',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), '100.00');
+    await tester.pumpAndSettle();
 
-      final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
-      expect(button.onPressed, isNull);
-    },
-  );
+    final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
+    expect(button.onPressed, isNull);
+  });
 
-  testWidgets(
-    'AddBillScreen save button is disabled when amount is missing',
-    (tester) async {
-      await tester.pumpWidget(createTestWidget());
+  testWidgets('AddBillScreen save button is disabled when amount is missing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
 
-      // Fill in valid title
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
-      await tester.pumpAndSettle();
+    // Fill in valid title
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'Electricity Bill',
+    );
+    await tester.pumpAndSettle();
 
-      final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
-      expect(button.onPressed, isNull);
-    },
-  );
+    final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
+    expect(button.onPressed, isNull);
+  });
 
   testWidgets(
     'AddBillScreen save button is enabled when all required fields are filled',
@@ -90,7 +94,10 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // Fill in valid title and amount
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'Electricity Bill',
+      );
       await tester.enterText(find.byType(TextFormField).at(1), '100.00');
 
       // Select date

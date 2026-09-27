@@ -70,10 +70,14 @@ class DeveloperOptionsSection extends ConsumerWidget {
                   color: AppTheme.urgentRed,
                 ),
                 onTap: () async {
-                  final confirm = await SettingsDialogs.showCrashTestDialog(context);
+                  final confirm = await SettingsDialogs.showCrashTestDialog(
+                    context,
+                  );
 
                   if (confirm == true) {
-                    logger.i('Simulating app crash via Firebase Crashlytics...');
+                    logger.i(
+                      'Simulating app crash via Firebase Crashlytics...',
+                    );
                     await Future.delayed(const Duration(milliseconds: 500));
                     FirebaseCrashlytics.instance.crash();
                   }
@@ -124,7 +128,11 @@ class DeveloperOptionsSection extends ConsumerWidget {
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
+          child: Icon(
+            icon,
+            color: iconColor ?? AppTheme.primaryAction,
+            size: 18,
+          ),
         ),
         title: Text(
           title,
@@ -143,7 +151,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
                 ),
               )
             : null,
-        trailing: trailing ??
+        trailing:
+            trailing ??
             Icon(
               Icons.chevron_right,
               color: Theme.of(context).textTheme.bodySmall?.color,
@@ -197,7 +206,9 @@ class DeveloperOptionsSection extends ConsumerWidget {
           }
         }
         final isDeleted = data['isDeleted'] == true;
-        firestoreItems.add('- $title ${isDeleted ? "(Deleted Tombstone)" : ""}');
+        firestoreItems.add(
+          '- $title ${isDeleted ? "(Deleted Tombstone)" : ""}',
+        );
       }
 
       // 2. Check Google Drive files
@@ -208,7 +219,9 @@ class DeveloperOptionsSection extends ConsumerWidget {
       bool dbBackupExists = false;
 
       if (token != null) {
-        final driveService = DriveService(GoogleAuthClient({'Authorization': 'Bearer $token'}));
+        final driveService = DriveService(
+          GoogleAuthClient({'Authorization': 'Bearer $token'}),
+        );
         try {
           final fileList = await driveService.driveApi.files.list(
             spaces: 'appDataFolder',
@@ -219,7 +232,9 @@ class DeveloperOptionsSection extends ConsumerWidget {
             final buffer = StringBuffer();
             for (var file in fileList.files!) {
               buffer.writeln('📁 ${file.name}');
-              buffer.writeln('  Size: ${file.size != null ? "${(int.parse(file.size!) / 1024).toStringAsFixed(1)} KB" : "Unknown"}');
+              buffer.writeln(
+                '  Size: ${file.size != null ? "${(int.parse(file.size!) / 1024).toStringAsFixed(1)} KB" : "Unknown"}',
+              );
               buffer.writeln('  Modified: ${file.modifiedTime?.toLocal()}');
               buffer.writeln();
               if (file.name == 'duevault_keys.json') keyBackupExists = true;
@@ -253,8 +268,11 @@ class DeveloperOptionsSection extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                     '🔥 FIRESTORE METADATA:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+                    '🔥 FIRESTORE METADATA:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryAction,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text('Total Items in Firestore: $firestoreCount'),
@@ -269,15 +287,25 @@ class DeveloperOptionsSection extends ConsumerWidget {
                   const Divider(height: 24),
                   const Text(
                     '📁 GOOGLE DRIVE BACKUPS:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryAction,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Keys Backup: ${keyBackupExists ? "✅ FOUND" : "❌ MISSING"}'),
-                  Text('Database Backup: ${dbBackupExists ? "✅ FOUND" : "❌ MISSING"}'),
+                  Text(
+                    'Keys Backup: ${keyBackupExists ? "✅ FOUND" : "❌ MISSING"}',
+                  ),
+                  Text(
+                    'Database Backup: ${dbBackupExists ? "✅ FOUND" : "❌ MISSING"}',
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     driveFilesInfo,
-                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ],
               ),
@@ -313,12 +341,15 @@ class DeveloperOptionsSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _forceRestoreKeysAndData(BuildContext context, WidgetRef ref) async {
+  Future<void> _forceRestoreKeysAndData(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not signed in.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Not signed in.')));
       return;
     }
 
@@ -326,9 +357,7 @@ class DeveloperOptionsSection extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(ctx).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Force Restore Backup'),
         content: const Text(
           'This will download your original encryption keys and database from Google Drive, '
@@ -339,12 +368,16 @@ class DeveloperOptionsSection extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
+              style: TextStyle(
+                color: Theme.of(ctx).textTheme.bodyMedium?.color,
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.safeGreen),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.safeGreen,
+            ),
             child: const Text('RESTORE', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -373,7 +406,9 @@ class DeveloperOptionsSection extends ConsumerWidget {
       try {
         final restoredIsar = await driveService.restoreDatabase();
         if (restoredIsar == null) {
-          throw Exception('Failed to restore database from Google Drive. Ensure backup file exists.');
+          throw Exception(
+            'Failed to restore database from Google Drive. Ensure backup file exists.',
+          );
         }
 
         // Update the provider state
@@ -381,7 +416,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
 
         // Reset sync checkpoint
         await restoredIsar.writeTxn(() async {
-          final config = await restoredIsar.collection<AppConfig>().get(0) ?? AppConfig();
+          final config =
+              await restoredIsar.collection<AppConfig>().get(0) ?? AppConfig();
           config.lastCloudSync = DateTime.fromMillisecondsSinceEpoch(0);
           await restoredIsar.appConfigs.put(config);
         });
@@ -398,7 +434,9 @@ class DeveloperOptionsSection extends ConsumerWidget {
             context: context,
             builder: (ctx) => AlertDialog(
               title: const Text('Restore Complete'),
-              content: const Text('Encryption keys, database, and all cloud records have been successfully restored!'),
+              content: const Text(
+                'Encryption keys, database, and all cloud records have been successfully restored!',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),

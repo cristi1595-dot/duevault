@@ -18,9 +18,7 @@ class SettingsDialogs {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Notifications Disabled'),
         content: const Text(
           'To enable global reminders, please allow notifications for DueVault in your device settings.',
@@ -62,9 +60,7 @@ class SettingsDialogs {
       useRootNavigator: true,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Sign Out'),
         content: const Text(
           'Are you sure you want to sign out? Your encrypted data will remain safe on this device.',
@@ -75,10 +71,7 @@ class SettingsDialogs {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.color,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           ),
@@ -144,14 +137,15 @@ class SettingsDialogs {
 
   /// Backup-now confirmation dialog showing Google Drive destination.
   /// Returns `true` if the user confirmed the backup.
-  static Future<bool?> showBackupNowDialog(BuildContext context, String userEmail) {
+  static Future<bool?> showBackupNowDialog(
+    BuildContext context,
+    String userEmail,
+  ) {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             const Icon(
@@ -184,9 +178,7 @@ class SettingsDialogs {
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context).dividerColor,
-                ),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Row(
                 children: [
@@ -203,9 +195,7 @@ class SettingsDialogs {
                         Text(
                           'Google Drive › App Data',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.color,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -261,9 +251,7 @@ class SettingsDialogs {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Simulate Crash?'),
         content: const Text(
           'This will trigger an immediate hard crash of the application using FirebaseCrashlytics.instance.crash() to verify your integration online. Make sure you saved your changes.',

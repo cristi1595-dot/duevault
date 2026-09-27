@@ -36,18 +36,18 @@ class OnboardingSyncPage extends ConsumerWidget {
               'Secure Cloud Backup',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Sync your vault with Google for automatic, secure backups and seamless access across all your devices.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textSecondary,
-                    height: 1.6,
-                  ),
+                color: AppTheme.textSecondary,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 40),
             _buildGoogleSignInButton(context, ref),
@@ -73,7 +73,9 @@ class OnboardingSyncPage extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30), // Pill style to align with PrimaryButton
+          borderRadius: BorderRadius.circular(
+            30,
+          ), // Pill style to align with PrimaryButton
           side: const BorderSide(
             color: Color(0xFF2D333D), // AppTheme.darkBorder
             width: 1.5,
@@ -111,11 +113,7 @@ class OnboardingSyncPage extends ConsumerWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.lock_outline,
-                    size: 11,
-                    color: AppTheme.safeGreen,
-                  ),
+                  Icon(Icons.lock_outline, size: 11, color: AppTheme.safeGreen),
                   SizedBox(width: 3),
                   Text(
                     'PRO',

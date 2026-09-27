@@ -343,7 +343,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     try {
       final repository = ref.read(vaultRepositoryProvider);
       final config = await repository.getConfig();
-      ref.read(showWalkthroughProvider.notifier).state = !config.hasSeenWalkthrough;
+      ref.read(showWalkthroughProvider.notifier).state =
+          !config.hasSeenWalkthrough;
     } catch (_) {}
   }
 

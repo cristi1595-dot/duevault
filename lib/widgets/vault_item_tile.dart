@@ -39,7 +39,9 @@ class VaultItemTile extends ConsumerWidget {
     final bool isBill = item.itemType == 'Bill';
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
-    final itemColor = isBill ? const Color(0xFF6366F1) : AppTheme.getMintGreen(context);
+    final itemColor = isBill
+        ? const Color(0xFF6366F1)
+        : AppTheme.getMintGreen(context);
 
     final Color statusColor;
     if (item.isPaid) {
@@ -49,7 +51,9 @@ class VaultItemTile extends ConsumerWidget {
     } else if (daysLeft <= 7) {
       statusColor = const Color(0xFFF59E0B); // Amber
     } else {
-      statusColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
+      statusColor = AppTheme.getSafeGreen(
+        context,
+      ); // Green (safe zone > 7 days)
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -64,19 +68,25 @@ class VaultItemTile extends ConsumerWidget {
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final double textColumnWidth = screenWidth -
+    final double textColumnWidth =
+        screenWidth -
         20 - // List horizontal padding
         57 - // Left Icon Box
         13 - // Left padding of the middle section
-        ((onCheckPressed != null) ? 3 : 13) - // Right padding of the middle section
+        ((onCheckPressed != null)
+            ? 3
+            : 13) - // Right padding of the middle section
         9 - // Gap between text and right columns
         110 - // Right column width
         ((onCheckPressed != null) ? 56 : 0); // Right checkmark button
 
     final rawTitle = item.title.isEmpty ? item.category : item.title;
-    final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
+    final displayTitle = rawTitle.length > 40
+        ? '${rawTitle.substring(0, 37)}...'
+        : rawTitle;
     final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
-    final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
+    final recurrenceSuffix =
+        (item.recurrence != 'None' && item.recurrence.isNotEmpty)
         ? ' • ${item.recurrence}'
         : '';
 
@@ -84,16 +94,17 @@ class VaultItemTile extends ConsumerWidget {
       text: TextSpan(
         text: displayTitle,
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: fontSize,
-              height: 1.1,
-              fontWeight: FontWeight.w600,
-            ),
+          fontSize: fontSize,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       maxLines: 2,
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: textColumnWidth > 0 ? textColumnWidth : 150);
 
-    final isTwoLines = textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
+    final isTwoLines =
+        textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
     final gapHeight = isTwoLines ? 2.0 : 10.0;
 
     return Padding(
@@ -140,7 +151,7 @@ class VaultItemTile extends ConsumerWidget {
                 // If it's in history, "Restore to Vault" means unarchive AND unpay (if it was paid/expired)
                 // toggleArchiveStatus(item.id, false) now handles both atomically.
                 notifier.toggleArchiveStatus(item.id, false);
-                
+
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
@@ -183,7 +194,9 @@ class VaultItemTile extends ConsumerWidget {
             }
           },
           background: Container(
-            color: isInHistory ? const Color(0xFF6366F1) : const Color(0xFF34D399),
+            color: isInHistory
+                ? const Color(0xFF6366F1)
+                : const Color(0xFF34D399),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -249,11 +262,11 @@ class VaultItemTile extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: isDark
                       ? (isHomeScreen && !isInHistory
-                          ? Border.all(
-                              color: statusColor.withValues(alpha: 0.15),
-                              width: 1.2,
-                            )
-                          : null)
+                            ? Border.all(
+                                color: statusColor.withValues(alpha: 0.15),
+                                width: 1.2,
+                              )
+                            : null)
                       : Border.all(
                           color: isHomeScreen && !isInHistory
                               ? statusColor.withValues(alpha: 0.10)
@@ -270,168 +283,199 @@ class VaultItemTile extends ConsumerWidget {
                         ]
                       : null,
                 ),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Left Icon Box: occupies full height
-                    Container(
-                      width: 57,
-                      constraints: const BoxConstraints(minHeight: 60),
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(18),
-                          bottomLeft: Radius.circular(18),
-                        ),
-                      ),
-                      child: Center(
-                        child: _VaultItemThumbnail(
-                          item: item,
-                          itemColor: itemColor,
-                          isBill: isBill,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          13,
-                          2,
-                          (onCheckPressed != null) ? 3 : 13,
-                          2,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayTitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                          fontSize: fontSize,
-                                          height: 1.1,
-                                          decoration: item.isPaid
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                          color: item.isPaid
-                                              ? Theme.of(context).textTheme.bodyMedium?.color
-                                              : Theme.of(context).textTheme.bodyLarge?.color,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                  SizedBox(height: gapHeight),
-                                  Text(
-                                    item.dueDate != null
-                                        ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
-                                        : '${isBill ? "Bill • No due date" : "Doc • Permanent"}$recurrenceSuffix',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontSize: 13,
-                                          color: Theme.of(context).brightness == Brightness.dark
-                                              ? Colors.white.withValues(alpha: 0.45)
-                                              : Colors.black.withValues(alpha: 0.45),
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 9),
-                            SizedBox(
-                              width: 110,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (isBill) ...[
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        currency.formatAmount(item.amount ?? 0.0),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 20,
-                                          letterSpacing: -0.2,
-                                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                                        ),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                  ],
-                                  StatusBadge(
-                                    isDocument: !isBill,
-                                    label: item.isPaid
-                                        ? (isBill ? 'PAID' : 'RENEWED')
-                                        : (item.dueDate == null
-                                            ? 'PERMANENT'
-                                            : (isOverdue
-                                                ? (isBill ? 'OVERDUE' : 'EXPIRED')
-                                                : (daysLeft == 0
-                                                    ? 'TODAY'
-                                                    : '$daysLeft DAYS'))),
-                                    isPaid: item.isPaid,
-                                    daysLeft: (item.isPaid || item.dueDate == null) ? null : daysLeft,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Right Checkmark Button: occupies full height, flush to edge
-                    if (onCheckPressed != null)
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: onCheckPressed,
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(18),
-                            bottomRight: Radius.circular(18),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Left Icon Box: occupies full height
+                      Container(
+                        width: 57,
+                        constraints: const BoxConstraints(minHeight: 60),
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
                           ),
-                          child: SizedBox(
-                            width: 56,
-                            child: Center(
-                              child: Container(
-                                width: 33,
-                                height: 33,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: item.isPaid
-                                      ? AppTheme.getSafeGreen(context)
-                                      : const Color(0xFF6366F1).withValues(alpha: 0.06),
-                                  border: Border.all(
+                        ),
+                        child: Center(
+                          child: _VaultItemThumbnail(
+                            item: item,
+                            itemColor: itemColor,
+                            isBill: isBill,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            13,
+                            2,
+                            (onCheckPressed != null) ? 3 : 13,
+                            2,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayTitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            fontSize: fontSize,
+                                            height: 1.1,
+                                            decoration: item.isPaid
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                            color: item.isPaid
+                                                ? Theme.of(
+                                                    context,
+                                                  ).textTheme.bodyMedium?.color
+                                                : Theme.of(
+                                                    context,
+                                                  ).textTheme.bodyLarge?.color,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    SizedBox(height: gapHeight),
+                                    Text(
+                                      item.dueDate != null
+                                          ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
+                                          : '${isBill ? "Bill • No due date" : "Doc • Permanent"}$recurrenceSuffix',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontSize: 13,
+                                            color:
+                                                Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? Colors.white.withValues(
+                                                    alpha: 0.45,
+                                                  )
+                                                : Colors.black.withValues(
+                                                    alpha: 0.45,
+                                                  ),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 9),
+                              SizedBox(
+                                width: 110,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (isBill) ...[
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          currency.formatAmount(
+                                            item.amount ?? 0.0,
+                                          ),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 20,
+                                            letterSpacing: -0.2,
+                                            color: Theme.of(
+                                              context,
+                                            ).textTheme.bodyLarge?.color,
+                                          ),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                    ],
+                                    StatusBadge(
+                                      isDocument: !isBill,
+                                      label: item.isPaid
+                                          ? (isBill ? 'PAID' : 'RENEWED')
+                                          : (item.dueDate == null
+                                                ? 'PERMANENT'
+                                                : (isOverdue
+                                                      ? (isBill
+                                                            ? 'OVERDUE'
+                                                            : 'EXPIRED')
+                                                      : (daysLeft == 0
+                                                            ? 'TODAY'
+                                                            : '$daysLeft DAYS'))),
+                                      isPaid: item.isPaid,
+                                      daysLeft:
+                                          (item.isPaid || item.dueDate == null)
+                                          ? null
+                                          : daysLeft,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Right Checkmark Button: occupies full height, flush to edge
+                      if (onCheckPressed != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onCheckPressed,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(18),
+                              bottomRight: Radius.circular(18),
+                            ),
+                            child: SizedBox(
+                              width: 56,
+                              child: Center(
+                                child: Container(
+                                  width: 33,
+                                  height: 33,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
                                     color: item.isPaid
                                         ? AppTheme.getSafeGreen(context)
-                                        : const Color(0xFF6366F1).withValues(alpha: 0.25),
-                                    width: 1.3,
+                                        : const Color(
+                                            0xFF6366F1,
+                                          ).withValues(alpha: 0.06),
+                                    border: Border.all(
+                                      color: item.isPaid
+                                          ? AppTheme.getSafeGreen(context)
+                                          : const Color(
+                                              0xFF6366F1,
+                                            ).withValues(alpha: 0.25),
+                                      width: 1.3,
+                                    ),
                                   ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.check_rounded,
-                                    color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
-                                    size: 23,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.check_rounded,
+                                      color: item.isPaid
+                                          ? Colors.white
+                                          : const Color(0xFF6366F1),
+                                      size: 23,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;

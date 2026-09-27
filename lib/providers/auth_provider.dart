@@ -140,7 +140,7 @@ class AuthService {
         // Trigger silent or explicit sign-in to get fresh credentials
         GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
         googleUser ??= await _googleSignIn.signIn();
-        
+
         if (googleUser == null) {
           throw Exception('Reauthentication canceled by the user.');
         }
@@ -153,7 +153,7 @@ class AuthService {
 
         // Reauthenticate the current user session
         await user.reauthenticateWithCredential(credential);
-        
+
         // Retry deletion
         await user.delete();
         logger.i('Firebase user deleted successfully after reauthentication.');

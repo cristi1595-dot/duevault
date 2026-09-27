@@ -17,18 +17,18 @@ class OnboardingHeader extends StatelessWidget {
             Text(
               'Due',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    color: Colors.white,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+                color: Colors.white,
+              ),
             ),
             Text(
               'Vault',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    color: AppTheme.safeGreen,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+                color: AppTheme.safeGreen,
+              ),
             ),
           ],
         ),

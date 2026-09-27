@@ -22,7 +22,9 @@ class BentoCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? (isDark ? Theme.of(context).cardTheme.color : Colors.white),
+        color:
+            color ??
+            (isDark ? Theme.of(context).cardTheme.color : Colors.white),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color:

@@ -58,11 +58,14 @@ class VaultItemProcessor {
     for (final rawPath in item.attachedFiles) {
       final fileName = p.basename(rawPath.replaceAll('\\', '/'));
       final isFullPath = rawPath.contains('/') || rawPath.contains('\\');
-      
+
       // Determine if the path is already inside our internal attachments directory
-      final isInternal = isFullPath && 
-          (p.canonicalize(rawPath).contains(p.canonicalize(attachmentsDir.path)) || 
-           rawPath.contains('app_flutter/attachments'));
+      final isInternal =
+          isFullPath &&
+          (p
+                  .canonicalize(rawPath)
+                  .contains(p.canonicalize(attachmentsDir.path)) ||
+              rawPath.contains('app_flutter/attachments'));
 
       if (isFullPath && !isInternal) {
         // This is a newly picked file from outside

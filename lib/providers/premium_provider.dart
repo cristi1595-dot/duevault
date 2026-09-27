@@ -32,6 +32,8 @@ class PremiumNotifier extends StateNotifier<bool> {
   /// Used after purchase/restore to avoid an extra network call.
   void updateFromCustomerInfo(CustomerInfo customerInfo) {
     state = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
-    logger.i('RevenueCat: Premium state updated from CustomerInfo. isPro: $state');
+    logger.i(
+      'RevenueCat: Premium state updated from CustomerInfo. isPro: $state',
+    );
   }
 }

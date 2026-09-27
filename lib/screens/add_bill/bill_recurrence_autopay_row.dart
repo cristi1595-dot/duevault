@@ -26,9 +26,7 @@ class BillRecurrenceAutoPayRow extends StatelessWidget {
             label: 'RECURRENCE',
             child: Container(
               height: 38,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               alignment: Alignment.center,
               child: DropdownButton<String>(
                 value: recurrence,
@@ -81,7 +79,9 @@ class BillRecurrenceAutoPayRow extends StatelessWidget {
                           child: Text(
                             'Direct Debit',
                             style: TextStyle(
-                              color: Theme.of(context).textTheme.bodyMedium?.color,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color,
                               fontSize: 19,
                               fontWeight: FontWeight.w600,
                             ),

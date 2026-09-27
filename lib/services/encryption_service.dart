@@ -128,11 +128,7 @@ class EncryptionService {
     if (bytes.length > 50 * 1024) {
       encryptedBytes = await compute(
         _encryptBytesIsolate,
-        EncryptParams(
-          bytes: bytes,
-          keyBytes: keyBytes,
-          ivBytes: ivBytes,
-        ),
+        EncryptParams(bytes: bytes, keyBytes: keyBytes, ivBytes: ivBytes),
       );
     } else {
       final key = encrypt.Key(keyBytes);

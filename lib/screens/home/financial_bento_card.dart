@@ -19,7 +19,10 @@ class FinancialBentoCard extends ConsumerWidget {
     final next30Days = today.add(const Duration(days: 30));
 
     final overdueBills = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
+      if (item.itemType != 'Bill' ||
+          item.isPaid ||
+          item.isArchived ||
+          item.dueDate == null) {
         return false;
       }
       return item.dueDate!.isBefore(today);
@@ -35,7 +38,10 @@ class FinancialBentoCard extends ConsumerWidget {
     }).toList();
 
     final upcomingBills = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
+      if (item.itemType != 'Bill' ||
+          item.isPaid ||
+          item.isArchived ||
+          item.dueDate == null) {
         return false;
       }
       final due = DateTime(
@@ -57,7 +63,10 @@ class FinancialBentoCard extends ConsumerWidget {
         totalDueOverdue;
 
     final items30Days = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
+      if (item.itemType != 'Bill' ||
+          item.isPaid ||
+          item.isArchived ||
+          item.dueDate == null) {
         return false;
       }
       final due = DateTime(
@@ -112,7 +121,10 @@ class FinancialBentoCard extends ConsumerWidget {
 
     // Calculate days remaining across active unpaid items to determine status
     final activeBills = vaultItems.where((item) {
-      return item.itemType == 'Bill' && !item.isPaid && !item.isArchived && item.dueDate != null;
+      return item.itemType == 'Bill' &&
+          !item.isPaid &&
+          !item.isArchived &&
+          item.dueDate != null;
     }).toList();
 
     int billMinDaysLeft = 99999;
@@ -141,7 +153,10 @@ class FinancialBentoCard extends ConsumerWidget {
     }
 
     final activeDocs = vaultItems.where((item) {
-      return item.itemType == 'Document' && !item.isArchived && !item.isPaid && item.dueDate != null;
+      return item.itemType == 'Document' &&
+          !item.isArchived &&
+          !item.isPaid &&
+          item.dueDate != null;
     }).toList();
 
     int docMinDaysLeft = 99999;
@@ -230,10 +245,7 @@ class FinancialBentoCard extends ConsumerWidget {
         decoration: BoxDecoration(
           gradient: cardGradient,
           borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(
-            color: borderColor,
-            width: 1.0,
-          ),
+          border: Border.all(color: borderColor, width: 1.0),
           boxShadow: [
             BoxShadow(
               color: isDark
@@ -273,7 +285,9 @@ class FinancialBentoCard extends ConsumerWidget {
                     Text(
                       '7-DAY OUTLOOK',
                       style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                         fontSize: 12.6,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.0,
@@ -282,7 +296,10 @@ class FinancialBentoCard extends ConsumerWidget {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
@@ -294,11 +311,7 @@ class FinancialBentoCard extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        statusIcon,
-                        size: 13.2,
-                        color: statusColor,
-                      ),
+                      Icon(statusIcon, size: 13.2, color: statusColor),
                       const SizedBox(width: 4),
                       Text(
                         statusLabel,
@@ -331,7 +344,9 @@ class FinancialBentoCard extends ConsumerWidget {
                           Text(
                             'BILLS',
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
                               fontSize: 11.0,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
@@ -351,7 +366,9 @@ class FinancialBentoCard extends ConsumerWidget {
                         child: Text(
                           currency.formatAmount(totalDue7Days),
                           style: TextStyle(
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                             fontWeight: FontWeight.bold,
                             fontSize: 32.0,
                             letterSpacing: -0.5,
@@ -362,7 +379,9 @@ class FinancialBentoCard extends ConsumerWidget {
                       Text(
                         'due bills',
                         style: TextStyle(
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade600,
                           fontSize: 13.0,
                           fontWeight: FontWeight.w500,
                         ),
@@ -377,7 +396,9 @@ class FinancialBentoCard extends ConsumerWidget {
                             size: 12,
                             color: totalDueOverdue > 0
                                 ? AppTheme.urgentRed
-                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                : (isDark
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade600),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -386,7 +407,9 @@ class FinancialBentoCard extends ConsumerWidget {
                               style: TextStyle(
                                 color: totalDueOverdue > 0
                                     ? AppTheme.urgentRed
-                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                    : (isDark
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade600),
                                 fontSize: 11.5,
                                 fontWeight: totalDueOverdue > 0
                                     ? FontWeight.w600
@@ -408,7 +431,9 @@ class FinancialBentoCard extends ConsumerWidget {
                   child: Container(
                     width: 1,
                     height: 90,
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                    color: (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.08,
+                    ),
                   ),
                 ),
 
@@ -423,7 +448,9 @@ class FinancialBentoCard extends ConsumerWidget {
                           Text(
                             'DOCUMENTS',
                             style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
                               fontSize: 11.0,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.8,
@@ -443,7 +470,9 @@ class FinancialBentoCard extends ConsumerWidget {
                         child: Text(
                           '$totalDocs7Days',
                           style: TextStyle(
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                             fontWeight: FontWeight.bold,
                             fontSize: 32.0,
                             letterSpacing: -0.5,
@@ -454,7 +483,9 @@ class FinancialBentoCard extends ConsumerWidget {
                       Text(
                         'expiring soon',
                         style: TextStyle(
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade500
+                              : Colors.grey.shade600,
                           fontSize: 13.0,
                           fontWeight: FontWeight.w500,
                         ),
@@ -469,7 +500,9 @@ class FinancialBentoCard extends ConsumerWidget {
                             size: 12,
                             color: expiredDocs.isNotEmpty
                                 ? AppTheme.urgentRed
-                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                : (isDark
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade600),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -478,7 +511,9 @@ class FinancialBentoCard extends ConsumerWidget {
                               style: TextStyle(
                                 color: expiredDocs.isNotEmpty
                                     ? AppTheme.urgentRed
-                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                                    : (isDark
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade600),
                                 fontSize: 11.5,
                                 fontWeight: expiredDocs.isNotEmpty
                                     ? FontWeight.w600

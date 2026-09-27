@@ -39,10 +39,9 @@ class BillAmountDateRow extends StatelessWidget {
                   color: Theme.of(context).textTheme.bodyLarge?.color,
                   fontSize: 19,
                 ),
-                validator: (value) => ValidationHelper.validateAmount(value, isRequired: true),
-                inputFormatters: [
-                  AmountInputFormatter(),
-                ],
+                validator: (value) =>
+                    ValidationHelper.validateAmount(value, isRequired: true),
+                inputFormatters: [AmountInputFormatter()],
                 decoration: const InputDecoration(
                   hintText: '0.00',
                   isDense: true,
@@ -68,9 +67,7 @@ class BillAmountDateRow extends StatelessWidget {
               onTap: onDateTap,
               child: Container(
                 height: 38,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.center,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -23,10 +23,7 @@ class HomeHeader extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const DueVaultLogo(
-                      size: 53,
-                      showGlow: false,
-                    ),
+                    const DueVaultLogo(size: 53, showGlow: false),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,9 +32,7 @@ class HomeHeader extends ConsumerWidget {
                           children: [
                             Text(
                               'DueVault',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium
+                              style: Theme.of(context).textTheme.headlineMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(
@@ -54,9 +49,7 @@ class HomeHeader extends ConsumerWidget {
                         Text(
                           'Smart Bill Manager',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.color,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                             fontSize: 14,
                           ),
                         ),
@@ -70,9 +63,7 @@ class HomeHeader extends ConsumerWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
                     );
                   },
                   child: Consumer(
@@ -86,9 +77,7 @@ class HomeHeader extends ConsumerWidget {
                         children: [
                           if (user == null)
                             Padding(
-                              padding: const EdgeInsets.only(
-                                right: 8.0,
-                              ),
+                              padding: const EdgeInsets.only(right: 8.0),
                               child: Text(
                                 'Guest',
                                 style: TextStyle(
@@ -107,8 +96,9 @@ class HomeHeader extends ConsumerWidget {
                               border: Border.all(
                                 color: user != null
                                     ? AppTheme.primaryAction
-                                    : Theme.of(context).dividerColor
-                                          .withValues(alpha: 0.2),
+                                    : Theme.of(
+                                        context,
+                                      ).dividerColor.withValues(alpha: 0.2),
                                 width: 2,
                               ),
                             ),

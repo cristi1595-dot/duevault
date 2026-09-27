@@ -18,7 +18,8 @@ class MockVaultNotifier extends VaultNotifier {
   }
 }
 
-class FakeCurrencyNotifier extends StateNotifier<Currency> implements CurrencyNotifier {
+class FakeCurrencyNotifier extends StateNotifier<Currency>
+    implements CurrencyNotifier {
   FakeCurrencyNotifier(super.state);
 
   @override
@@ -48,11 +49,7 @@ void main() {
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
         home: const Scaffold(
           body: SingleChildScrollView(
-            child: Column(
-              children: [
-                FinancialBentoCard(),
-              ],
-            ),
+            child: Column(children: [FinancialBentoCard()]),
           ),
         ),
       ),
@@ -60,18 +57,21 @@ void main() {
   }
 
   Finder findMainCardContainer() {
-    return find.byWidgetPredicate((w) =>
-      w is Container &&
-      w.decoration is BoxDecoration &&
-      (w.decoration as BoxDecoration).gradient is LinearGradient
+    return find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).gradient is LinearGradient,
     );
   }
 
   group('FinancialBentoCard Status Tests', () {
-    testWidgets('Red Status Test: Overdue bill triggers Urgent state', (WidgetTester tester) async {
+    testWidgets('Red Status Test: Overdue bill triggers Urgent state', (
+      WidgetTester tester,
+    ) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       final overdueBill = VaultItem()
         ..itemType = 'Bill'
         ..isPaid = false
@@ -79,7 +79,9 @@ void main() {
         ..amount = 100.0
         ..title = 'Overdue Gas';
 
-      await tester.pumpWidget(createTestWidget(items: [overdueBill], isDark: true));
+      await tester.pumpWidget(
+        createTestWidget(items: [overdueBill], isDark: true),
+      );
       await tester.pumpAndSettle();
 
       // Verify Red Status properties
@@ -100,10 +102,12 @@ void main() {
       expect(gradient.colors[0], expectedStartColor);
     });
 
-    testWidgets('Red Status Test: Bill due in 2 days triggers Urgent state', (WidgetTester tester) async {
+    testWidgets('Red Status Test: Bill due in 2 days triggers Urgent state', (
+      WidgetTester tester,
+    ) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       final urgentBill = VaultItem()
         ..itemType = 'Bill'
         ..isPaid = false
@@ -111,45 +115,57 @@ void main() {
         ..amount = 50.0
         ..title = 'Due in 2 days';
 
-      await tester.pumpWidget(createTestWidget(items: [urgentBill], isDark: true));
+      await tester.pumpWidget(
+        createTestWidget(items: [urgentBill], isDark: true),
+      );
       await tester.pumpAndSettle();
 
       // Verify Red Status properties
       expect(find.text('ACTION REQUIRED'), findsOneWidget);
-      
+
       final container = tester.widget<Container>(findMainCardContainer());
       final decoration = container.decoration as BoxDecoration;
       final border = decoration.border as Border;
       expect(border.top.color, AppTheme.urgentRed.withValues(alpha: 0.15));
     });
 
-    testWidgets('Yellow Status Test: Bill due in 5 days triggers Warning state', (WidgetTester tester) async {
+    testWidgets(
+      'Yellow Status Test: Bill due in 5 days triggers Warning state',
+      (WidgetTester tester) async {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        final warningBill = VaultItem()
+          ..itemType = 'Bill'
+          ..isPaid = false
+          ..dueDate = today.add(const Duration(days: 5))
+          ..amount = 150.0
+          ..title = 'Due in 5 days';
+
+        await tester.pumpWidget(
+          createTestWidget(items: [warningBill], isDark: true),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify Yellow Status properties
+        expect(find.text('UPCOMING DUE'), findsOneWidget);
+
+        final container = tester.widget<Container>(findMainCardContainer());
+        final decoration = container.decoration as BoxDecoration;
+        final border = decoration.border as Border;
+        expect(
+          border.top.color,
+          AppTheme.warningYellow.withValues(alpha: 0.15),
+        );
+      },
+    );
+
+    testWidgets('Green Status Test: Bill due in 8 days triggers Safe state', (
+      WidgetTester tester,
+    ) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      
-      final warningBill = VaultItem()
-        ..itemType = 'Bill'
-        ..isPaid = false
-        ..dueDate = today.add(const Duration(days: 5))
-        ..amount = 150.0
-        ..title = 'Due in 5 days';
 
-      await tester.pumpWidget(createTestWidget(items: [warningBill], isDark: true));
-      await tester.pumpAndSettle();
-
-      // Verify Yellow Status properties
-      expect(find.text('UPCOMING DUE'), findsOneWidget);
-
-      final container = tester.widget<Container>(findMainCardContainer());
-      final decoration = container.decoration as BoxDecoration;
-      final border = decoration.border as Border;
-      expect(border.top.color, AppTheme.warningYellow.withValues(alpha: 0.15));
-    });
-
-    testWidgets('Green Status Test: Bill due in 8 days triggers Safe state', (WidgetTester tester) async {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      
       final safeBill = VaultItem()
         ..itemType = 'Bill'
         ..isPaid = false
@@ -157,7 +173,9 @@ void main() {
         ..amount = 200.0
         ..title = 'Due in 8 days';
 
-      await tester.pumpWidget(createTestWidget(items: [safeBill], isDark: true));
+      await tester.pumpWidget(
+        createTestWidget(items: [safeBill], isDark: true),
+      );
       await tester.pumpAndSettle();
 
       // Verify Green Status properties
@@ -169,7 +187,9 @@ void main() {
       expect(border.top.color, AppTheme.safeGreen.withValues(alpha: 0.15));
     });
 
-    testWidgets('Green Status Test: No items triggers Safe state', (WidgetTester tester) async {
+    testWidgets('Green Status Test: No items triggers Safe state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(items: [], isDark: true));
       await tester.pumpAndSettle();
 
@@ -182,14 +202,16 @@ void main() {
       expect(border.top.color, AppTheme.safeGreen.withValues(alpha: 0.15));
     });
 
-    testWidgets('Light Theme Test: Correct alphaBlend start color used', (WidgetTester tester) async {
+    testWidgets('Light Theme Test: Correct alphaBlend start color used', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(items: [], isDark: false));
       await tester.pumpAndSettle();
 
       final container = tester.widget<Container>(findMainCardContainer());
       final decoration = container.decoration as BoxDecoration;
       final border = decoration.border as Border;
-      
+
       // Border color in light mode: statusColor (safeGreen) with 0.22 alpha
       expect(border.top.color, AppTheme.safeGreen.withValues(alpha: 0.22));
 

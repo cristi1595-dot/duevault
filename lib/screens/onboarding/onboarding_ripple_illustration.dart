@@ -63,10 +63,7 @@ class OnboardingRippleIllustration extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1B1F26), // AppTheme.darkSurface
             shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withValues(alpha: 0.4),
-              width: 2.0,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.4), width: 2.0),
             boxShadow: [
               BoxShadow(
                 color: color.withValues(alpha: 0.15),
@@ -75,11 +72,7 @@ class OnboardingRippleIllustration extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            size: 48,
-            color: color,
-          ),
+          child: Icon(icon, size: 48, color: color),
         ),
       ],
     );

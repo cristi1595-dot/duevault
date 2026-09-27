@@ -48,19 +48,15 @@ class VaultSearchAndSort extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Search...',
                   hintStyle: TextStyle(
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.color
-                        ?.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.3),
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.color
-                        ?.withValues(alpha: 0.4),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withValues(alpha: 0.4),
                     size: 20,
                   ),
                   border: InputBorder.none,
@@ -69,10 +65,7 @@ class VaultSearchAndSort extends StatelessWidget {
                       ? IconButton(
                           icon: Icon(
                             Icons.clear,
-                            color: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.color
+                            color: Theme.of(context).textTheme.bodySmall?.color
                                 ?.withValues(alpha: 0.4),
                             size: 16,
                           ),
@@ -149,11 +142,9 @@ class VaultSearchAndSort extends StatelessWidget {
           Icon(
             icon,
             size: 18,
-            color: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.color
-                ?.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 12),
           Text(

@@ -4,11 +4,7 @@ class DueVaultLogo extends StatelessWidget {
   final double size;
   final bool showGlow;
 
-  const DueVaultLogo({
-    super.key,
-    this.size = 100,
-    this.showGlow = true,
-  });
+  const DueVaultLogo({super.key, this.size = 100, this.showGlow = true});
 
   @override
   Widget build(BuildContext context) {
@@ -40,4 +36,3 @@ class DueVaultLogo extends StatelessWidget {
     );
   }
 }
-

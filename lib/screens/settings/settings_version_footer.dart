@@ -52,11 +52,9 @@ class _SettingsVersionFooterState extends State<SettingsVersionFooter> {
           child: Text(
             'Version 1.0.0 (Pre-Beta)',
             style: TextStyle(
-              color: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.color
-                  ?.withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
               fontSize: 12,
               letterSpacing: 0.5,
             ),

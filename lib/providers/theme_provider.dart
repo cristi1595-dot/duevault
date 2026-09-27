@@ -19,7 +19,7 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
       final isDarkMode = config?.isDarkMode ?? true;
       return isDarkMode ? ThemeMode.dark : ThemeMode.light;
     }
-    
+
     switch (themeStr) {
       case 'light':
         return ThemeMode.light;
@@ -38,7 +38,7 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
 
   Future<void> _saveTheme(ThemeMode mode) async {
     final config = await isar.appConfigs.get(0) ?? AppConfig();
-    
+
     String modeStr;
     switch (mode) {
       case ThemeMode.light:

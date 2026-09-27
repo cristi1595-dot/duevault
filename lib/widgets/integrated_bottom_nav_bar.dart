@@ -31,7 +31,9 @@ class IntegratedBottomNavBar extends StatelessWidget {
             child: Container(
               height: 68,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65), // Dark semi-transparent background
+                color: Colors.black.withValues(
+                  alpha: 0.65,
+                ), // Dark semi-transparent background
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.12),
@@ -79,7 +81,9 @@ class IntegratedBottomNavBar extends StatelessWidget {
   ) {
     final isSelected = currentIndex == index;
     const activeColor = Colors.greenAccent;
-    final color = isSelected ? activeColor : inactiveColor.withValues(alpha: 0.5);
+    final color = isSelected
+        ? activeColor
+        : inactiveColor.withValues(alpha: 0.5);
 
     return GestureDetector(
       onTap: () => onTap(index),
@@ -87,11 +91,7 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 26,
-          ),
+          Icon(icon, color: color, size: 26),
           const SizedBox(height: 6),
           AnimatedContainer(
             duration: const Duration(milliseconds: 250),
@@ -146,13 +146,15 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
       duration: const Duration(milliseconds: 1000),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    _glowAnimation = Tween<double>(begin: 12.0, end: 24.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _glowAnimation = Tween<double>(
+      begin: 12.0,
+      end: 24.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     if (widget.shouldPulse) {
       _controller.repeat(reverse: true);
@@ -185,7 +187,9 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
       builder: (context, child) {
         final scale = widget.shouldPulse ? _scaleAnimation.value : 1.0;
         final glow = widget.shouldPulse ? _glowAnimation.value : 12.0;
-        final spread = widget.shouldPulse ? 2.0 + (_controller.value * 2.0) : 2.0;
+        final spread = widget.shouldPulse
+            ? 2.0 + (_controller.value * 2.0)
+            : 2.0;
 
         return Transform.scale(
           scale: scale,
@@ -197,17 +201,16 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const RadialGradient(
-                  colors: [
-                    Colors.greenAccent,
-                    Color(0xFF00E676),
-                  ],
+                  colors: [Colors.greenAccent, Color(0xFF00E676)],
                   center: Alignment.center,
                   radius: 0.85,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.greenAccent.withValues(
-                      alpha: widget.shouldPulse ? 0.35 + (_controller.value * 0.15) : 0.35,
+                      alpha: widget.shouldPulse
+                          ? 0.35 + (_controller.value * 0.15)
+                          : 0.35,
                     ),
                     blurRadius: glow,
                     spreadRadius: spread,
@@ -215,11 +218,7 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.black,
-                size: 28,
-              ),
+              child: const Icon(Icons.add, color: Colors.black, size: 28),
             ),
           ),
         );
@@ -227,5 +226,3 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
     );
   }
 }
-
-

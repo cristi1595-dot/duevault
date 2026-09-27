@@ -57,7 +57,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   void initState() {
     super.initState();
     _loadAttachmentsDirectory();
-    
+
     // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
@@ -65,7 +65,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
     if (widget.item != null) {
       _itemType = widget.item!.itemType ?? 'Bill';
-      _category = _isEdit ? widget.item!.category : AppCategories.billCategories.first.name;
+      _category = _isEdit
+          ? widget.item!.category
+          : AppCategories.billCategories.first.name;
       _recurrence = widget.item!.recurrence;
       _directDebit = widget.item!.directDebit;
       _dueDate = widget.item!.dueDate;
@@ -105,7 +107,10 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       }
     }
     if (result.probableDate != null && _dueDate == null) {
-      if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
+      if (ValidationHelper.isDateValid(
+        result.probableDate,
+        isRequired: false,
+      )) {
         _dueDate = result.probableDate;
       }
     }
@@ -187,8 +192,11 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
               brightness: Theme.of(context).brightness,
               primary: AppTheme.primaryAction,
               onPrimary: Colors.white,
-              surface: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
-              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+              surface:
+                  Theme.of(context).cardTheme.color ??
+                  Theme.of(context).cardColor,
+              onSurface:
+                  Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
               secondary: AppTheme.primaryAction,
               onSecondary: Colors.white,
               error: AppTheme.urgentRed,
@@ -240,7 +248,10 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     }
 
     final amountStr = _amountController.text.trim();
-    final amountError = ValidationHelper.validateAmount(amountStr, isRequired: true);
+    final amountError = ValidationHelper.validateAmount(
+      amountStr,
+      isRequired: true,
+    );
     if (amountError != null) {
       _showValidationError(amountError);
       return;
@@ -279,14 +290,18 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     setState(() => _isSaving = true);
     try {
       await ref.read(vaultProvider.notifier).addItem(item);
-      await ref.read(analyticsServiceProvider).logItemAdded(item.itemType ?? 'Bill');
+      await ref
+          .read(analyticsServiceProvider)
+          .logItemAdded(item.itemType ?? 'Bill');
       if (mounted) {
         final rootContext = Navigator.of(context).context;
         // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (rootContext.mounted) {
-            ref.read(appReviewServiceProvider).incrementActionCounter(ref, rootContext);
+            ref
+                .read(appReviewServiceProvider)
+                .incrementActionCounter(ref, rootContext);
           }
         });
       }
@@ -312,7 +327,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   @override
   Widget build(BuildContext context) {
     final currency = ref.watch(currencyProvider);
-    final isFormValid = _titleController.text.trim().isNotEmpty &&
+    final isFormValid =
+        _titleController.text.trim().isNotEmpty &&
         _amountController.text.trim().isNotEmpty &&
         _dueDate != null;
     return Scaffold(
@@ -405,7 +421,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 onRecurrenceChanged: (v) {
                   if (v != null) setState(() => _recurrence = v);
                 },
-                onDirectDebitChanged: (val) => setState(() => _directDebit = val),
+                onDirectDebitChanged: (val) =>
+                    setState(() => _directDebit = val),
               ),
               const SizedBox(height: 10),
 

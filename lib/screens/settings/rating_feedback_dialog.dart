@@ -55,16 +55,22 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: (_selectedRating >= 4 ? AppTheme.primaryAction : AppTheme.warningYellow).withValues(alpha: 0.1),
+                  color:
+                      (_selectedRating >= 4
+                              ? AppTheme.primaryAction
+                              : AppTheme.warningYellow)
+                          .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   _selectedRating == 0
                       ? Icons.star_border_rounded
                       : _selectedRating >= 4
-                          ? Icons.favorite_rounded
-                          : Icons.rate_review_rounded,
-                  color: _selectedRating >= 4 ? AppTheme.primaryAction : AppTheme.warningYellow,
+                      ? Icons.favorite_rounded
+                      : Icons.rate_review_rounded,
+                  color: _selectedRating >= 4
+                      ? AppTheme.primaryAction
+                      : AppTheme.warningYellow,
                   size: 36,
                 ),
               ),
@@ -75,8 +81,8 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                 _selectedRating == 0
                     ? 'Enjoying DueVault?'
                     : _selectedRating >= 4
-                        ? 'We love you back!'
-                        : 'Help us improve',
+                    ? 'We love you back!'
+                    : 'Help us improve',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -90,8 +96,8 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                 _selectedRating == 0
                     ? 'Tap a star to rate your experience with us.'
                     : _selectedRating >= 4
-                        ? 'Would you mind sharing a quick rating on the Google Play Store to support our development?'
-                        : 'Please tell us what we can do better so we can make it right for you.',
+                    ? 'Would you mind sharing a quick rating on the Google Play Store to support our development?'
+                    : 'Please tell us what we can do better so we can make it right for you.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
@@ -121,8 +127,14 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                         scale: isLit ? 1.15 : 1.0,
                         duration: const Duration(milliseconds: 150),
                         child: Icon(
-                          isLit ? Icons.star_rounded : Icons.star_outline_rounded,
-                          color: isLit ? Colors.amber : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.4),
+                          isLit
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: isLit
+                              ? Colors.amber
+                              : theme.textTheme.bodySmall?.color?.withValues(
+                                  alpha: 0.4,
+                                ),
                           size: 42,
                         ),
                       ),
@@ -132,7 +144,9 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
               ),
 
               // Feedback Form (1-3 stars)
-              if (_selectedRating > 0 && _selectedRating <= 3 && !_submittedFeedback) ...[
+              if (_selectedRating > 0 &&
+                  _selectedRating <= 3 &&
+                  !_submittedFeedback) ...[
                 const SizedBox(height: 24),
                 TextField(
                   controller: _feedbackController,
@@ -142,7 +156,9 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                   decoration: InputDecoration(
                     hintText: 'Share your thoughts, suggestions, or issues...',
                     hintStyle: TextStyle(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: theme.textTheme.bodySmall?.color?.withValues(
+                        alpha: 0.6,
+                      ),
                       fontSize: 13,
                     ),
                     filled: true,
@@ -174,7 +190,9 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.pop(context),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -199,13 +217,17 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                                 setState(() {
                                   _isSubmitting = true;
                                 });
-                                widget.onFeedbackSubmitted(_feedbackController.text);
+                                widget.onFeedbackSubmitted(
+                                  _feedbackController.text,
+                                );
                                 setState(() {
                                   _isSubmitting = false;
                                   _submittedFeedback = true;
                                 });
                                 // Keep it briefly open to show completion animation
-                                await Future.delayed(const Duration(milliseconds: 1500));
+                                await Future.delayed(
+                                  const Duration(milliseconds: 1500),
+                                );
                                 if (context.mounted) {
                                   Navigator.of(context).pop();
                                 }
@@ -223,7 +245,9 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
@@ -298,7 +322,11 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_rounded, color: AppTheme.safeGreen, size: 20),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppTheme.safeGreen,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Thank you for your response!',

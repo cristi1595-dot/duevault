@@ -6,10 +6,7 @@ import 'onboarding_header.dart';
 class OnboardingTutorialPage extends StatelessWidget {
   final VoidCallback onContinue;
 
-  const OnboardingTutorialPage({
-    super.key,
-    required this.onContinue,
-  });
+  const OnboardingTutorialPage({super.key, required this.onContinue});
 
   @override
   Widget build(BuildContext context) {

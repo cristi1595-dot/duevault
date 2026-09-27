@@ -7,7 +7,8 @@ class VaultListBuilder extends StatelessWidget {
   final List<VaultItem> items;
   final Currency currency;
   final ScrollController? scrollController;
-  final Function(int id, bool isPaid, String title, String actionText) onPaidStatusToggle;
+  final Function(int id, bool isPaid, String title, String actionText)
+  onPaidStatusToggle;
 
   const VaultListBuilder({
     super.key,
@@ -37,9 +38,18 @@ class VaultListBuilder extends StatelessWidget {
               : () {
                   final nextStatus = !item.isPaid;
                   final actionText = nextStatus
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                  onPaidStatusToggle(item.id, nextStatus, item.title.isEmpty ? item.category : item.title, actionText);
+                      ? (item.itemType == 'Bill'
+                            ? 'marked as paid'
+                            : 'marked as renewed')
+                      : (item.itemType == 'Bill'
+                            ? 'marked as unpaid'
+                            : 'marked as not renewed');
+                  onPaidStatusToggle(
+                    item.id,
+                    nextStatus,
+                    item.title.isEmpty ? item.category : item.title,
+                    actionText,
+                  );
                 },
         );
       },

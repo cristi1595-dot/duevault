@@ -21,7 +21,11 @@ class AnalyticsService {
         parameters: {'user_type': userType},
       );
     } catch (e, stack) {
-      logger.e('Analytics: Error logging user type', error: e, stackTrace: stack);
+      logger.e(
+        'Analytics: Error logging user type',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -34,7 +38,11 @@ class AnalyticsService {
         parameters: {'category': category},
       );
     } catch (e, stack) {
-      logger.e('Analytics: Error logging item added', error: e, stackTrace: stack);
+      logger.e(
+        'Analytics: Error logging item added',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -42,16 +50,19 @@ class AnalyticsService {
   Future<void> logSettingsChanged(String settingName, dynamic value) async {
     try {
       final String formattedValue = value.toString();
-      logger.i('Analytics: Logging settings_changed event. Name: $settingName, Value: $formattedValue');
+      logger.i(
+        'Analytics: Logging settings_changed event. Name: $settingName, Value: $formattedValue',
+      );
       await _analytics.logEvent(
         name: 'settings_changed',
-        parameters: {
-          'setting_name': settingName,
-          'value': formattedValue,
-        },
+        parameters: {'setting_name': settingName, 'value': formattedValue},
       );
     } catch (e, stack) {
-      logger.e('Analytics: Error logging settings changed', error: e, stackTrace: stack);
+      logger.e(
+        'Analytics: Error logging settings changed',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 }

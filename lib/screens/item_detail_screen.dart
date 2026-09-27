@@ -246,9 +246,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
             // 4. Attachments
             if (currentItem.attachedFiles.isNotEmpty)
-              BentoCard(
-                child: ItemDetailAttachments(item: currentItem),
-              ),
+              BentoCard(child: ItemDetailAttachments(item: currentItem)),
             const SizedBox(height: 32),
 
             // 5. Actions
@@ -322,7 +320,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   final wasArchived = currentItem.isArchived;
                   final wasPaid = currentItem.isPaid;
                   final notifier = ref.read(vaultProvider.notifier);
-                  unawaited(notifier.toggleArchiveStatus(currentItem.id, false));
+                  unawaited(
+                    notifier.toggleArchiveStatus(currentItem.id, false),
+                  );
 
                   VaultSnackBar.show(
                     message: 'Restored to Vault',
@@ -330,7 +330,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     backgroundColor: AppTheme.primaryAction,
                     onAction: () async {
                       if (wasArchived) {
-                        await notifier.toggleArchiveStatus(currentItem.id, true);
+                        await notifier.toggleArchiveStatus(
+                          currentItem.id,
+                          true,
+                        );
                       }
                       if (wasPaid) {
                         await notifier.updatePaidStatus(currentItem.id, true);
@@ -362,8 +365,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     WidgetRef ref,
     VaultItem currentItem,
   ) async {
-    final title = currentItem.title.isEmpty ? currentItem.category : currentItem.title;
-    final confirm = await ItemDetailDialogs.showDeleteItemDialog(context, title);
+    final title = currentItem.title.isEmpty
+        ? currentItem.category
+        : currentItem.title;
+    final confirm = await ItemDetailDialogs.showDeleteItemDialog(
+      context,
+      title,
+    );
 
     if (confirm == true) {
       unawaited(ref.read(vaultProvider.notifier).deleteItem(currentItem.id));

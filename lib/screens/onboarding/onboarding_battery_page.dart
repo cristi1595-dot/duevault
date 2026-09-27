@@ -34,18 +34,18 @@ class OnboardingBatteryPage extends StatelessWidget {
               'Reliable background alerts',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               "Your phone's system often puts inactive apps to sleep. Grant permission to run discreetly in the background so you always receive alerts on time.",
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textSecondary,
-                    height: 1.6,
-                  ),
+                color: AppTheme.textSecondary,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 40),
             PrimaryButton(

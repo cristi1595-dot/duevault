@@ -44,7 +44,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       final offerings = await Purchases.getOfferings();
 
       if (offerings.current == null) {
-        _showNotification('No offerings available. Please try again later.', isError: true);
+        _showNotification(
+          'No offerings available. Please try again later.',
+          isError: true,
+        );
         return;
       }
 
@@ -52,17 +55,24 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       final package = offerings.current!.availablePackages.first;
       logger.i('Initiating purchase for package: ${package.identifier}');
 
-      final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
+      final purchaseResult = await Purchases.purchase(
+        PurchaseParams.package(package),
+      );
       final customerInfo = purchaseResult.customerInfo;
 
       if (customerInfo.entitlements.all['DueVault Pro']?.isActive == true) {
         // Update premium state immediately from the returned CustomerInfo
-        ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
+        ref
+            .read(isPremiumProvider.notifier)
+            .updateFromCustomerInfo(customerInfo);
         if (!mounted) return;
         _showNotification('✓ Purchase successful! PRO unlocked.');
         Navigator.pop(context); // Close Paywall
       } else {
-        _showNotification('Purchase completed but PRO entitlement not found. Contact support.', isError: true);
+        _showNotification(
+          'Purchase completed but PRO entitlement not found. Contact support.',
+          isError: true,
+        );
       }
     } on PlatformException catch (e) {
       // RevenueCat wraps errors in PlatformException
@@ -89,12 +99,15 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     try {
       logger.i('Restoring purchases with RevenueCat...');
       final customerInfo = await Purchases.restorePurchases();
-      final isPro = customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
+      final isPro =
+          customerInfo.entitlements.all['DueVault Pro']?.isActive ?? false;
 
       if (!mounted) return;
 
       if (isPro) {
-        ref.read(isPremiumProvider.notifier).updateFromCustomerInfo(customerInfo);
+        ref
+            .read(isPremiumProvider.notifier)
+            .updateFromCustomerInfo(customerInfo);
         _showNotification('✓ Purchases restored! PRO unlocked.');
         Navigator.pop(context); // Close Paywall
       } else {
@@ -153,7 +166,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,7 +177,11 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 16, top: 8),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white60, size: 28),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white60,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -177,10 +194,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 10),
-                        const DueVaultLogo(
-                          size: 80,
-                          showGlow: true,
-                        ),
+                        const DueVaultLogo(size: 80, showGlow: true),
                         const SizedBox(height: 24),
                         // Neon styled Title
                         Text(
@@ -192,12 +206,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                             color: Colors.white,
                             shadows: [
                               Shadow(
-                                color: const Color(0xFF00E676).withValues(alpha: 0.6),
+                                color: const Color(
+                                  0xFF00E676,
+                                ).withValues(alpha: 0.6),
                                 blurRadius: 10,
                                 offset: const Offset(0, 0),
                               ),
                               Shadow(
-                                color: const Color(0xFF00B0FF).withValues(alpha: 0.4),
+                                color: const Color(
+                                  0xFF00B0FF,
+                                ).withValues(alpha: 0.4),
                                 blurRadius: 20,
                                 offset: const Offset(0, 0),
                               ),
@@ -220,21 +238,24 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         _buildBenefitCard(
                           emoji: '☁️',
                           title: 'Cloud Sync & Backup',
-                          subtitle: 'Instantly sync and restore across devices safely using Google Drive & Firebase.',
+                          subtitle:
+                              'Instantly sync and restore across devices safely using Google Drive & Firebase.',
                         ),
                         const SizedBox(height: 16),
                         _buildBenefitCard(
                           emoji: '📸',
                           title: 'Auto-Scan (OCR)',
-                          subtitle: 'Automatically scan documents & bills with high precision ML auto-fill tools.',
+                          subtitle:
+                              'Automatically scan documents & bills with high precision ML auto-fill tools.',
                         ),
                         const SizedBox(height: 16),
                         _buildBenefitCard(
                           emoji: '♾️',
                           title: 'Unlimited Peace of Mind',
-                          subtitle: 'Save unlimited documents, alerts, categories and enjoy zero storage caps.',
+                          subtitle:
+                              'Save unlimited documents, alerts, categories and enjoy zero storage caps.',
                         ),
-                        
+
                         const SizedBox(height: 50),
                       ],
                     ),
@@ -243,7 +264,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
                 // CTA Section (Always at the bottom)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28.0,
+                    vertical: 16.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -255,17 +279,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                           height: 56,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF00E676),
-                                Color(0xFF00B0FF),
-                              ],
+                              colors: [Color(0xFF00E676), Color(0xFF00B0FF)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E676).withValues(alpha: 0.35),
+                                color: const Color(
+                                  0xFF00E676,
+                                ).withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),
@@ -278,7 +301,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                                     height: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : Text(
@@ -330,9 +355,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,10 +367,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 24),
-            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 24)),
           ),
           const SizedBox(width: 16),
           // Texts

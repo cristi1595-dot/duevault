@@ -56,11 +56,7 @@ class AttachmentSection extends ConsumerWidget {
           if (attachedFiles.isNotEmpty)
             Container(
               height: 90,
-              padding: const EdgeInsets.only(
-                left: 12,
-                bottom: 12,
-                top: 4,
-              ),
+              padding: const EdgeInsets.only(left: 12, bottom: 12, top: 4),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: attachedFiles.length,
@@ -68,7 +64,7 @@ class AttachmentSection extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final path = attachedFiles[index];
                   return Stack(
-                     children: [
+                    children: [
                       Container(
                         width: 70,
                         decoration: BoxDecoration(
@@ -146,7 +142,8 @@ class AttachmentSection extends ConsumerWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Theme.of(context).textTheme.bodySmall?.color ??
+                    color:
+                        Theme.of(context).textTheme.bodySmall?.color ??
                         AppTheme.lightTextSecondary,
                     fontSize: 11,
                   ),
@@ -217,7 +214,9 @@ class AttachmentSection extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      isProcessingOcr ? 'Scanning...' : (isPro ? 'Smart Scan' : 'Take a picture'),
+                      isProcessingOcr
+                          ? 'Scanning...'
+                          : (isPro ? 'Smart Scan' : 'Take a picture'),
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyLarge?.color,
                         fontWeight: FontWeight.bold,
@@ -227,12 +226,17 @@ class AttachmentSection extends ConsumerWidget {
                     if (!ref.watch(isPremiumProvider)) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryAction.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: AppTheme.primaryAction.withValues(alpha: 0.4),
+                            color: AppTheme.primaryAction.withValues(
+                              alpha: 0.4,
+                            ),
                             width: 0.8,
                           ),
                         ),
@@ -272,7 +276,8 @@ class AttachmentSection extends ConsumerWidget {
                           value: useOcr,
                           onChanged: onOcrToggleChanged,
                           activeThumbColor: AppTheme.primaryAction,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                     ),
@@ -293,24 +298,43 @@ class AttachmentSection extends ConsumerWidget {
       return true;
     }
     // PNG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
       return true;
     }
     // GIF
-    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) {
+    if (bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38) {
       return true;
     }
     // WEBP
     if (bytes.length >= 12 &&
-        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
       return true;
     }
     // HEIC/HEIF
     if (bytes.length >= 12 &&
-        bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) {
+        bytes[4] == 0x66 &&
+        bytes[5] == 0x74 &&
+        bytes[6] == 0x79 &&
+        bytes[7] == 0x70) {
       final brand = String.fromCharCodes(bytes.sublist(8, 12));
-      if (brand == 'heic' || brand == 'heix' || brand == 'hevc' || brand == 'mif1' || brand == 'msf1') {
+      if (brand == 'heic' ||
+          brand == 'heix' ||
+          brand == 'hevc' ||
+          brand == 'mif1' ||
+          brand == 'msf1') {
         return true;
       }
     }
@@ -368,16 +392,22 @@ class AttachmentSection extends ConsumerWidget {
 
         final bytes = snapshot.data;
         if (snapshot.hasError || bytes == null || bytes.isEmpty) {
-          return _buildFileIcon(path, isPdf: path.toLowerCase().endsWith('.pdf'));
+          return _buildFileIcon(
+            path,
+            isPdf: path.toLowerCase().endsWith('.pdf'),
+          );
         }
 
-        final isPdf = path.toLowerCase().endsWith('.pdf') || _detectExtension(bytes) == '.pdf';
+        final isPdf =
+            path.toLowerCase().endsWith('.pdf') ||
+            _detectExtension(bytes) == '.pdf';
         if (isPdf) {
           return _buildFileIcon(path, isPdf: true);
         }
 
         final cleanPath = path.toLowerCase().replaceAll('.enc', '');
-        final isImage = _isImageBytes(bytes) ||
+        final isImage =
+            _isImageBytes(bytes) ||
             cleanPath.endsWith('.jpg') ||
             cleanPath.endsWith('.jpeg') ||
             cleanPath.endsWith('.png') ||

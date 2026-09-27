@@ -83,13 +83,17 @@ class VaultRepository {
           final List<String> removedFiles = [];
           final List<String> removedCloudIds = [];
 
+          // Extract basenames of updated item's attachments into a Set for O(1) lookups
+          final updatedFileNames = item.attachedFiles
+              .map((newPath) => p.basename(newPath.replaceAll('\\', '/')))
+              .toSet();
+
           for (int i = 0; i < oldItem.attachedFiles.length; i++) {
             final oldPath = oldItem.attachedFiles[i];
             final oldFileName = p.basename(oldPath.replaceAll('\\', '/'));
 
             // Check if this file is still present in the updated item's attachments
-            final stillExists = item.attachedFiles.any((newPath) =>
-                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+            final stillExists = updatedFileNames.contains(oldFileName);
 
             if (!stillExists) {
               removedFiles.add(oldFileName);
@@ -110,7 +114,10 @@ class VaultRepository {
                   logger.i('Local removed file deleted: $fileName');
                 }
               } catch (e) {
-                logger.e('Failed to delete local removed file: $fileName', error: e);
+                logger.e(
+                  'Failed to delete local removed file: $fileName',
+                  error: e,
+                );
               }
             }
           }
@@ -128,9 +135,10 @@ class VaultRepository {
           final List<String> newCloudIds = [];
           final List<String> newChecksums = [];
           for (int i = 0; i < oldItem.attachedFiles.length; i++) {
-            final oldFileName = p.basename(oldItem.attachedFiles[i].replaceAll('\\', '/'));
-            final stillExists = item.attachedFiles.any((newPath) =>
-                p.basename(newPath.replaceAll('\\', '/')) == oldFileName);
+            final oldFileName = p.basename(
+              oldItem.attachedFiles[i].replaceAll('\\', '/'),
+            );
+            final stillExists = updatedFileNames.contains(oldFileName);
             if (stillExists) {
               if (i < oldItem.cloudFileIds.length) {
                 newCloudIds.add(oldItem.cloudFileIds[i]);
@@ -164,7 +172,8 @@ class VaultRepository {
 
       // Schedule notifications if enabled
       if (notificationsEnabled &&
-          (processedItem.itemType == 'Bill' || processedItem.itemType == 'Document') &&
+          (processedItem.itemType == 'Bill' ||
+              processedItem.itemType == 'Document') &&
           processedItem.dueDate != null &&
           !processedItem.isPaid) {
         await NotificationService.scheduleDualAlerts(
@@ -182,7 +191,9 @@ class VaultRepository {
         );
       }
 
-      logger.i('Item saved successfully: ${processedItem.title} (${processedItem.uuid})');
+      logger.i(
+        'Item saved successfully: ${processedItem.title} (${processedItem.uuid})',
+      );
       return processedItem;
     } catch (e, stack) {
       logger.e('Error saving item: ${item.title}', error: e, stackTrace: stack);

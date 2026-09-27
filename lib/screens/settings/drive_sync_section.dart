@@ -28,7 +28,9 @@ class DriveSyncSection extends ConsumerWidget {
     if (syncState.status == SyncStatus.syncing) {
       subtitleText = 'Syncing...';
     } else if (syncTimestamp.valueOrNull != null) {
-      final formatted = DateFormat('MMM dd, HH:mm').format(syncTimestamp.valueOrNull!.toLocal());
+      final formatted = DateFormat(
+        'MMM dd, HH:mm',
+      ).format(syncTimestamp.valueOrNull!.toLocal());
       subtitleText = 'Last sync: $formatted';
     }
 
@@ -72,7 +74,9 @@ class DriveSyncSection extends ConsumerWidget {
                 await ref.read(wifiOnlyProvider.notifier).toggleWifiOnly(v);
               },
               activeThumbColor: AppTheme.getSettingsAccent(context),
-              activeTrackColor: AppTheme.getSettingsAccent(context).withValues(alpha: 0.3),
+              activeTrackColor: AppTheme.getSettingsAccent(
+                context,
+              ).withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -104,7 +108,11 @@ class DriveSyncSection extends ConsumerWidget {
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
+          child: Icon(
+            icon,
+            color: iconColor ?? AppTheme.primaryAction,
+            size: 18,
+          ),
         ),
         title: Text(
           title,
@@ -123,7 +131,8 @@ class DriveSyncSection extends ConsumerWidget {
                 ),
               )
             : null,
-        trailing: trailing ??
+        trailing:
+            trailing ??
             Icon(
               Icons.chevron_right,
               color: Theme.of(context).textTheme.bodySmall?.color,

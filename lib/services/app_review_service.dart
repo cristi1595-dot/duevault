@@ -16,14 +16,19 @@ class AppReviewService {
 
   /// Increment the action count. If milestone (e.g. 3) is reached,
   /// trigger automatic prompt checks.
-  Future<void> incrementActionCounter(WidgetRef ref, BuildContext context) async {
+  Future<void> incrementActionCounter(
+    WidgetRef ref,
+    BuildContext context,
+  ) async {
     try {
       final config = await _repository.getConfig();
       if (config.hasRatedApp) return;
 
       config.successfulActionsCount++;
       await _repository.updateConfig(config);
-      logger.i('AppReviewService: Actions count incremented to ${config.successfulActionsCount}');
+      logger.i(
+        'AppReviewService: Actions count incremented to ${config.successfulActionsCount}',
+      );
 
       if (config.successfulActionsCount >= 3) {
         // Run automatic trigger check in a post-frame callback to avoid UI build issues
@@ -32,12 +37,18 @@ class AppReviewService {
         });
       }
     } catch (e) {
-      logger.e('AppReviewService: Failed to increment action counter', error: e);
+      logger.e(
+        'AppReviewService: Failed to increment action counter',
+        error: e,
+      );
     }
   }
 
   /// Automatically prompts the user if they qualify
-  Future<void> checkAndPromptAutomaticReview(WidgetRef ref, BuildContext context) async {
+  Future<void> checkAndPromptAutomaticReview(
+    WidgetRef ref,
+    BuildContext context,
+  ) async {
     try {
       final config = await _repository.getConfig();
       if (config.hasRatedApp) return;
@@ -50,8 +61,10 @@ class AppReviewService {
 
       // Cooldown of 30 days between automatic prompts
       if (lastPrompt == null || now.difference(lastPrompt).inDays >= 30) {
-        logger.i('AppReviewService: Qualifying user for automatic review. Triggering prompt...');
-        
+        logger.i(
+          'AppReviewService: Qualifying user for automatic review. Triggering prompt...',
+        );
+
         // Update prompt date first to avoid double prompts
         config.lastPromptedDate = now;
         await _repository.updateConfig(config);
@@ -61,7 +74,11 @@ class AppReviewService {
         }
       }
     } catch (e, stack) {
-      logger.e('AppReviewService: Error checking automatic review condition', error: e, stackTrace: stack);
+      logger.e(
+        'AppReviewService: Error checking automatic review condition',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -80,7 +97,7 @@ class AppReviewService {
           if (feedbackText == 'STORES_REVIEW') {
             // Trigger 4-5 stars Play Store rating
             await _triggerStoreRating();
-            
+
             // Mark rated in config
             final config = await _repository.getConfig();
             config.hasRatedApp = true;
@@ -102,11 +119,17 @@ class AppReviewService {
         logger.i('AppReviewService: Launching in-app review sheet');
         await _inAppReview.requestReview();
       } else {
-        logger.i('AppReviewService: in_app_review not available. Falling back to Store listing');
+        logger.i(
+          'AppReviewService: in_app_review not available. Falling back to Store listing',
+        );
         await _inAppReview.openStoreListing();
       }
     } catch (e, stack) {
-      logger.e('AppReviewService: Failed to trigger store review flow', error: e, stackTrace: stack);
+      logger.e(
+        'AppReviewService: Failed to trigger store review flow',
+        error: e,
+        stackTrace: stack,
+      );
       // Fallback
       try {
         await _inAppReview.openStoreListing();
@@ -132,7 +155,11 @@ class AppReviewService {
       logger.i('AppReviewService: Submitting feedback to Firestore: $data');
       await FirebaseFirestore.instance.collection('feedback').add(data);
     } catch (e, stack) {
-      logger.w('AppReviewService: Failed to upload feedback to Firestore (offline or disabled)', error: e, stackTrace: stack);
+      logger.w(
+        'AppReviewService: Failed to upload feedback to Firestore (offline or disabled)',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 }

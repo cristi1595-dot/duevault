@@ -13,10 +13,7 @@ class AttachmentSyncManager {
   final Isar localIsar;
   final User user;
 
-  AttachmentSyncManager({
-    required this.localIsar,
-    required this.user,
-  });
+  AttachmentSyncManager({required this.localIsar, required this.user});
 
   /// Synchronizes local attachments with Google Drive
   Future<void> syncAttachments(DriveService driveService) async {
@@ -35,7 +32,9 @@ class AttachmentSyncManager {
 
         // 2. UPLOAD/UPDATE files in Cloud based on Checksums
         for (int i = 0; i < item.attachedFiles.length; i++) {
-          final fileName = p.basename(item.attachedFiles[i].replaceAll('\\', '/'));
+          final fileName = p.basename(
+            item.attachedFiles[i].replaceAll('\\', '/'),
+          );
           final localFile = File('${attachmentsDir.path}/$fileName');
           if (!await localFile.exists()) continue;
 

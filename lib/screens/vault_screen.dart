@@ -21,14 +21,19 @@ class VaultScreen extends ConsumerStatefulWidget {
 
 class _VaultScreenState extends ConsumerState<VaultScreen> {
   static const int _initialPageIndex = 4000;
-  final PageController _pageController = PageController(initialPage: _initialPageIndex);
+  final PageController _pageController = PageController(
+    initialPage: _initialPageIndex,
+  );
   final TextEditingController _searchController = TextEditingController();
 
   int _currentPageIndex = _initialPageIndex;
   String _searchQuery = '';
   SortOption _sortBy = SortOption.date;
   bool _sortAscending = true;
-  final List<ScrollController> _scrollControllers = List.generate(4, (_) => ScrollController());
+  final List<ScrollController> _scrollControllers = List.generate(
+    4,
+    (_) => ScrollController(),
+  );
 
   @override
   void dispose() {
@@ -60,7 +65,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   void _togglePaidStatus(int id, bool isPaid, String title, String actionText) {
     final notifier = ref.read(vaultProvider.notifier);
     notifier.updatePaidStatus(id, isPaid);
-    
+
     VaultSnackBar.show(
       message: '$title $actionText',
       actionLabel: 'UNDO',
@@ -69,8 +74,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     );
   }
 
-  List<VaultItem> _getFilteredAndSortedItems(List<VaultItem> allItems, int tabIndex) {
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  List<VaultItem> _getFilteredAndSortedItems(
+    List<VaultItem> allItems,
+    int tabIndex,
+  ) {
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
 
     // 1. Search Filter
     final searchFiltered = allItems.where((item) {
@@ -145,7 +157,10 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
           children: [
             DueVaultLogo(size: 34, showGlow: false),
             SizedBox(width: 12),
-            Text('Vault', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+            Text(
+              'Vault',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+            ),
             SizedBox(width: 8),
             SyncStatusIndicator(),
           ],
@@ -171,7 +186,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                           child: Text(
                             'Guest',
                             style: TextStyle(
-                              color: Theme.of(context).textTheme.bodySmall?.color,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
                               fontSize: 12,
                             ),
                           ),
@@ -179,11 +196,15 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: Theme.of(context).cardTheme.color,
-                        backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                        backgroundImage: photoUrl != null
+                            ? NetworkImage(photoUrl)
+                            : null,
                         child: photoUrl == null
                             ? Icon(
                                 Icons.person,
-                                color: Theme.of(context).textTheme.bodyMedium?.color,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.color,
                                 size: 18,
                               )
                             : null,
@@ -242,10 +263,14 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               },
               child: PageView.builder(
                 controller: _pageController,
-                onPageChanged: (index) => setState(() => _currentPageIndex = index),
+                onPageChanged: (index) =>
+                    setState(() => _currentPageIndex = index),
                 itemBuilder: (context, index) {
                   final tabIndex = index % 4;
-                  final items = _getFilteredAndSortedItems(vaultItems, tabIndex);
+                  final items = _getFilteredAndSortedItems(
+                    vaultItems,
+                    tabIndex,
+                  );
                   return VaultListBuilder(
                     items: items,
                     currency: currency,

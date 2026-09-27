@@ -53,17 +53,16 @@ class NotificationHealthBanner extends ConsumerWidget {
               children: [
                 const Text(
                   'Notificări dezactivate de sistem',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Apasă mai jos pentru a reactiva alarmele.',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
                   ),
                 ),
               ],

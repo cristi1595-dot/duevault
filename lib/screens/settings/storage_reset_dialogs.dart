@@ -7,9 +7,7 @@ Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isPro) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: Theme.of(ctx).cardTheme.color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text('Clear Local Cache'),
       content: Text(
         isPro
@@ -21,16 +19,12 @@ Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isPro) {
           onPressed: () => Navigator.pop(ctx, false),
           child: Text(
             'Cancel',
-            style: TextStyle(
-              color: Theme.of(ctx).textTheme.bodyMedium?.color,
-            ),
+            style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
           ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.urgentRed,
-          ),
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.urgentRed),
           child: const Text(
             'CLEAR CACHE',
             style: TextStyle(color: Colors.white),
@@ -42,14 +36,15 @@ Future<bool?> showClearCacheConfirmDialog(BuildContext context, bool isPro) {
 }
 
 /// Prompts confirmation for wiping all phone and cloud data.
-Future<bool?> showWipeEverythingConfirmDialog(BuildContext context, bool isPro) {
+Future<bool?> showWipeEverythingConfirmDialog(
+  BuildContext context,
+  bool isPro,
+) {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: Theme.of(ctx).cardTheme.color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text('WIPE EVERYTHING'),
       content: Text(
         isPro
@@ -61,16 +56,12 @@ Future<bool?> showWipeEverythingConfirmDialog(BuildContext context, bool isPro) 
           onPressed: () => Navigator.pop(ctx, false),
           child: Text(
             'Cancel',
-            style: TextStyle(
-              color: Theme.of(ctx).textTheme.bodyMedium?.color,
-            ),
+            style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
           ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.urgentRed,
-          ),
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.urgentRed),
           child: Text(
             isPro ? 'ERASE CLOUD & PHONE' : 'ERASE ALL LOCAL DATA',
             style: const TextStyle(color: Colors.white),
@@ -87,9 +78,7 @@ Future<bool?> showDeleteAccountConfirmDialog(BuildContext context) {
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: Theme.of(ctx).cardTheme.color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text('DELETE ACCOUNT'),
       content: const Text(
         'WARNING: This is permanent and irreversible. This will delete all your local data, your Google Drive backup, your Firestore database records, and permanently close your account registration. You will be logged out completely.',
@@ -99,16 +88,12 @@ Future<bool?> showDeleteAccountConfirmDialog(BuildContext context) {
           onPressed: () => Navigator.pop(ctx, false),
           child: Text(
             'Cancel',
-            style: TextStyle(
-              color: Theme.of(ctx).textTheme.bodyMedium?.color,
-            ),
+            style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
           ),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.urgentRed,
-          ),
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.urgentRed),
           child: const Text(
             'DELETE CONT & DATE',
             style: TextStyle(color: Colors.white),

@@ -108,7 +108,9 @@ class VaultAutomationManager {
           existingNext.cloudFileIds = [];
           await isar.collection<VaultItem>().put(existingNext);
         });
-        logger.i('Deleted next recurring instance during undo: ${existingNext.title}');
+        logger.i(
+          'Deleted next recurring instance during undo: ${existingNext.title}',
+        );
       }
     }
   }

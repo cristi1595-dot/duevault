@@ -12,4 +12,3 @@ export 'security_lock_screen.dart';
 export 'duevault_logo.dart';
 export 'encrypted_image.dart';
 export 'empty_state.dart';
-

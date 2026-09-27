@@ -18,10 +18,14 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.primaryAction.withValues(alpha: isDark ? 0.03 : 0.05),
+                color: AppTheme.primaryAction.withValues(
+                  alpha: isDark ? 0.03 : 0.05,
+                ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppTheme.primaryAction.withValues(alpha: isDark ? 0.15 : 0.3),
+                  color: AppTheme.primaryAction.withValues(
+                    alpha: isDark ? 0.15 : 0.3,
+                  ),
                   width: 1.5,
                 ),
                 boxShadow: isDark
@@ -45,11 +49,11 @@ class EmptyState extends StatelessWidget {
             Text(
               'Your vault is empty',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    letterSpacing: -0.2,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                letterSpacing: -0.2,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -57,10 +61,10 @@ class EmptyState extends StatelessWidget {
             Text(
               'Tap + to add your first document or bill.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    fontSize: 13.5,
-                    height: 1.5,
-                  ),
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                fontSize: 13.5,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

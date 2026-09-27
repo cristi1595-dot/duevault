@@ -64,20 +64,32 @@ class VaultItem {
     assert(title.trim().isNotEmpty, 'Title cannot be empty');
     assert(title.trim().length <= 40, 'Title cannot exceed 40 characters');
     assert(category.trim().isNotEmpty, 'Category cannot be empty');
-    assert(itemType == 'Bill' || itemType == 'Document', 'Invalid itemType: must be Bill or Document');
+    assert(
+      itemType == 'Bill' || itemType == 'Document',
+      'Invalid itemType: must be Bill or Document',
+    );
 
     if (itemType == 'Bill') {
       assert(amount != null, 'Amount is required for Bills');
-      assert(amount! > 0 && amount!.isFinite && amount! <= 99999999.99, 'Amount must be positive, finite, and under 100,000,000');
+      assert(
+        amount! > 0 && amount!.isFinite && amount! <= 99999999.99,
+        'Amount must be positive, finite, and under 100,000,000',
+      );
       assert(dueDate != null, 'DueDate is required for Bills');
     } else {
       if (amount != null) {
-        assert(amount! > 0 && amount!.isFinite && amount! <= 99999999.99, 'Amount must be positive and finite');
+        assert(
+          amount! > 0 && amount!.isFinite && amount! <= 99999999.99,
+          'Amount must be positive and finite',
+        );
       }
     }
 
     if (dueDate != null) {
-      assert(dueDate!.year >= 1900 && dueDate!.year <= 2100, 'Date must be between 1900 and 2100');
+      assert(
+        dueDate!.year >= 1900 && dueDate!.year <= 2100,
+        'Date must be between 1900 and 2100',
+      );
     }
 
     if (notes != null && !notes!.startsWith('encrypted:')) {
@@ -103,15 +115,26 @@ class VaultItem {
       if (amount == null) {
         throw ValidationError('Amount is required for Bills.');
       }
-      if (amount! <= 0 || amount!.isNaN || amount!.isInfinite || amount! > 99999999.99) {
-        throw ValidationError('Amount must be a positive finite number under 100,000,000.');
+      if (amount! <= 0 ||
+          amount!.isNaN ||
+          amount!.isInfinite ||
+          amount! > 99999999.99) {
+        throw ValidationError(
+          'Amount must be a positive finite number under 100,000,000.',
+        );
       }
       if (dueDate == null) {
         throw ValidationError('Due date is required for Bills.');
       }
     } else {
-      if (amount != null && (amount! <= 0 || amount!.isNaN || amount!.isInfinite || amount! > 99999999.99)) {
-        throw ValidationError('Amount must be a positive finite number under 100,000,000.');
+      if (amount != null &&
+          (amount! <= 0 ||
+              amount!.isNaN ||
+              amount!.isInfinite ||
+              amount! > 99999999.99)) {
+        throw ValidationError(
+          'Amount must be a positive finite number under 100,000,000.',
+        );
       }
     }
     if (dueDate != null) {
@@ -119,7 +142,9 @@ class VaultItem {
         throw ValidationError('Date must be between 1900 and 2100.');
       }
     }
-    if (notes != null && !notes!.startsWith('encrypted:') && notes!.length > 1000) {
+    if (notes != null &&
+        !notes!.startsWith('encrypted:') &&
+        notes!.length > 1000) {
       throw ValidationError('Notes cannot exceed 1000 characters.');
     }
     if (attachedFiles.length > 5) {

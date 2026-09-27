@@ -37,10 +37,7 @@ class CompactProfileCard extends ConsumerWidget {
             color: isDark ? null : Colors.white,
             gradient: isDark
                 ? const LinearGradient(
-                    colors: [
-                      Color(0xFF1E222B),
-                      Color(0xFF13171F),
-                    ],
+                    colors: [Color(0xFF1E222B), Color(0xFF13171F)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -90,11 +87,9 @@ class CompactProfileCard extends ConsumerWidget {
                   child: user?.photoURL == null
                       ? Icon(
                           Icons.person_outline_rounded,
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.color
-                              ?.withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyLarge?.color?.withValues(alpha: 0.7),
                           size: 22,
                         )
                       : null,
@@ -131,7 +126,9 @@ class CompactProfileCard extends ConsumerWidget {
               if (!isGuest)
                 GestureDetector(
                   onTap: () async {
-                    final confirm = await SettingsDialogs.showSignOutDialog(context);
+                    final confirm = await SettingsDialogs.showSignOutDialog(
+                      context,
+                    );
 
                     if (confirm == true) {
                       debugPrint(
@@ -145,8 +142,10 @@ class CompactProfileCard extends ConsumerWidget {
                       final isar = ref.read(isarProvider);
                       await isar.writeTxn(() async {
                         final config =
-                            await isar.collection<AppConfig>().get(0) ?? AppConfig();
-                        config.isGuest = true; // Switch back to guest mode automatically
+                            await isar.collection<AppConfig>().get(0) ??
+                            AppConfig();
+                        config.isGuest =
+                            true; // Switch back to guest mode automatically
                         config.lastCloudSync = null;
                         config.lastLocalChange = null;
                         config.lastSyncCheck = null;

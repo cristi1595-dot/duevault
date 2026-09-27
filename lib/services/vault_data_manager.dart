@@ -39,9 +39,13 @@ class VaultDataManager {
     }
 
     // 2. Identify and remove from cloud (Drive)
-    final index = item.attachedFiles.indexWhere((path) => p.basename(path.replaceAll('\\', '/')) == fileName);
+    final index = item.attachedFiles.indexWhere(
+      (path) => p.basename(path.replaceAll('\\', '/')) == fileName,
+    );
     if (index == -1) {
-      logger.w('removeAttachment: File $fileName not found in item attachments: ${item.attachedFiles}');
+      logger.w(
+        'removeAttachment: File $fileName not found in item attachments: ${item.attachedFiles}',
+      );
       return false;
     }
 

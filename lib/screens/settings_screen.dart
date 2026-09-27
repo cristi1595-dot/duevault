@@ -83,10 +83,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: child,
-      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(20), child: child),
     );
   }
 
@@ -98,9 +95,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         title: Text(
           'Settings',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -142,10 +139,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             // 1.5 Biometric Lock (Security)
             const SettingsSectionHeader(title: 'SECURITY'),
             const SizedBox(height: 5),
-            _buildCategoryCard(
-              context,
-              child: const SecurityLockSection(),
-            ),
+            _buildCategoryCard(context, child: const SecurityLockSection()),
 
             // 3. Preferences (Interface) Section
             const SettingsSectionHeader(title: 'INTERFACE'),
@@ -177,9 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   context,
                   child: Column(
                     children: [
-                      if (!isGuest) ...[
-                        const DriveSyncSection(),
-                      ],
+                      if (!isGuest) ...[const DriveSyncSection()],
                       const StorageIntegritySection(),
                     ],
                   ),
@@ -199,7 +191,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     title: 'Rate DueVault',
                     subtitle: 'Love the app? Let us know or suggest updates',
                     onTap: () {
-                      ref.read(appReviewServiceProvider).showRatingDialog(context);
+                      ref
+                          .read(appReviewServiceProvider)
+                          .showRatingDialog(context);
                     },
                   ),
                   SettingsListTile(
@@ -208,14 +202,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     subtitle: 'Take a quick guided tour of key features',
                     onTap: () async {
                       ref.read(showWalkthroughProvider.notifier).state = true;
-                      
+
                       final repository = ref.read(vaultRepositoryProvider);
                       final config = await repository.getConfig();
                       config.hasSeenWalkthrough = false;
                       await repository.updateConfig(config);
 
                       if (context.mounted) {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
                       }
                     },
                   ),

@@ -14,10 +14,7 @@ class SyncConflictResolver {
   final Isar localIsar;
   final User user;
 
-  SyncConflictResolver({
-    required this.localIsar,
-    required this.user,
-  });
+  SyncConflictResolver({required this.localIsar, required this.user});
 
   /// Advanced Smart Merge: Resolves multi-device conflicts using UUIDs and timestamps.
   /// Does NOT overwrite the whole DB.
@@ -29,7 +26,7 @@ class SyncConflictResolver {
     final cloudIsar = await driveService.downloadAndOpenDatabase(
       'merge_${DateTime.now().millisecondsSinceEpoch}',
     );
-    
+
     if (cloudIsar == null) {
       return {'localModified': false, 'cloudModified': false};
     }
@@ -77,9 +74,13 @@ class SyncConflictResolver {
               final attachmentsDir = Directory('${appDir.path}/attachments');
 
               for (int i = 0; i < localItem.attachedFiles.length; i++) {
-                final fileName = p.basename(localItem.attachedFiles[i].replaceAll('\\', '/'));
-                final cloudId = i < localItem.cloudFileIds.length ? localItem.cloudFileIds[i] : null;
-                
+                final fileName = p.basename(
+                  localItem.attachedFiles[i].replaceAll('\\', '/'),
+                );
+                final cloudId = i < localItem.cloudFileIds.length
+                    ? localItem.cloudFileIds[i]
+                    : null;
+
                 if (cloudId != null && cloudId.isNotEmpty) {
                   final stillExists = cloudItem.cloudFileIds.contains(cloudId);
                   if (!stillExists) {
@@ -89,14 +90,19 @@ class SyncConflictResolver {
                         await file.delete();
                       }
                     } catch (e) {
-                      logger.e('Failed to delete removed attachment file: $fileName', error: e);
+                      logger.e(
+                        'Failed to delete removed attachment file: $fileName',
+                        error: e,
+                      );
                     }
                   }
                 }
               }
 
               // 2. Normalize and keep only filenames for cloudItem
-              cloudItem.attachedFiles = cloudItem.attachedFiles.map((path) => p.basename(path.replaceAll('\\', '/'))).toList();
+              cloudItem.attachedFiles = cloudItem.attachedFiles
+                  .map((path) => p.basename(path.replaceAll('\\', '/')))
+                  .toList();
 
               // Cloud version is NEWER -> Update local
               cloudItem.id = localItem.id; // Keep local database ID
@@ -144,7 +150,10 @@ class SyncConflictResolver {
                   await file.delete();
                 }
               } catch (e) {
-                logger.e('Failed to delete attachment file for deleted item: $localPath', error: e);
+                logger.e(
+                  'Failed to delete attachment file for deleted item: $localPath',
+                  error: e,
+                );
               }
             }
             await localIsar.writeTxn(() async {
@@ -158,12 +167,13 @@ class SyncConflictResolver {
         }
       }
 
-      return {
-        'localModified': localModified,
-        'cloudModified': cloudModified,
-      };
+      return {'localModified': localModified, 'cloudModified': cloudModified};
     } catch (e, stack) {
-      logger.e('SyncConflictResolver: Merge error', error: e, stackTrace: stack);
+      logger.e(
+        'SyncConflictResolver: Merge error',
+        error: e,
+        stackTrace: stack,
+      );
       return {'localModified': false, 'cloudModified': false};
     } finally {
       await cloudIsar.close();
@@ -173,7 +183,8 @@ class SyncConflictResolver {
   /// Update sync markers in the local database
   Future<void> updateSyncMarkers() async {
     await localIsar.writeTxn(() async {
-      final config = await localIsar.collection<AppConfig>().get(0) ?? AppConfig();
+      final config =
+          await localIsar.collection<AppConfig>().get(0) ?? AppConfig();
       config.lastCloudSync = DateTime.now();
       config.lastLocalChange = DateTime.now();
       await localIsar.collection<AppConfig>().put(config);

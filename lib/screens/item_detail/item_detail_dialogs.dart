@@ -35,7 +35,10 @@ class ItemDetailDialogs {
     );
   }
 
-  static Future<bool?> showDeleteItemDialog(BuildContext context, String itemTitle) {
+  static Future<bool?> showDeleteItemDialog(
+    BuildContext context,
+    String itemTitle,
+  ) {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

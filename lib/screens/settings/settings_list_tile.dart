@@ -37,7 +37,11 @@ class SettingsListTile extends StatelessWidget {
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
+          child: Icon(
+            icon,
+            color: iconColor ?? AppTheme.primaryAction,
+            size: 18,
+          ),
         ),
         title: Text(
           title,
@@ -56,7 +60,8 @@ class SettingsListTile extends StatelessWidget {
                 ),
               )
             : null,
-        trailing: trailing ??
+        trailing:
+            trailing ??
             Icon(
               Icons.chevron_right,
               color: Theme.of(context).textTheme.bodySmall?.color,

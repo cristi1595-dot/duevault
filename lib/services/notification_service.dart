@@ -91,13 +91,16 @@ class NotificationService {
       if (currentStatus.isGranted) {
         try {
           final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-          if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+          if (exactAlarmStatus.isDenied ||
+              exactAlarmStatus.isPermanentlyDenied) {
             logger.i(
               'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
             );
           }
         } catch (e) {
-          logger.w('NotificationService: Error checking exact alarm status: $e');
+          logger.w(
+            'NotificationService: Error checking exact alarm status: $e',
+          );
         }
         return true;
       }
@@ -116,13 +119,16 @@ class NotificationService {
       if (status.isGranted) {
         try {
           final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-          if (exactAlarmStatus.isDenied || exactAlarmStatus.isPermanentlyDenied) {
+          if (exactAlarmStatus.isDenied ||
+              exactAlarmStatus.isPermanentlyDenied) {
             logger.i(
               'NotificationService: Exact Alarm permission is denied. User may need to enable it in settings.',
             );
           }
         } catch (e) {
-          logger.w('NotificationService: Error checking exact alarm status: $e');
+          logger.w(
+            'NotificationService: Error checking exact alarm status: $e',
+          );
         }
       }
 
@@ -136,12 +142,16 @@ class NotificationService {
           try {
             await androidImplementation.requestNotificationsPermission();
           } catch (e) {
-            logger.w('NotificationService: Failed requesting plugin notification permission: $e');
+            logger.w(
+              'NotificationService: Failed requesting plugin notification permission: $e',
+            );
           }
           try {
             await androidImplementation.requestExactAlarmsPermission();
           } catch (e) {
-            logger.w('NotificationService: Failed requesting plugin exact alarm permission: $e');
+            logger.w(
+              'NotificationService: Failed requesting plugin exact alarm permission: $e',
+            );
           }
         }
       }
@@ -149,7 +159,11 @@ class NotificationService {
       final finalStatus = await Permission.notification.status;
       return finalStatus.isGranted;
     } catch (e, stack) {
-      logger.e('NotificationService: Error in requestPermissions', error: e, stackTrace: stack);
+      logger.e(
+        'NotificationService: Error in requestPermissions',
+        error: e,
+        stackTrace: stack,
+      );
       try {
         return await Permission.notification.isGranted;
       } catch (_) {

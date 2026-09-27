@@ -67,7 +67,8 @@ class _EncryptedImageState extends State<EncryptedImage> {
           } else if (widget.height != null && widget.height!.isFinite) {
             cHeight = (widget.height! * 2).toInt();
           } else {
-            cWidth = 1280; // Downsample fallback to prevent uncompressed 4K RAM spikes
+            cWidth =
+                1280; // Downsample fallback to prevent uncompressed 4K RAM spikes
           }
         }
 

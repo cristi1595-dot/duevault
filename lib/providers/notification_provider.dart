@@ -106,22 +106,22 @@ class GlobalNotificationsNotifier extends StateNotifier<bool> {
 }
 
 /// Status enum for notification system health check
-enum NotificationHealthStatus {
-  healthy,
-  permissionRevoked,
-  disabledByUser,
-}
+enum NotificationHealthStatus { healthy, permissionRevoked, disabledByUser }
 
 /// Provider to check if OS system permissions match user notification intent
 final notificationHealthProvider =
-    StateNotifierProvider<NotificationHealthNotifier, NotificationHealthStatus>((ref) {
-  return NotificationHealthNotifier(ref);
-});
+    StateNotifierProvider<NotificationHealthNotifier, NotificationHealthStatus>(
+      (ref) {
+        return NotificationHealthNotifier(ref);
+      },
+    );
 
-class NotificationHealthNotifier extends StateNotifier<NotificationHealthStatus> {
+class NotificationHealthNotifier
+    extends StateNotifier<NotificationHealthStatus> {
   final Ref _ref;
 
-  NotificationHealthNotifier(this._ref) : super(NotificationHealthStatus.healthy) {
+  NotificationHealthNotifier(this._ref)
+    : super(NotificationHealthStatus.healthy) {
     checkHealth();
   }
 
@@ -146,9 +146,10 @@ class NotificationHealthNotifier extends StateNotifier<NotificationHealthStatus>
 }
 
 /// Provider for the variable final alert days (0-2)
-final finalReminderDaysProvider = StateNotifierProvider<FinalReminderDaysNotifier, int>((ref) {
-  return FinalReminderDaysNotifier(ref);
-});
+final finalReminderDaysProvider =
+    StateNotifierProvider<FinalReminderDaysNotifier, int>((ref) {
+      return FinalReminderDaysNotifier(ref);
+    });
 
 class FinalReminderDaysNotifier extends StateNotifier<int> {
   final Ref _ref;
@@ -176,9 +177,10 @@ class FinalReminderDaysNotifier extends StateNotifier<int> {
 }
 
 /// Provider for final reminder toggle
-final finalReminderEnabledProvider = StateNotifierProvider<FinalReminderEnabledNotifier, bool>((ref) {
-  return FinalReminderEnabledNotifier(ref);
-});
+final finalReminderEnabledProvider =
+    StateNotifierProvider<FinalReminderEnabledNotifier, bool>((ref) {
+      return FinalReminderEnabledNotifier(ref);
+    });
 
 class FinalReminderEnabledNotifier extends StateNotifier<bool> {
   final Ref _ref;
@@ -206,13 +208,15 @@ class FinalReminderEnabledNotifier extends StateNotifier<bool> {
 }
 
 /// Provider for global notification time (hour and minute)
-final notificationTimeProvider = StateNotifierProvider<NotificationTimeNotifier, TimeOfDay>((ref) {
-  return NotificationTimeNotifier(ref);
-});
+final notificationTimeProvider =
+    StateNotifierProvider<NotificationTimeNotifier, TimeOfDay>((ref) {
+      return NotificationTimeNotifier(ref);
+    });
 
 class NotificationTimeNotifier extends StateNotifier<TimeOfDay> {
   final Ref _ref;
-  NotificationTimeNotifier(this._ref) : super(const TimeOfDay(hour: 9, minute: 0)) {
+  NotificationTimeNotifier(this._ref)
+    : super(const TimeOfDay(hour: 9, minute: 0)) {
     _load();
   }
 

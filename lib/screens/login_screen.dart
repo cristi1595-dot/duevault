@@ -64,7 +64,8 @@ class LoginScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Due',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
                               color: Colors.white,
@@ -72,7 +73,8 @@ class LoginScreen extends ConsumerWidget {
                       ),
                       Text(
                         'Vault',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
                               color: AppTheme.safeGreen,
@@ -217,7 +219,9 @@ class LoginScreen extends ConsumerWidget {
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primaryAction),
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryAction,
+                    ),
                   ),
                 ),
               );
@@ -360,11 +364,7 @@ class LoginScreen extends ConsumerWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.lock_outline,
-                    size: 11,
-                    color: AppTheme.safeGreen,
-                  ),
+                  Icon(Icons.lock_outline, size: 11, color: AppTheme.safeGreen),
                   SizedBox(width: 3),
                   Text(
                     'PRO',

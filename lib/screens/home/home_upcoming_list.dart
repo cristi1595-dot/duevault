@@ -9,10 +9,7 @@ import '../item_detail_screen.dart';
 class HomeUpcomingList extends ConsumerWidget {
   final ScrollController scrollController;
 
-  const HomeUpcomingList({
-    super.key,
-    required this.scrollController,
-  });
+  const HomeUpcomingList({super.key, required this.scrollController});
 
   Widget _buildGroupHeader(String title, int count, Color color) {
     return Padding(
@@ -63,26 +60,27 @@ class HomeUpcomingList extends ConsumerWidget {
     final today = DateTime(now.year, now.month, now.day);
 
     // Upcoming list: Both paid and unpaid items sorted by dueDate
-    final allUpcoming = vaultItems
-        .where(
-          (item) => !item.isArchived && item.dueDate != null,
-        )
-        .toList()
-      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+    final allUpcoming =
+        vaultItems
+            .where((item) => !item.isArchived && item.dueDate != null)
+            .toList()
+          ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
 
     int getDaysLeft(DateTime dueDate) {
       final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
       return due.difference(today).inDays;
     }
 
-    final upcoming7Days =
-        allUpcoming.where((item) => getDaysLeft(item.dueDate!) <= 7).toList();
+    final upcoming7Days = allUpcoming
+        .where((item) => getDaysLeft(item.dueDate!) <= 7)
+        .toList();
     final upcoming30Days = allUpcoming.where((item) {
       final days = getDaysLeft(item.dueDate!);
       return days > 7 && days <= 30;
     }).toList();
-    final upcomingLater =
-        allUpcoming.where((item) => getDaysLeft(item.dueDate!) > 30).toList();
+    final upcomingLater = allUpcoming
+        .where((item) => getDaysLeft(item.dueDate!) > 30)
+        .toList();
 
     if (vaultItems.isEmpty) {
       return const EmptyState();
@@ -132,13 +130,18 @@ class HomeUpcomingList extends ConsumerWidget {
                   notifier.updatePaidStatus(item.id, nextPaidState);
                   final name = item.title.isEmpty ? item.category : item.title;
                   final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                      ? (item.itemType == 'Bill'
+                            ? 'marked as paid'
+                            : 'marked as renewed')
+                      : (item.itemType == 'Bill'
+                            ? 'marked as unpaid'
+                            : 'marked as not renewed');
                   VaultSnackBar.show(
                     message: '$name $actionText',
                     actionLabel: 'UNDO',
                     backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                    onAction: () =>
+                        notifier.updatePaidStatus(item.id, !nextPaidState),
                   );
                 },
               ),
@@ -169,13 +172,18 @@ class HomeUpcomingList extends ConsumerWidget {
                   notifier.updatePaidStatus(item.id, nextPaidState);
                   final name = item.title.isEmpty ? item.category : item.title;
                   final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                      ? (item.itemType == 'Bill'
+                            ? 'marked as paid'
+                            : 'marked as renewed')
+                      : (item.itemType == 'Bill'
+                            ? 'marked as unpaid'
+                            : 'marked as not renewed');
                   VaultSnackBar.show(
                     message: '$name $actionText',
                     actionLabel: 'UNDO',
                     backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                    onAction: () =>
+                        notifier.updatePaidStatus(item.id, !nextPaidState),
                   );
                 },
               ),
@@ -206,19 +214,24 @@ class HomeUpcomingList extends ConsumerWidget {
                   notifier.updatePaidStatus(item.id, nextPaidState);
                   final name = item.title.isEmpty ? item.category : item.title;
                   final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+                      ? (item.itemType == 'Bill'
+                            ? 'marked as paid'
+                            : 'marked as renewed')
+                      : (item.itemType == 'Bill'
+                            ? 'marked as unpaid'
+                            : 'marked as not renewed');
                   VaultSnackBar.show(
                     message: '$name $actionText',
                     actionLabel: 'UNDO',
                     backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+                    onAction: () =>
+                        notifier.updatePaidStatus(item.id, !nextPaidState),
                   );
                 },
               ),
             ),
           ],
-        ]
+        ],
       ],
     );
   }

@@ -20,8 +20,8 @@ class InterfaceCustomizationSection extends ConsumerWidget {
           icon: themeMode == ThemeMode.dark
               ? Icons.dark_mode_outlined
               : themeMode == ThemeMode.light
-                  ? Icons.light_mode_outlined
-                  : Icons.settings_suggest_outlined,
+              ? Icons.light_mode_outlined
+              : Icons.settings_suggest_outlined,
           title: 'App Theme',
           trailing: DropdownButton<ThemeMode>(
             value: themeMode,
@@ -34,10 +34,9 @@ class InterfaceCustomizationSection extends ConsumerWidget {
             onChanged: (ThemeMode? newValue) {
               if (newValue != null) {
                 ref.read(themeProvider.notifier).setTheme(newValue);
-                ref.read(analyticsServiceProvider).logSettingsChanged(
-                      'theme_mode',
-                      newValue.name,
-                    );
+                ref
+                    .read(analyticsServiceProvider)
+                    .logSettingsChanged('theme_mode', newValue.name);
               }
             },
             items: ThemeMode.values.map<DropdownMenuItem<ThemeMode>>((
@@ -96,10 +95,9 @@ class InterfaceCustomizationSection extends ConsumerWidget {
         onChanged: (Currency? newValue) {
           if (newValue != null) {
             ref.read(currencyProvider.notifier).setCurrency(newValue);
-            ref.read(analyticsServiceProvider).logSettingsChanged(
-                  'primary_currency',
-                  newValue.code,
-                );
+            ref
+                .read(analyticsServiceProvider)
+                .logSettingsChanged('primary_currency', newValue.code);
           }
         },
         items: availableCurrencies.map<DropdownMenuItem<Currency>>((

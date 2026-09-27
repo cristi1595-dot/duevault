@@ -12,10 +12,7 @@ import '../../services/analytics_service.dart';
 class SmartAlertsSection extends ConsumerWidget {
   final Future<void> Function({required bool targetState}) onAttemptActivation;
 
-  const SmartAlertsSection({
-    super.key,
-    required this.onAttemptActivation,
-  });
+  const SmartAlertsSection({super.key, required this.onAttemptActivation});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,10 +42,7 @@ class SmartAlertsSection extends ConsumerWidget {
                     ),
                     Text(
                       'Receive reminders for due bills',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -66,11 +60,21 @@ class SmartAlertsSection extends ConsumerWidget {
                             return Theme(
                               data: Theme.of(context).copyWith(
                                 timePickerTheme: TimePickerThemeData(
-                                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                                  hourMinuteTextColor: Theme.of(context).textTheme.bodyLarge?.color,
-                                  dialBackgroundColor: Theme.of(context).cardTheme.color,
-                                  dialTextColor: Theme.of(context).textTheme.bodyLarge?.color,
-                                  dayPeriodTextColor: Theme.of(context).textTheme.bodyLarge?.color,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).scaffoldBackgroundColor,
+                                  hourMinuteTextColor: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.color,
+                                  dialBackgroundColor: Theme.of(
+                                    context,
+                                  ).cardTheme.color,
+                                  dialTextColor: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.color,
+                                  dayPeriodTextColor: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.color,
                                 ),
                                 colorScheme: isDark
                                     ? const ColorScheme.dark(
@@ -91,11 +95,19 @@ class SmartAlertsSection extends ConsumerWidget {
                           },
                         );
                         if (pickedTime != null) {
-                          await ref.read(notificationTimeProvider.notifier).setTime(pickedTime);
-                          await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                          await ref
+                              .read(notificationTimeProvider.notifier)
+                              .setTime(pickedTime);
+                          await ref
+                              .read(vaultProvider.notifier)
+                              .rescheduleAllNotifications();
                         }
                       },
-                      icon: Icon(Icons.access_time_rounded, size: 16, color: accentColor),
+                      icon: Icon(
+                        Icons.access_time_rounded,
+                        size: 16,
+                        color: accentColor,
+                      ),
                       label: Consumer(
                         builder: (context, ref, _) {
                           final time = ref.watch(notificationTimeProvider);
@@ -111,7 +123,10 @@ class SmartAlertsSection extends ConsumerWidget {
                       ),
                       style: TextButton.styleFrom(
                         backgroundColor: accentColor.withValues(alpha: 0.1),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
@@ -126,7 +141,9 @@ class SmartAlertsSection extends ConsumerWidget {
                       value: globalEnabled,
                       onChanged: (v) async {
                         await onAttemptActivation(targetState: v);
-                        await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
+                        await ref
+                            .read(vaultProvider.notifier)
+                            .rescheduleAllNotifications();
                       },
                       activeThumbColor: accentColor,
                       activeTrackColor: accentColor.withValues(alpha: 0.3),
@@ -142,12 +159,17 @@ class SmartAlertsSection extends ConsumerWidget {
           // 2. Early Alert Row
           Consumer(
             builder: (context, ref, _) {
-              final firstReminderEnabled = ref.watch(threeDayAlertEnabledProvider);
+              final firstReminderEnabled = ref.watch(
+                threeDayAlertEnabledProvider,
+              );
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -156,8 +178,11 @@ class SmartAlertsSection extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                    'Early Alert',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                'Early Alert',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               Text(
                                 firstReminderEnabled
@@ -165,8 +190,12 @@ class SmartAlertsSection extends ConsumerWidget {
                                     : 'Early warning for upcoming bills',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: firstReminderEnabled ? accentColor : Colors.grey,
-                                  fontWeight: firstReminderEnabled ? FontWeight.w500 : FontWeight.normal,
+                                  color: firstReminderEnabled
+                                      ? accentColor
+                                      : Colors.grey,
+                                  fontWeight: firstReminderEnabled
+                                      ? FontWeight.w500
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ],
@@ -177,12 +206,23 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Switch(
                             value: firstReminderEnabled,
                             onChanged: (val) async {
-                              await ref.read(threeDayAlertEnabledProvider.notifier).toggle(val);
-                              await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
-                              await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_enabled', val);
+                              await ref
+                                  .read(threeDayAlertEnabledProvider.notifier)
+                                  .toggle(val);
+                              await ref
+                                  .read(vaultProvider.notifier)
+                                  .rescheduleAllNotifications();
+                              await ref
+                                  .read(analyticsServiceProvider)
+                                  .logSettingsChanged(
+                                    'early_alert_enabled',
+                                    val,
+                                  );
                             },
                             activeThumbColor: accentColor,
-                            activeTrackColor: accentColor.withValues(alpha: 0.3),
+                            activeTrackColor: accentColor.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                       ],
@@ -190,18 +230,31 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (firstReminderEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 6,
+                      ),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 2,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                            valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 12,
+                            ),
+                            valueIndicatorTextStyle: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
                             valueIndicatorColor: accentColor,
                             activeTrackColor: accentColor,
-                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            inactiveTrackColor: accentColor.withValues(
+                              alpha: 0.1,
+                            ),
                             thumbColor: accentColor,
                           ),
                           child: Slider(
@@ -211,11 +264,20 @@ class SmartAlertsSection extends ConsumerWidget {
                             divisions: 11,
                             label: '$alertDays Days',
                             onChanged: (val) {
-                              ref.read(alertDaysProvider.notifier).setAlertDays(val.toInt());
+                              ref
+                                  .read(alertDaysProvider.notifier)
+                                  .setAlertDays(val.toInt());
                             },
                             onChangeEnd: (val) async {
-                              await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
-                              await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_days', val.toInt());
+                              await ref
+                                  .read(vaultProvider.notifier)
+                                  .rescheduleAllNotifications();
+                              await ref
+                                  .read(analyticsServiceProvider)
+                                  .logSettingsChanged(
+                                    'early_alert_days',
+                                    val.toInt(),
+                                  );
                             },
                           ),
                         ),
@@ -230,13 +292,18 @@ class SmartAlertsSection extends ConsumerWidget {
             builder: (context, ref, _) {
               final finalEnabled = ref.watch(finalReminderEnabledProvider);
               final finalDays = ref.watch(finalReminderDaysProvider);
-              final finalDaysText = finalDays == 0 ? 'Day of' : '$finalDays ${finalDays == 1 ? "day" : "days"} before';
+              final finalDaysText = finalDays == 0
+                  ? 'Day of'
+                  : '$finalDays ${finalDays == 1 ? "day" : "days"} before';
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -245,8 +312,11 @@ class SmartAlertsSection extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                    'SOS Urgent Alert',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                'SOS Urgent Alert',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               Text(
                                 finalEnabled
@@ -254,8 +324,12 @@ class SmartAlertsSection extends ConsumerWidget {
                                     : 'Urgent alert right before due date',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: finalEnabled ? accentColor : Colors.grey,
-                                  fontWeight: finalEnabled ? FontWeight.w500 : FontWeight.normal,
+                                  color: finalEnabled
+                                      ? accentColor
+                                      : Colors.grey,
+                                  fontWeight: finalEnabled
+                                      ? FontWeight.w500
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ],
@@ -266,12 +340,23 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Switch(
                             value: finalEnabled,
                             onChanged: (val) async {
-                              await ref.read(finalReminderEnabledProvider.notifier).toggle(val);
-                              await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
-                              await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_enabled', val);
+                              await ref
+                                  .read(finalReminderEnabledProvider.notifier)
+                                  .toggle(val);
+                              await ref
+                                  .read(vaultProvider.notifier)
+                                  .rescheduleAllNotifications();
+                              await ref
+                                  .read(analyticsServiceProvider)
+                                  .logSettingsChanged(
+                                    'sos_urgent_alert_enabled',
+                                    val,
+                                  );
                             },
                             activeThumbColor: accentColor,
-                            activeTrackColor: accentColor.withValues(alpha: 0.3),
+                            activeTrackColor: accentColor.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                       ],
@@ -279,18 +364,31 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (finalEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 6,
+                      ),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 2,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                            valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 12,
+                            ),
+                            valueIndicatorTextStyle: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
                             valueIndicatorColor: accentColor,
                             activeTrackColor: accentColor,
-                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            inactiveTrackColor: accentColor.withValues(
+                              alpha: 0.1,
+                            ),
                             thumbColor: accentColor,
                           ),
                           child: Slider(
@@ -298,13 +396,24 @@ class SmartAlertsSection extends ConsumerWidget {
                             min: 0,
                             max: 2,
                             divisions: 2,
-                            label: finalDays == 0 ? 'Day of' : '$finalDays Days',
+                            label: finalDays == 0
+                                ? 'Day of'
+                                : '$finalDays Days',
                             onChanged: (val) {
-                              ref.read(finalReminderDaysProvider.notifier).setFinalReminderDays(val.toInt());
+                              ref
+                                  .read(finalReminderDaysProvider.notifier)
+                                  .setFinalReminderDays(val.toInt());
                             },
                             onChangeEnd: (val) async {
-                              await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
-                              await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_days', val.toInt());
+                              await ref
+                                  .read(vaultProvider.notifier)
+                                  .rescheduleAllNotifications();
+                              await ref
+                                  .read(analyticsServiceProvider)
+                                  .logSettingsChanged(
+                                    'sos_urgent_alert_days',
+                                    val.toInt(),
+                                  );
                             },
                           ),
                         ),

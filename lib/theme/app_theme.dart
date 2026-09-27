@@ -50,8 +50,15 @@ class AppTheme {
       textSecondary: lightTextSecondary,
     ).copyWith(
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal : null),
-        trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal.withValues(alpha: 0.5) : null),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? Colors.teal : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.teal.withValues(alpha: 0.5)
+              : null,
+        ),
       ),
       sliderTheme: const SliderThemeData(
         activeTrackColor: Colors.teal,

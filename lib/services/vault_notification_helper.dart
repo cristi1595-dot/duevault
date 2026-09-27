@@ -17,9 +17,15 @@ class VaultNotificationHelper {
     debugPrint('╔══════════════════════════════════════════════════════');
     debugPrint('║ 🔄 rescheduleAllNotifications() CALLED');
     debugPrint('║ Global Notifications Enabled: $notificationsEnabled');
-    debugPrint('║ First Reminder: ${threeDayAlert ? "ON" : "OFF"} ($alertDays days)');
-    debugPrint('║ Final Reminder: ${finalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days)');
-    debugPrint('║ Notification Time: ${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}');
+    debugPrint(
+      '║ First Reminder: ${threeDayAlert ? "ON" : "OFF"} ($alertDays days)',
+    );
+    debugPrint(
+      '║ Final Reminder: ${finalReminderEnabled ? "ON" : "OFF"} ($finalReminderDays days)',
+    );
+    debugPrint(
+      '║ Notification Time: ${notificationTime.hour}:${notificationTime.minute.toString().padLeft(2, '0')}',
+    );
     debugPrint('║ Total items in Riverpod state: ${items.length}');
     debugPrint('╚══════════════════════════════════════════════════════');
     // ═══════ END DIAGNOSTIC ═══════

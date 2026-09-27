@@ -89,10 +89,7 @@ class _SecurityLockScreenState extends ConsumerState<SecurityLockScreen>
                           width: 2,
                         ),
                       ),
-                      child: const DueVaultLogo(
-                        size: 64,
-                        showGlow: false,
-                      ),
+                      child: const DueVaultLogo(size: 64, showGlow: false),
                     ),
                     const SizedBox(height: 32),
                     const Text(

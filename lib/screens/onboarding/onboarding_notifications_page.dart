@@ -36,18 +36,18 @@ class OnboardingNotificationsPage extends StatelessWidget {
               'Never miss a due date',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Get smart, timely alerts right on your screen before your bills or important documents expire. No penalties, no stress.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textSecondary,
-                    height: 1.6,
-                  ),
+                color: AppTheme.textSecondary,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 40),
             PrimaryButton(

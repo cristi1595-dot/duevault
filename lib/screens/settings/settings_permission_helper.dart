@@ -14,7 +14,8 @@ class SettingsPermissionHelper {
   static Future<Map<String, bool>> checkStatus() async {
     final isAndroid = Platform.isAndroid;
     final bool notificationsGranted = await Permission.notification.isGranted;
-    final bool exactAlarmGranted = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
+    final bool exactAlarmGranted =
+        !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
     return {
       'notificationsGranted': notificationsGranted,
@@ -57,7 +58,8 @@ class SettingsPermissionHelper {
       final isAndroid = Platform.isAndroid;
 
       bool hasNotification = await Permission.notification.isGranted;
-      bool hasExactAlarm = !isAndroid || await Permission.scheduleExactAlarm.isGranted;
+      bool hasExactAlarm =
+          !isAndroid || await Permission.scheduleExactAlarm.isGranted;
 
       // 1. If notifications and exact alarm are already granted, just enable and return
       if (hasNotification && hasExactAlarm) {
@@ -74,7 +76,9 @@ class SettingsPermissionHelper {
         try {
           requestStatus = await Permission.notification.request();
         } catch (e) {
-          logger.w('SettingsPermissionHelper: Permission request threw exception: $e');
+          logger.w(
+            'SettingsPermissionHelper: Permission request threw exception: $e',
+          );
           requestStatus = await Permission.notification.status;
         }
         if (requestStatus.isPermanentlyDenied && context.mounted) {

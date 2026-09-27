@@ -28,20 +28,20 @@ class SecurityLockSection extends ConsumerWidget {
                 return;
               }
               ref.read(securityProvider.notifier).toggleSecurity(true);
-              ref.read(analyticsServiceProvider).logSettingsChanged(
-                    'biometric_lock_enabled',
-                    true,
-                  );
+              ref
+                  .read(analyticsServiceProvider)
+                  .logSettingsChanged('biometric_lock_enabled', true);
             } else {
               ref.read(securityProvider.notifier).toggleSecurity(false);
-              ref.read(analyticsServiceProvider).logSettingsChanged(
-                    'biometric_lock_enabled',
-                    false,
-                  );
+              ref
+                  .read(analyticsServiceProvider)
+                  .logSettingsChanged('biometric_lock_enabled', false);
             }
           },
           activeThumbColor: AppTheme.getSettingsAccent(context),
-          activeTrackColor: AppTheme.getSettingsAccent(context).withValues(alpha: 0.3),
+          activeTrackColor: AppTheme.getSettingsAccent(
+            context,
+          ).withValues(alpha: 0.3),
         ),
       ),
     );

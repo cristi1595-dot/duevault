@@ -65,7 +65,8 @@ class _WalkthroughOverlayState extends State<WalkthroughOverlay>
         'height': 175.0,
         'radius': 24.0,
         'title': 'Financial Overview',
-        'desc': 'This bento card shows your total balance, upcoming payments, and current billing cycle status at a glance.',
+        'desc':
+            'This bento card shows your total balance, upcoming payments, and current billing cycle status at a glance.',
         'cardAlignment': Alignment.bottomCenter,
         'cardOffset': const Offset(0, -20.0),
       },
@@ -77,7 +78,8 @@ class _WalkthroughOverlayState extends State<WalkthroughOverlay>
         'height': 64.0,
         'radius': 32.0,
         'title': 'Add Bills & Documents',
-        'desc': 'Tap the "+" button to add a new bill or document. You can scan receipts using the built-in AI OCR engine!',
+        'desc':
+            'Tap the "+" button to add a new bill or document. You can scan receipts using the built-in AI OCR engine!',
         'cardAlignment': Alignment.topCenter,
         'cardOffset': const Offset(0, 16.0),
       },
@@ -89,7 +91,8 @@ class _WalkthroughOverlayState extends State<WalkthroughOverlay>
         'height': 56.0,
         'radius': 16.0,
         'title': 'Your Secure Vault',
-        'desc': 'Navigate here to view all stored bills, archives, and files, categorized and encrypted with device-lock security.',
+        'desc':
+            'Navigate here to view all stored bills, archives, and files, categorized and encrypted with device-lock security.',
         'cardAlignment': Alignment.topRight,
         'cardOffset': const Offset(-16.0, 16.0),
       },
@@ -101,7 +104,8 @@ class _WalkthroughOverlayState extends State<WalkthroughOverlay>
         'height': 48.0,
         'radius': 24.0,
         'title': 'App Customization',
-        'desc': 'Tap the Settings icon to manage security locks, cloud sync, notifications, and customize system theme settings.',
+        'desc':
+            'Tap the Settings icon to manage security locks, cloud sync, notifications, and customize system theme settings.',
         'cardAlignment': Alignment.bottomRight,
         'cardOffset': const Offset(-16.0, -16.0),
       },

@@ -24,7 +24,7 @@ class GoogleSignInSection extends ConsumerWidget {
     return GestureDetector(
       onTap: () async {
         if (isProcessing) return;
-        
+
         // Gate Google Sign-In behind PRO subscription
         final isPremium = ref.read(isPremiumProvider);
         if (!isPremium) {
@@ -94,7 +94,9 @@ class GoogleSignInSection extends ConsumerWidget {
                       onPressed: () => Navigator.pop(ctx, false),
                       child: Text(
                         'No, delete',
-                        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
                       ),
                     ),
                     ElevatedButton(
@@ -119,7 +121,9 @@ class GoogleSignInSection extends ConsumerWidget {
                     context: context,
                     barrierDismissible: false,
                     builder: (context) => const Center(
-                      child: CircularProgressIndicator(color: AppTheme.primaryAction),
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryAction,
+                      ),
                     ),
                   ),
                 );
@@ -225,7 +229,9 @@ class GoogleSignInSection extends ConsumerWidget {
           if (context.mounted) {
             messenger.showSnackBar(
               SnackBar(
-                content: Text('Sign in error: ${e.toString().split('\n').first}'),
+                content: Text(
+                  'Sign in error: ${e.toString().split('\n').first}',
+                ),
                 backgroundColor: AppTheme.urgentRed,
               ),
             );
@@ -297,7 +303,10 @@ class GoogleSignInSection extends ConsumerWidget {
                   if (!ref.watch(isPremiumProvider)) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.safeGreen.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),

@@ -36,7 +36,9 @@ class AutoSyncService {
 
     final isProcessing = _ref.read(isProcessingAuthSyncProvider);
     if (isProcessing) {
-      logger.i('AutoSyncService: Backup scheduled but skipped (auth sync active).');
+      logger.i(
+        'AutoSyncService: Backup scheduled but skipped (auth sync active).',
+      );
       return;
     }
 
@@ -63,7 +65,8 @@ class AutoSyncService {
     if (!autoSyncEnabled) return;
 
     final connectivityResult = await Connectivity().checkConnectivity();
-    final canSync = connectivityResult.contains(ConnectivityResult.wifi) ||
+    final canSync =
+        connectivityResult.contains(ConnectivityResult.wifi) ||
         connectivityResult.contains(ConnectivityResult.ethernet) ||
         connectivityResult.contains(ConnectivityResult.vpn) ||
         (connectivityResult.contains(ConnectivityResult.mobile) && !wifiOnly);
@@ -86,9 +89,12 @@ class AutoSyncService {
         try {
           final isar = _ref.read(isarProvider);
           final user = FirebaseAuth.instance.currentUser!;
-          
+
           // 1. Sync Attachments
-          final attachmentManager = AttachmentSyncManager(localIsar: isar, user: user);
+          final attachmentManager = AttachmentSyncManager(
+            localIsar: isar,
+            user: user,
+          );
           await attachmentManager.syncAttachments(driveService);
 
           // 2. Backup Database
@@ -107,14 +113,18 @@ class AutoSyncService {
             _ref.read(syncProvider.notifier).setSuccess();
 
             await isar.writeTxn(() async {
-              final itemsToMark = await isar.collection<VaultItem>()
-                  .filter().wasSyncedEqualTo(false).findAll();
+              final itemsToMark = await isar
+                  .collection<VaultItem>()
+                  .filter()
+                  .wasSyncedEqualTo(false)
+                  .findAll();
               for (var item in itemsToMark) {
                 item.wasSynced = true;
               }
               await isar.collection<VaultItem>().putAll(itemsToMark);
 
-              final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
+              final config =
+                  await isar.collection<AppConfig>().get(0) ?? AppConfig();
               config.lastCloudSync = DateTime.now();
               config.localDatabaseChecksum = checksum;
               await isar.appConfigs.put(config);
@@ -167,10 +177,16 @@ class AutoSyncService {
         final isar = _ref.read(isarProvider);
         final user = FirebaseAuth.instance.currentUser!;
         final resolver = SyncConflictResolver(localIsar: isar, user: user);
-        
-        final results = await resolver.mergeWithCloud(driveService, isLoginSync: true);
+
+        final results = await resolver.mergeWithCloud(
+          driveService,
+          isLoginSync: true,
+        );
         if (results['localModified'] == true) {
-          final attachmentManager = AttachmentSyncManager(localIsar: isar, user: user);
+          final attachmentManager = AttachmentSyncManager(
+            localIsar: isar,
+            user: user,
+          );
           await attachmentManager.syncAttachments(driveService);
           return 'restored';
         }
@@ -231,26 +247,37 @@ class AutoSyncService {
 
         if (cloudMetadata != null) {
           final cloudTimeString = cloudMetadata['last_modified'] as String?;
-          final cloudTime = cloudTimeString != null ? DateTime.tryParse(cloudTimeString) : null;
+          final cloudTime = cloudTimeString != null
+              ? DateTime.tryParse(cloudTimeString)
+              : null;
 
           if (cloudTime != null) {
-            if (localTime == null || cloudTime.isAfter(localTime.add(const Duration(seconds: 5)))) {
+            if (localTime == null ||
+                cloudTime.isAfter(localTime.add(const Duration(seconds: 5)))) {
               final user = FirebaseAuth.instance.currentUser!;
-              final resolver = SyncConflictResolver(localIsar: isar, user: user);
+              final resolver = SyncConflictResolver(
+                localIsar: isar,
+                user: user,
+              );
               final results = await resolver.mergeWithCloud(driveService);
-              
+
               if (results['localModified'] == true) {
                 await _ref.read(vaultProvider.notifier).refreshVault();
-                final attachmentManager = AttachmentSyncManager(localIsar: isar, user: user);
+                final attachmentManager = AttachmentSyncManager(
+                  localIsar: isar,
+                  user: user,
+                );
                 await attachmentManager.syncAttachments(driveService);
               }
 
               if (results['cloudModified'] == true) {
                 scheduleBackup();
               }
-              
+
               await resolver.updateSyncMarkers();
-            } else if (localTime.isAfter(cloudTime.add(const Duration(seconds: 5)))) {
+            } else if (localTime.isAfter(
+              cloudTime.add(const Duration(seconds: 5)),
+            )) {
               await _performBackup();
             }
           }
@@ -259,7 +286,11 @@ class AutoSyncService {
         driveService.dispose();
       }
     } catch (e, stack) {
-      logger.e('AutoSyncService: Error during syncOnStartup', error: e, stackTrace: stack);
+      logger.e(
+        'AutoSyncService: Error during syncOnStartup',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 

@@ -44,7 +44,9 @@ class AttachmentPickerHelper {
 
       // 10MB limit (10 * 1024 * 1024)
       if (fileSize > 10485760) {
-        onError('Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB');
+        onError(
+          'Image too large (Max 10MB). Current: ${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB',
+        );
         return;
       }
 
@@ -57,7 +59,10 @@ class AttachmentPickerHelper {
 
       if (useOcr) {
         onOcrProcessingChanged(true);
-        final result = await OcrService.processImage(file, isDocument: isDocument);
+        final result = await OcrService.processImage(
+          file,
+          isDocument: isDocument,
+        );
         onOcrProcessingChanged(false);
         onOcrResult(result);
       }
@@ -83,7 +88,15 @@ class AttachmentPickerHelper {
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg', 'heic', 'heif', 'webp'],
+        allowedExtensions: [
+          'pdf',
+          'jpg',
+          'png',
+          'jpeg',
+          'heic',
+          'heif',
+          'webp',
+        ],
       );
       if (result == null) return;
 
@@ -111,29 +124,31 @@ class AttachmentPickerHelper {
 
       final List<String> pathsToAdd = validPaths.take(availableSlots).toList();
       if (validPaths.length > availableSlots) {
-        onError('Only added $availableSlots files. Maximum 5 attachments allowed.');
+        onError(
+          'Only added $availableSlots files. Maximum 5 attachments allowed.',
+        );
       }
 
       onFilesAdded(pathsToAdd);
 
       if (useOcr) {
         // OCR Support for first uploaded image
-        final firstImagePath = pathsToAdd.firstWhere(
-          (path) {
-            final lower = path.toLowerCase();
-            return lower.endsWith('.jpg') ||
-                lower.endsWith('.jpeg') ||
-                lower.endsWith('.png') ||
-                lower.endsWith('.heic') ||
-                lower.endsWith('.heif') ||
-                lower.endsWith('.webp');
-          },
-          orElse: () => '',
-        );
+        final firstImagePath = pathsToAdd.firstWhere((path) {
+          final lower = path.toLowerCase();
+          return lower.endsWith('.jpg') ||
+              lower.endsWith('.jpeg') ||
+              lower.endsWith('.png') ||
+              lower.endsWith('.heic') ||
+              lower.endsWith('.heif') ||
+              lower.endsWith('.webp');
+        }, orElse: () => '');
 
         if (firstImagePath.isNotEmpty) {
           onOcrProcessingChanged(true);
-          final ocrResult = await OcrService.processImage(File(firstImagePath), isDocument: isDocument);
+          final ocrResult = await OcrService.processImage(
+            File(firstImagePath),
+            isDocument: isDocument,
+          );
           onOcrProcessingChanged(false);
           onOcrResult(ocrResult);
         }
