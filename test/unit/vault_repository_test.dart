@@ -3,6 +3,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:isar_community/isar.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:duevault_app/models/vault_item.dart';
+import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'package:flutter/services.dart';
 
@@ -17,6 +19,10 @@ class MockIsar extends Mock implements Isar {
 }
 
 class MockIsarCollection extends Mock implements IsarCollection<VaultItem> {}
+
+class MockFlutterLocalNotificationsPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements FlutterLocalNotificationsPlatform {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +39,10 @@ void main() {
             return '.';
           },
         );
+    final mockNotificationsPlatform = MockFlutterLocalNotificationsPlatform();
+    when(() => mockNotificationsPlatform.cancel(id: any(named: 'id'))).thenAnswer((_) async => null);
+    FlutterLocalNotificationsPlatform.instance = mockNotificationsPlatform;
+
     registerFallbackValue(VaultItem());
   });
 
@@ -68,6 +78,44 @@ void main() {
 
       // Verify that put was called (even if the method threw later due to other IO)
       verify(() => mockCollection.put(any())).called(1);
+    });
+  });
+
+  group('VaultRepository.softDeleteItem', () {
+    test('rethrows exception when Isar throws an error', () async {
+      when(() => mockCollection.get(1)).thenThrow(Exception('Database error'));
+
+      expect(
+        () => repository.softDeleteItem(1),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('successfully soft deletes item when it exists', () async {
+      final item = VaultItem()
+        ..id = 1
+        ..title = 'Test Bill'
+        ..isDeleted = false
+        ..wasSynced = true
+        ..cloudFileIds = ['cloud_id_1'];
+
+      when(() => mockCollection.get(1)).thenAnswer((_) async => item);
+      when(() => mockCollection.put(any())).thenAnswer((_) async => 1);
+
+      await repository.softDeleteItem(1);
+
+      expect(item.isDeleted, isTrue);
+      expect(item.wasSynced, isFalse);
+      expect(item.cloudFileIds, isEmpty);
+      verify(() => mockCollection.put(item)).called(1);
+    });
+
+    test('does nothing when item is not found', () async {
+      when(() => mockCollection.get(1)).thenAnswer((_) async => null);
+
+      await repository.softDeleteItem(1);
+
+      verifyNever(() => mockCollection.put(any()));
     });
   });
 }
