@@ -7,8 +7,8 @@ import '../utils/logger.dart';
 final authStateProvider = StreamProvider<User?>((ref) {
   try {
     return FirebaseAuth.instance.authStateChanges();
-  } catch (e) {
-    logger.w('Firebase Auth is not available: $e');
+  } catch (e, stack) {
+    logger.w('Firebase Auth is not available', error: e, stackTrace: stack);
     return const Stream.empty();
   }
 });
