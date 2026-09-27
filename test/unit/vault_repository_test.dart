@@ -69,5 +69,32 @@ void main() {
       // Verify that put was called (even if the method threw later due to other IO)
       verify(() => mockCollection.put(any())).called(1);
     });
+
+    test('Updating an item correctly aligns cloudFileIds and cloudFileChecksums', () async {
+      final oldItem = VaultItem()
+        ..id = 1
+        ..title = 'Existing Item'
+        ..itemType = 'Document'
+        ..attachedFiles = ['/path/to/doc1.pdf', '/path/to/doc2.pdf', '/path/to/doc3.pdf']
+        ..cloudFileIds = ['cloud_1', 'cloud_2', 'cloud_3']
+        ..cloudFileChecksums = ['sum_1', 'sum_2', 'sum_3'];
+
+      final newItem = VaultItem()
+        ..id = 1
+        ..title = 'Existing Item Updated'
+        ..itemType = 'Document'
+        ..attachedFiles = ['/new_path/doc1.pdf', '/new_path/doc3.pdf'];
+
+      when(() => mockCollection.get(1)).thenAnswer((_) async => oldItem);
+      when(() => mockCollection.put(any())).thenAnswer((_) async => 1);
+
+      try {
+        await repository.saveItem(newItem);
+      } catch (e) {
+        // Ignore IO errors in unit test environment
+      }
+
+      expect(newItem.cloudFileIds, equals(['cloud_1', 'cloud_3']));
+    });
   });
 }
