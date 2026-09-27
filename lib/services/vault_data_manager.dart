@@ -158,6 +158,8 @@ class VaultDataManager {
         );
         try {
           await driveService.deleteBackup();
+        } catch (e, stack) {
+          logger.e('Error during sign out data wipe', error: e, stackTrace: stack);
         } finally {
           driveService.dispose();
         }

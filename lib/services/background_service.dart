@@ -25,9 +25,9 @@ void callbackDispatcher() {
             directory: dir.path,
             inspector: false, // Essential for Android 15 background isolates
           );
-        } catch (e) {
-          logger.e('BackgroundService: Failed to open Isar', error: e);
-          return Future.value(false);
+        } catch (e, stack) {
+          logger.e('BackgroundService: Failed to open Isar', error: e, stackTrace: stack);
+          return false;
         }
       }
 
@@ -100,14 +100,14 @@ void callbackDispatcher() {
       }
 
       if (shouldClose) await db.close();
-      return Future.value(true);
+      return true;
     } catch (e, stack) {
       logger.e(
         'BackgroundService: Error executing task',
         error: e,
         stackTrace: stack,
       );
-      return Future.value(false);
+      return false;
     }
   });
 }
