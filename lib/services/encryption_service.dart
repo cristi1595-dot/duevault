@@ -16,35 +16,45 @@ class EncryptionService {
 
   /// Gets or generates a 32-byte key for Isar Native Encryption
   static Future<Uint8List> getIsarMasterKey() async {
-    String? base64Key = await _storage.read(key: _isarMasterKeyName);
-    if (base64Key == null) {
-      final random = Random.secure();
-      final keyBytes = Uint8List.fromList(
-        List.generate(32, (_) => random.nextInt(256)),
-      );
-      base64Key = base64.encode(keyBytes);
-      await _storage.write(key: _isarMasterKeyName, value: base64Key);
-      return keyBytes;
+    try {
+      String? base64Key = await _storage.read(key: _isarMasterKeyName);
+      if (base64Key == null) {
+        final random = Random.secure();
+        final keyBytes = Uint8List.fromList(
+          List.generate(32, (_) => random.nextInt(256)),
+        );
+        base64Key = base64.encode(keyBytes);
+        await _storage.write(key: _isarMasterKeyName, value: base64Key);
+        return keyBytes;
+      }
+      return base64.decode(base64Key);
+    } catch (e, stack) {
+      logger.e('Failed to load secure keys', error: e, stackTrace: stack);
+      rethrow;
     }
-    return base64.decode(base64Key);
   }
 
   /// Gets the existing encryption key or generates a new one (32 bytes for AES-256)
 
   static Future<Uint8List> _getOrCreateKey() async {
-    String? base64Key = await _storage.read(key: _keyName);
+    try {
+      String? base64Key = await _storage.read(key: _keyName);
 
-    if (base64Key == null) {
-      final random = Random.secure();
-      final keyBytes = Uint8List.fromList(
-        List.generate(32, (_) => random.nextInt(256)),
-      );
-      base64Key = base64.encode(keyBytes);
-      await _storage.write(key: _keyName, value: base64Key);
-      return keyBytes;
+      if (base64Key == null) {
+        final random = Random.secure();
+        final keyBytes = Uint8List.fromList(
+          List.generate(32, (_) => random.nextInt(256)),
+        );
+        base64Key = base64.encode(keyBytes);
+        await _storage.write(key: _keyName, value: base64Key);
+        return keyBytes;
+      }
+
+      return base64.decode(base64Key);
+    } catch (e, stack) {
+      logger.e('Failed to load secure keys', error: e, stackTrace: stack);
+      rethrow;
     }
-
-    return base64.decode(base64Key);
   }
 
   // --- TEXT ENCRYPTION (DYNAMIC IV) ---
@@ -102,8 +112,9 @@ class EncryptionService {
       final encrypter = encrypt.Encrypter(encrypt.AES(key));
 
       return encrypter.decrypt64(base64.encode(encryptedBytes), iv: iv);
-    } catch (e) {
+    } catch (e, stack) {
       // If decryption fails, it might be unencrypted legacy data
+      logger.d('Text decryption failed', error: e, stackTrace: stack);
       return base64Text;
     }
   }
@@ -185,8 +196,9 @@ class EncryptionService {
       }
 
       return Uint8List.fromList(decrypted);
-    } catch (e) {
+    } catch (e, stack) {
       // Fallback for unencrypted files
+      logger.e('Failed to decrypt file', error: e, stackTrace: stack);
       return file.readAsBytes();
     }
   }
