@@ -49,9 +49,12 @@ class SyncConflictResolver {
       bool localModified = false;
       bool cloudModified = false;
 
-      final localItemsByUuid = <String, VaultItem>{
-        for (var i in localItems) i.uuid: i
-      };
+      final localItemsByUuid = <String, VaultItem>{};
+      for (var i in localItems) {
+        if (i.uuid.isNotEmpty) {
+          localItemsByUuid.putIfAbsent(i.uuid, () => i);
+        }
+      }
 
       await localIsar.writeTxn(() async {
         for (var cloudItem in cloudItems) {

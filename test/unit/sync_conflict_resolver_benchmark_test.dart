@@ -14,8 +14,6 @@ void main() {
       final localItem = localItems.where((i) => i.uuid == cloudItem.uuid).firstOrNull;
       if (localItem != null) matchCountBaseline++;
     }
-    final baselineMs = stopwatch.elapsedMilliseconds;
-
     stopwatch.reset();
     stopwatch.start();
 
@@ -26,10 +24,8 @@ void main() {
       final localItem = localItemMap[cloudItem.uuid];
       if (localItem != null) matchCountOptimized++;
     }
-    final optimizedMs = stopwatch.elapsedMilliseconds;
 
-    print('Baseline time: ${baselineMs}ms');
-    print('Optimized time: ${optimizedMs}ms');
+    // Ensure both approaches yield identical results
     expect(matchCountBaseline, equals(matchCountOptimized));
   });
 }
