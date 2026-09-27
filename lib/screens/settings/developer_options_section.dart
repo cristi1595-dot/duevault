@@ -291,7 +291,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Cloud diagnostics error', error: e, stackTrace: stack);
       if (context.mounted) {
         Navigator.pop(context); // Dismiss loading
       }
@@ -411,7 +412,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
       } finally {
         driveService.dispose();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      logger.e('Force restore error', error: e, stackTrace: stack);
       if (context.mounted) {
         Navigator.pop(context); // Close loading
         await showDialog(
