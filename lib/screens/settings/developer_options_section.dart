@@ -192,7 +192,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
           try {
             final dec = await EncryptionService.decryptText(titleEnc);
             title = dec ?? 'Empty';
-          } catch (e) {
+          } catch (e, stack) {
+            logger.e('Failed to decrypt title for Firestore item', error: e, stackTrace: stack);
             title = 'Encrypted (Decryption key missing)';
           }
         }
