@@ -31,8 +31,8 @@ class AppReviewService {
           checkAndPromptAutomaticReview(ref, context);
         });
       }
-    } catch (e) {
-      logger.e('AppReviewService: Failed to increment action counter', error: e);
+    } catch (e, stack) {
+      logger.e('AppReviewService: Failed to increment action counter', error: e, stackTrace: stack);
     }
   }
 
@@ -110,8 +110,8 @@ class AppReviewService {
       // Fallback
       try {
         await _inAppReview.openStoreListing();
-      } catch (ex) {
-        logger.e('AppReviewService: Store redirect fallback failed', error: ex);
+      } catch (ex, stack) {
+        logger.e('AppReviewService: Store redirect fallback failed', error: ex, stackTrace: stack);
       }
     }
   }
