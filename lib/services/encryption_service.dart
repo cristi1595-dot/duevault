@@ -232,9 +232,21 @@ class EncryptionService {
         logger.i('Encryption keys imported to Secure Storage.');
         return true;
       }
+      logger.w('Backup data missing required key field.');
+      return false;
+    } on FormatException catch (e, stack) {
+      logger.e(
+        'Failed to parse backup keys JSON data',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     } catch (e, stack) {
-      logger.e('Error importing keys', error: e, stackTrace: stack);
+      logger.e(
+        'Failed to import keys from backup',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     }
   }
