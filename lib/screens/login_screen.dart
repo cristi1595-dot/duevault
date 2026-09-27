@@ -145,8 +145,8 @@ class LoginScreen extends ConsumerWidget {
           userCredential = await ref
               .read(authServiceProvider)
               .signInWithGoogle();
-        } catch (e) {
-          logger.e('Google Sign-In failed with exception', error: e);
+        } catch (e, stack) {
+          logger.e('Google Sign-In failed with exception', error: e, stackTrace: stack);
           if (context.mounted) {
             Navigator.pop(context); // Pop loading indicator
           }
@@ -294,8 +294,8 @@ class LoginScreen extends ConsumerWidget {
                 SnackBar(content: Text(message), backgroundColor: bgColor),
               );
             }
-          } catch (e) {
-            logger.e('Error during background login sync', error: e);
+          } catch (e, stack) {
+            logger.e('Error during background login sync', error: e, stackTrace: stack);
           }
 
           // Remove loading indicator
