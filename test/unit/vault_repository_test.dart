@@ -40,7 +40,7 @@ void main() {
           },
         );
     final mockNotificationsPlatform = MockFlutterLocalNotificationsPlatform();
-    when(() => mockNotificationsPlatform.cancel(id: any(named: 'id'))).thenAnswer((_) async => null);
+    when(() => mockNotificationsPlatform.cancel(id: any(named: 'id'))).thenAnswer((_) async {});
     FlutterLocalNotificationsPlatform.instance = mockNotificationsPlatform;
 
     registerFallbackValue(VaultItem());
