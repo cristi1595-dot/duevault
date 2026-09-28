@@ -80,5 +80,50 @@ void main() {
       // Verify that put was called (even if the method threw later due to other IO)
       verify(() => mockCollection.put(any())).called(1);
     });
+
+    test('rethrows Exception when put operation throws generic Exception', () async {
+      final item = VaultItem()
+        ..title = 'Failed Bill'
+        ..itemType = 'Bill'
+        ..amount = 100.0
+        ..dueDate = DateTime.now();
+
+      when(() => mockCollection.put(any())).thenThrow(Exception('Database put failed'));
+
+      expect(
+        () async => repository.saveItem(item),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Database put failed'))),
+      );
+    });
+
+    test('throws user-friendly storage full exception when put operation throws IsarError with disk full', () async {
+      final item = VaultItem()
+        ..title = 'Storage Bill'
+        ..itemType = 'Bill'
+        ..amount = 100.0
+        ..dueDate = DateTime.now();
+
+      when(() => mockCollection.put(any())).thenThrow(IsarError('Disk full error'));
+
+      expect(
+        () async => repository.saveItem(item),
+        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Storage is full. Please free up some space and try again.'))),
+      );
+    });
+
+    test('rethrows IsarError when put operation throws non-disk IsarError', () async {
+      final item = VaultItem()
+        ..title = 'Other Isar Error Bill'
+        ..itemType = 'Bill'
+        ..amount = 100.0
+        ..dueDate = DateTime.now();
+
+      when(() => mockCollection.put(any())).thenThrow(IsarError('Some database corruption error'));
+
+      expect(
+        () async => repository.saveItem(item),
+        throwsA(isA<IsarError>().having((e) => e.toString(), 'message', contains('Some database corruption error'))),
+      );
+    });
   });
 }
