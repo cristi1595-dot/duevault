@@ -49,12 +49,19 @@ class SyncConflictResolver {
       bool localModified = false;
       bool cloudModified = false;
 
+      final localItemsByUuid = <String, VaultItem>{};
+      for (var i in localItems) {
+        if (i.uuid.isNotEmpty) {
+          localItemsByUuid.putIfAbsent(i.uuid, () => i);
+        }
+      }
+
       await localIsar.writeTxn(() async {
         for (var cloudItem in cloudItems) {
           // Match by UUID for rock-solid identification
-          final localItem = localItems
-              .where((i) => i.uuid == cloudItem.uuid)
-              .firstOrNull;
+          final localItem = cloudItem.uuid.isNotEmpty
+              ? localItemsByUuid[cloudItem.uuid]
+              : null;
 
           if (localItem == null) {
             // If localItem is null and we don't have a record of it, it's new from cloud.
@@ -127,8 +134,12 @@ class SyncConflictResolver {
       final appDir = await getApplicationDocumentsDirectory();
       final attachmentsDir = Directory('${appDir.path}/attachments');
 
+      final cloudUuids = {
+        for (var i in cloudItems) if (i.uuid.isNotEmpty) i.uuid
+      };
+
       for (var localItem in localItems) {
-        final existsInCloud = cloudItems.any((i) => i.uuid == localItem.uuid);
+        final existsInCloud = localItem.uuid.isNotEmpty && cloudUuids.contains(localItem.uuid);
         if (!existsInCloud) {
           if (localItem.wasSynced && !isLoginSync) {
             // Item was in cloud before, but is gone now -> Deleted from another device
