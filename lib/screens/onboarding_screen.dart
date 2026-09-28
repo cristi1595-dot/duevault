@@ -70,17 +70,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   Future<void> _completeOnboarding({bool isGuest = false}) async {
-    final isar = ref.read(isarProvider);
-    await isar.writeTxn(() async {
-      final config = await isar.appConfigs.get(0) ?? AppConfig();
-      config.hasSeenOnboarding = true;
-      config.isGuest = isGuest;
-      await isar.appConfigs.put(config);
-    });
-    if (isGuest) {
-      ref.read(isGuestProvider.notifier).state = true;
+    try {
+      final isar = ref.read(isarProvider);
+      await isar.writeTxn(() async {
+        final config = await isar.appConfigs.get(0) ?? AppConfig();
+        config.hasSeenOnboarding = true;
+        config.isGuest = isGuest;
+        await isar.appConfigs.put(config);
+      });
+      if (isGuest) {
+        ref.read(isGuestProvider.notifier).state = true;
+      }
+      ref.read(hasSeenOnboardingProvider.notifier).state = true;
+    } catch (e, stack) {
+      logger.e('Failed to complete onboarding', error: e, stackTrace: stack);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to set up Guest mode.')),
+        );
+      }
     }
-    ref.read(hasSeenOnboardingProvider.notifier).state = true;
   }
 
   Future<void> _showAppSettingsDialog() async {
@@ -231,8 +240,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       userCredential = await ref
           .read(authServiceProvider)
           .signInWithGoogle();
-    } catch (e) {
-      logger.e('Google Sign-In failed during onboarding with exception', error: e);
+    } catch (e, stack) {
+      logger.e('Google Sign-In failed during onboarding with exception', error: e, stackTrace: stack);
       if (mounted) {
         Navigator.pop(context); // Pop loading indicator
       }
@@ -294,8 +303,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ),
           );
         }
-      } catch (e) {
-        logger.e('Error during onboarding login sync', error: e);
+      } catch (e, stack) {
+        logger.e('Error during onboarding login sync', error: e, stackTrace: stack);
       }
 
       // Pop loading indicator
