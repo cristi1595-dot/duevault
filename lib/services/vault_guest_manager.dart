@@ -36,7 +36,27 @@ class VaultGuestManager {
                 .uuidEqualTo(item.uuid)
                 .findFirst();
 
-            if (existing != null) {
+            bool isSemanticDup = false;
+            if (existing == null && item.dueDate != null) {
+              final dayStart = DateTime(item.dueDate!.year, item.dueDate!.month, item.dueDate!.day);
+              final dayEnd = DateTime(item.dueDate!.year, item.dueDate!.month, item.dueDate!.day, 23, 59, 59);
+              final candidates = await isar
+                  .collection<VaultItem>()
+                  .filter()
+                  .ownerIdEqualTo(newUid)
+                  .isDeletedEqualTo(false)
+                  .itemTypeEqualTo(item.itemType)
+                  .dueDateBetween(dayStart, dayEnd)
+                  .findAll();
+              isSemanticDup = candidates.any((c) =>
+                  c.title.trim().toLowerCase() == item.title.trim().toLowerCase() &&
+                  (c.amount == item.amount ||
+                      (c.amount != null &&
+                          item.amount != null &&
+                          (c.amount! - item.amount!).abs() < 0.01)));
+            }
+
+            if (existing != null || isSemanticDup) {
               logger.i(
                 'Migration: Item "${item.title}" already exists in cloud account. Deleting guest copy.',
               );

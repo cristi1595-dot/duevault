@@ -25,6 +25,7 @@ import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
+import '../utils/category_matcher.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -266,12 +267,33 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     item.recurrence = _recurrence;
     item.directDebit = _directDebit;
 
-    // Fix the bug where item.isPaid = false unconditionally overwrites recurring and Direct Debit logic!
-    if (!_isEdit) {
-      item.isPaid = _directDebit;
-    } else if (_directDebit) {
-      item.isPaid = true;
-    } // Otherwise, if it is edit and Direct Debit is off, keep the item's previous isPaid status!
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDayOnly = _dueDate != null
+        ? DateTime(_dueDate!.year, _dueDate!.month, _dueDate!.day)
+        : null;
+    final isDuePassed = dueDayOnly != null &&
+        (dueDayOnly.isBefore(today) || dueDayOnly.isAtSameMomentAs(today));
+
+    // Proper Autopay & Paid state logic:
+    if (_directDebit) {
+      if (isDuePassed) {
+        // Autopay is ON and payment date has arrived or passed -> marked as paid!
+        item.isPaid = true;
+        if (dueDayOnly.isBefore(today)) {
+          // If strictly in the past, also mark as archived
+          item.isArchived = true;
+        }
+      } else {
+        // Autopay is ON but payment date is in the future -> NOT paid yet!
+        item.isPaid = false;
+      }
+    } else {
+      if (!_isEdit) {
+        item.isPaid = false;
+      }
+      // If editing and autopay is OFF, retain user's previous manual isPaid status
+    }
 
     item.notes = notesStr.isEmpty ? null : notesStr;
     item.attachedFiles = _attachedFiles;
@@ -361,7 +383,15 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                       vertical: 6,
                     ),
                   ),
-                  onChanged: (val) => setState(() {}),
+                  onChanged: (val) {
+                    if (!_isEdit) {
+                      final matched = CategoryMatcher.detectCategory(val);
+                      if (matched != null && matched != _category) {
+                        _category = matched;
+                      }
+                    }
+                    setState(() {});
+                  },
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
                   validator: (value) => ValidationHelper.validateTitle(value),
                 ),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/vault_provider.dart';
 import '../widgets/notification_health_banner.dart';
+import '../widgets/categories/category_filter_bar.dart';
 import 'home/home_header.dart';
 import 'home/financial_bento_card.dart';
 import 'home/home_upcoming_list.dart';
@@ -40,8 +42,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Re-check health when returning to app from settings or background
+      // Re-check health and refresh vault when returning to app
       ref.read(notificationHealthProvider.notifier).checkHealth();
+      ref.read(vaultProvider.notifier).refreshVault();
     }
   }
 
@@ -61,6 +64,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
+    final vaultItems = ref.watch(vaultProvider);
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -69,6 +74,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const HomeHeader(),
             const NotificationHealthBanner(),
             const FinancialBentoCard(),
+            const SizedBox(height: 6),
+            CategoryFilterBar(items: vaultItems),
+            const SizedBox(height: 4),
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {

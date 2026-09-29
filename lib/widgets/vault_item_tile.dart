@@ -5,6 +5,7 @@ import '../screens/item_detail_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/vault_provider.dart';
 import '../constants/app_categories.dart';
+import '../providers/category_provider.dart';
 import 'status_badge.dart';
 import 'vault_snackbar.dart';
 import '../theme/app_theme.dart';
@@ -33,13 +34,13 @@ class VaultItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final category = ref.watch(categoryProvider.notifier).getCategory(item.category);
     final daysLeft = _calculateDaysLeft(item.dueDate);
     final isOverdue = item.isOverdue;
     final bool isExpired = item.isExpired;
     final bool isBill = item.itemType == 'Bill';
 
     final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
-    final itemColor = isBill ? const Color(0xFF6366F1) : AppTheme.getMintGreen(context);
 
     final Color statusColor;
     if (item.isPaid) {
@@ -287,7 +288,8 @@ class VaultItemTile extends ConsumerWidget {
                       child: Center(
                         child: _VaultItemThumbnail(
                           item: item,
-                          itemColor: itemColor,
+                          categoryColor: category.color,
+                          categoryIcon: category.icon,
                           isBill: isBill,
                         ),
                       ),
@@ -324,16 +326,40 @@ class VaultItemTile extends ConsumerWidget {
                                         ),
                                   ),
                                   SizedBox(height: gapHeight),
-                                  Text(
-                                    item.dueDate != null
-                                        ? '${isBill ? "Bill • Due" : "Doc • Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
-                                        : '${isBill ? "Bill • No due date" : "Doc • Permanent"}$recurrenceSuffix',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontSize: 13,
-                                          color: Theme.of(context).brightness == Brightness.dark
-                                              ? Colors.white.withValues(alpha: 0.45)
-                                              : Colors.black.withValues(alpha: 0.45),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: category.color.withValues(alpha: 0.14),
+                                          borderRadius: BorderRadius.circular(6),
                                         ),
+                                        child: Text(
+                                          category.name,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: category.color,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          item.dueDate != null
+                                              ? '${isBill ? "Due" : "Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
+                                              : '${isBill ? "No due date" : "Permanent"}$recurrenceSuffix',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontSize: 12.5,
+                                                color: Theme.of(context).brightness == Brightness.dark
+                                                    ? Colors.white.withValues(alpha: 0.45)
+                                                    : Colors.black.withValues(alpha: 0.45),
+                                              ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -462,12 +488,14 @@ class VaultItemTile extends ConsumerWidget {
 
 class _VaultItemThumbnail extends StatelessWidget {
   final VaultItem item;
-  final Color itemColor;
+  final Color categoryColor;
+  final IconData categoryIcon;
   final bool isBill;
 
   const _VaultItemThumbnail({
     required this.item,
-    required this.itemColor,
+    required this.categoryColor,
+    required this.categoryIcon,
     required this.isBill,
   });
 
@@ -477,15 +505,15 @@ class _VaultItemThumbnail extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: itemColor.withValues(alpha: 0.08),
+        color: categoryColor.withValues(alpha: 0.12),
         shape: isBill ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: isBill ? null : BorderRadius.circular(10),
       ),
       child: Center(
         child: Icon(
-          CategoryUtils.getIcon(item.category),
-          color: itemColor,
-          size: 24,
+          categoryIcon,
+          color: categoryColor,
+          size: 22,
         ),
       ),
     );

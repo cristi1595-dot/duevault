@@ -130,10 +130,35 @@ class FirebaseSyncService {
         final remoteItem = VaultItem.fromMap(doc.data());
 
         // Find local version by UUID
-        final localItem = await isar.vaultItems
+        var localItem = await isar.vaultItems
             .filter()
             .uuidEqualTo(remoteItem.uuid)
             .findFirst();
+
+        // Semantic fallback to prevent duplicate creation
+        if (localItem == null && remoteItem.dueDate != null) {
+          final due = remoteItem.dueDate!;
+          final dayStart = DateTime(due.year, due.month, due.day);
+          final dayEnd = DateTime(due.year, due.month, due.day, 23, 59, 59);
+          final candidates = await isar.vaultItems
+              .filter()
+              .ownerIdEqualTo(uid)
+              .isDeletedEqualTo(false)
+              .itemTypeEqualTo(remoteItem.itemType)
+              .dueDateBetween(dayStart, dayEnd)
+              .findAll();
+          for (final c in candidates) {
+            if (c.title.trim().toLowerCase() == remoteItem.title.trim().toLowerCase() &&
+                (c.amount == remoteItem.amount ||
+                    (c.amount != null &&
+                        remoteItem.amount != null &&
+                        (c.amount! - remoteItem.amount!).abs() < 0.01))) {
+              localItem = c;
+              localItem.uuid = remoteItem.uuid;
+              break;
+            }
+          }
+        }
 
         if (localItem == null) {
           // New item from another device

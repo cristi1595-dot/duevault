@@ -10,6 +10,8 @@ import '../widgets/vault/vault_search_and_sort.dart';
 import '../widgets/vault/vault_list_builder.dart';
 import '../theme/app_theme.dart';
 import '../models/vault_item.dart';
+import '../providers/category_provider.dart';
+import '../widgets/categories/category_filter_bar.dart';
 import 'settings_screen.dart';
 
 class VaultScreen extends ConsumerStatefulWidget {
@@ -69,11 +71,19 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     );
   }
 
-  List<VaultItem> _getFilteredAndSortedItems(List<VaultItem> allItems, int tabIndex) {
+  List<VaultItem> _getFilteredAndSortedItems(
+    List<VaultItem> allItems,
+    int tabIndex,
+    String? selectedCategory,
+  ) {
     final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-    // 1. Search Filter
+    // 1. Search & Category Filter
     final searchFiltered = allItems.where((item) {
+      if (selectedCategory != null &&
+          item.category.toLowerCase() != selectedCategory.toLowerCase()) {
+        return false;
+      }
       final query = _searchQuery.toLowerCase();
       return item.title.toLowerCase().contains(query) ||
           item.category.toLowerCase().contains(query) ||
@@ -114,6 +124,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         case SortOption.amount:
           result = (a.amount ?? 0).compareTo(b.amount ?? 0);
           break;
+        case SortOption.category:
+          result = a.category.toLowerCase().compareTo(b.category.toLowerCase());
+          break;
       }
       return _sortAscending ? result : -result;
     });
@@ -123,6 +136,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
   Widget build(BuildContext context) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
+    final selectedCategory = ref.watch(selectedCategoryFilterProvider);
 
     ref.listen(bottomNavIndexProvider, (previous, next) {
       if (next == 1) {
@@ -222,6 +236,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
             },
           ),
           const SizedBox(height: 4),
+          CategoryFilterBar(
+            items: vaultItems,
+            itemTypeFilter: _activeTabIndex == 1
+                ? 'Bill'
+                : (_activeTabIndex == 2 ? 'Document' : null),
+          ),
+          const SizedBox(height: 6),
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: (notification) {
@@ -245,7 +266,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                 onPageChanged: (index) => setState(() => _currentPageIndex = index),
                 itemBuilder: (context, index) {
                   final tabIndex = index % 4;
-                  final items = _getFilteredAndSortedItems(vaultItems, tabIndex);
+                  final items = _getFilteredAndSortedItems(
+                    vaultItems,
+                    tabIndex,
+                    selectedCategory,
+                  );
                   return VaultListBuilder(
                     items: items,
                     currency: currency,

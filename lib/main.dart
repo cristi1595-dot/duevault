@@ -175,6 +175,9 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
       // Re-init timezone in case of travel
       NotificationService.initialize();
 
+      // Refresh vault so autopay date rollover, overdue bills, and recurrence are updated immediately
+      ref.read(vaultProvider.notifier).refreshVault();
+
       if (user != null) {
         logger.i('App resumed: Triggering Safe Sync sequence...');
         _runSafeSyncSequence();

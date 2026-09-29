@@ -4,11 +4,12 @@ import '../models/app_config.dart';
 import '../models/vault_item.dart';
 
 import '../utils/logger.dart';
+import 'vault_automation_manager.dart';
 
 class MigrationService {
   /// The current version of the data structure.
   /// Increment this when you need to trigger a new migration.
-  static const int currentDataVersion = 4;
+  static const int currentDataVersion = 5;
 
   static Future<void> runMigrations(Isar isar) async {
     final config = await isar.collection<AppConfig>().get(0) ?? AppConfig();
@@ -27,6 +28,9 @@ class MigrationService {
       }
       if (config.dataVersion < 4) {
         await _migrateToV4(isar);
+      }
+      if (config.dataVersion < 5) {
+        await _migrateToV5(isar);
       }
 
       // After all migrations, update the version and trigger a cloud sync
@@ -131,5 +135,18 @@ class MigrationService {
     });
 
     logger.i('MigrationService: Migrated ${toUpdate.length} items in v4.');
+  }
+
+  /// Migration v5: Deduplicate any duplicate vault items created by sync/migration
+  static Future<void> _migrateToV5(Isar isar) async {
+    logger.i('MigrationService: Running deduplication migration v5...');
+    final automationManager = VaultAutomationManager(isar);
+    final allItems = await isar.collection<VaultItem>().where().findAll();
+    final owners = allItems.map((i) => i.ownerId).toSet();
+    int totalRemoved = 0;
+    for (final ownerId in owners) {
+      totalRemoved += await automationManager.deduplicateItems(ownerId);
+    }
+    logger.i('MigrationService: v5 finished. Deduplicated $totalRemoved duplicate items.');
   }
 }

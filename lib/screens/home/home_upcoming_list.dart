@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
+import '../../providers/category_provider.dart';
 import '../item_detail_screen.dart';
 
 class HomeUpcomingList extends ConsumerWidget {
@@ -16,36 +18,55 @@ class HomeUpcomingList extends ConsumerWidget {
 
   Widget _buildGroupHeader(String title, int count, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade500,
-              letterSpacing: 1.2,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: color.withValues(alpha: 0.15),
+                color: color.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
             child: Text(
               '$count ${count == 1 ? "item" : "items"}',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: color,
-                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -54,34 +75,101 @@ class HomeUpcomingList extends ConsumerWidget {
     );
   }
 
+  List<Widget> _buildSection({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String title,
+    required List<VaultItem> items,
+    required Color color,
+    required Currency currency,
+  }) {
+    if (items.isEmpty) return const [];
+    return [
+      _buildGroupHeader(title, items.length, color),
+      ...items.map(
+        (item) => VaultItemTile(
+          item: item,
+          currency: currency,
+          isHomeScreen: true,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+            );
+          },
+          onCheckPressed: () {
+            final notifier = ref.read(vaultProvider.notifier);
+            final nextPaidState = !item.isPaid;
+            notifier.updatePaidStatus(item.id, nextPaidState);
+            final name = item.title.isEmpty ? item.category : item.title;
+            final actionText = nextPaidState
+                ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+            VaultSnackBar.show(
+              message: '$name $actionText',
+              actionLabel: 'UNDO',
+              backgroundColor: AppTheme.safeGreen,
+              onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+            );
+          },
+        ),
+      ),
+      const SizedBox(height: 6),
+    ];
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
+    final selectedCategory = ref.watch(selectedCategoryFilterProvider);
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Upcoming list: Both paid and unpaid items sorted by dueDate
-    final allUpcoming = vaultItems
+    // Upcoming list: Both paid and unpaid items sorted by dueDate (defensively deduplicated)
+    final seenSignatures = <String>{};
+    final allUpcoming = <VaultItem>[];
+    final sortedCandidates = vaultItems
         .where(
-          (item) => !item.isArchived && item.dueDate != null,
+          (item) => !item.isArchived && !item.isDeleted && item.dueDate != null,
+        )
+        .where(
+          (item) =>
+              selectedCategory == null ||
+              item.category.toLowerCase() == selectedCategory.toLowerCase(),
         )
         .toList()
       ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+
+    for (final item in sortedCandidates) {
+      final normTitle = item.title.trim().toLowerCase();
+      final type = item.itemType ?? 'Bill';
+      final dueStr = '${item.dueDate!.year}-${item.dueDate!.month}-${item.dueDate!.day}';
+      final amtStr = item.amount != null ? item.amount!.toStringAsFixed(2) : '';
+      final sig = '$normTitle|$type|$dueStr|$amtStr';
+      if (seenSignatures.add(sig)) {
+        allUpcoming.add(item);
+      }
+    }
 
     int getDaysLeft(DateTime dueDate) {
       final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
       return due.difference(today).inDays;
     }
 
-    final upcoming7Days =
-        allUpcoming.where((item) => getDaysLeft(item.dueDate!) <= 7).toList();
-    final upcoming30Days = allUpcoming.where((item) {
+    final urgentItems = allUpcoming
+        .where((item) => item.isOverdue || getDaysLeft(item.dueDate!) <= 0)
+        .toList();
+    final thisWeekItems = allUpcoming
+        .where((item) =>
+            !urgentItems.contains(item) && getDaysLeft(item.dueDate!) <= 7)
+        .toList();
+    final thisMonthItems = allUpcoming.where((item) {
       final days = getDaysLeft(item.dueDate!);
       return days > 7 && days <= 30;
     }).toList();
-    final upcomingLater =
+    final laterItems =
         allUpcoming.where((item) => getDaysLeft(item.dueDate!) > 30).toList();
 
     if (vaultItems.isEmpty) {
@@ -90,135 +178,79 @@ class HomeUpcomingList extends ConsumerWidget {
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 140),
+      padding: const EdgeInsets.fromLTRB(10, 2, 10, 140),
       children: [
         if (allUpcoming.isEmpty)
-          const BentoCard(
+          BentoCard(
             child: SizedBox(
               width: double.infinity,
               child: Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('All caught up! No bills due.'),
+                  padding: const EdgeInsets.symmetric(vertical: 28.0, horizontal: 16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 38,
+                        color: AppTheme.safeGreen.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        selectedCategory != null
+                            ? 'No upcoming items for "$selectedCategory"'
+                            : 'All caught up! No items due.',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      if (selectedCategory != null) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            ref.read(selectedCategoryFilterProvider.notifier).state = null;
+                          },
+                          child: const Text('Show all categories'),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
           )
         else ...[
-          if (upcoming7Days.isNotEmpty) ...[
-            _buildGroupHeader(
-              'Next 7 Days',
-              upcoming7Days.length,
-              upcoming7Days.any((item) => getDaysLeft(item.dueDate!) <= 3)
-                  ? AppTheme.urgentRed
-                  : AppTheme.warningYellow,
-            ),
-            ...upcoming7Days.map(
-              (item) => VaultItemTile(
-                item: item,
-                currency: currency,
-                isHomeScreen: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: item),
-                    ),
-                  );
-                },
-                onCheckPressed: () {
-                  final notifier = ref.read(vaultProvider.notifier);
-                  final nextPaidState = !item.isPaid;
-                  notifier.updatePaidStatus(item.id, nextPaidState);
-                  final name = item.title.isEmpty ? item.category : item.title;
-                  final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                  VaultSnackBar.show(
-                    message: '$name $actionText',
-                    actionLabel: 'UNDO',
-                    backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                  );
-                },
-              ),
-            ),
-          ],
-          if (upcoming30Days.isNotEmpty) ...[
-            _buildGroupHeader(
-              'Next 30 Days',
-              upcoming30Days.length,
-              AppTheme.safeGreen,
-            ),
-            ...upcoming30Days.map(
-              (item) => VaultItemTile(
-                item: item,
-                currency: currency,
-                isHomeScreen: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: item),
-                    ),
-                  );
-                },
-                onCheckPressed: () {
-                  final notifier = ref.read(vaultProvider.notifier);
-                  final nextPaidState = !item.isPaid;
-                  notifier.updatePaidStatus(item.id, nextPaidState);
-                  final name = item.title.isEmpty ? item.category : item.title;
-                  final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                  VaultSnackBar.show(
-                    message: '$name $actionText',
-                    actionLabel: 'UNDO',
-                    backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                  );
-                },
-              ),
-            ),
-          ],
-          if (upcomingLater.isNotEmpty) ...[
-            _buildGroupHeader(
-              'Later',
-              upcomingLater.length,
-              AppTheme.safeGreen,
-            ),
-            ...upcomingLater.map(
-              (item) => VaultItemTile(
-                item: item,
-                currency: currency,
-                isHomeScreen: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: item),
-                    ),
-                  );
-                },
-                onCheckPressed: () {
-                  final notifier = ref.read(vaultProvider.notifier);
-                  final nextPaidState = !item.isPaid;
-                  notifier.updatePaidStatus(item.id, nextPaidState);
-                  final name = item.title.isEmpty ? item.category : item.title;
-                  final actionText = nextPaidState
-                      ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                      : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-                  VaultSnackBar.show(
-                    message: '$name $actionText',
-                    actionLabel: 'UNDO',
-                    backgroundColor: AppTheme.safeGreen,
-                    onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-                  );
-                },
-              ),
-            ),
-          ],
-        ]
+          ..._buildSection(
+            context: context,
+            ref: ref,
+            title: 'Urgent / Due Today',
+            items: urgentItems,
+            color: AppTheme.urgentRed,
+            currency: currency,
+          ),
+          ..._buildSection(
+            context: context,
+            ref: ref,
+            title: 'This Week',
+            items: thisWeekItems,
+            color: const Color(0xFFF59E0B),
+            currency: currency,
+          ),
+          ..._buildSection(
+            context: context,
+            ref: ref,
+            title: 'Later This Month',
+            items: thisMonthItems,
+            color: AppTheme.safeGreen,
+            currency: currency,
+          ),
+          ..._buildSection(
+            context: context,
+            ref: ref,
+            title: 'Upcoming',
+            items: laterItems,
+            color: const Color(0xFF6366F1),
+            currency: currency,
+          ),
+        ],
       ],
     );
   }

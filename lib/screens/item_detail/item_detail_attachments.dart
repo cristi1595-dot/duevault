@@ -89,6 +89,7 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
       try {
         final success = await driveService.downloadAttachment(cloudId, absolutePath);
         if (success) {
+          if (!mounted) return;
           // Force a rebuild by updating state
           setState(() {
             _downloadingPaths[fileName] = false;
@@ -104,9 +105,11 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
       }
     } catch (e, stack) {
       logger.e('Error downloading attachment', error: e, stackTrace: stack);
-      setState(() {
-        _downloadingPaths[fileName] = false;
-      });
+      if (mounted) {
+        setState(() {
+          _downloadingPaths[fileName] = false;
+        });
+      }
       if (context.mounted) {
         _showErrorSnackBar(
           context,

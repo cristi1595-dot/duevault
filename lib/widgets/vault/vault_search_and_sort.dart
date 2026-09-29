@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-enum SortOption { date, name, amount }
+enum SortOption { date, name, amount, category }
 
 class VaultSearchAndSort extends StatelessWidget {
   final TextEditingController searchController;
@@ -127,6 +127,12 @@ class VaultSearchAndSort extends StatelessWidget {
                   SortOption.amount,
                   'Amount',
                   Icons.payments_outlined,
+                ),
+                _buildSortItem(
+                  context,
+                  SortOption.category,
+                  'Category',
+                  Icons.category_outlined,
                 ),
               ],
             ),

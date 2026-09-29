@@ -68,7 +68,26 @@ void callbackDispatcher() {
                 .uuidEqualTo(nextUuid)
                 .findFirst();
 
-            if (existing == null) {
+            final nextDayStart = DateTime(nextDueDate.year, nextDueDate.month, nextDueDate.day);
+            final nextDayEnd = DateTime(nextDueDate.year, nextDueDate.month, nextDueDate.day, 23, 59, 59);
+
+            final existingSemantic = await db.vaultItems
+                .filter()
+                .ownerIdEqualTo(bill.ownerId)
+                .isDeletedEqualTo(false)
+                .itemTypeEqualTo(bill.itemType)
+                .dueDateBetween(nextDayStart, nextDayEnd)
+                .findAll();
+
+            final alreadyExists = existing != null ||
+                existingSemantic.any((c) =>
+                    c.title.trim().toLowerCase() == bill.title.trim().toLowerCase() &&
+                    (c.amount == bill.amount ||
+                        (c.amount != null &&
+                            bill.amount != null &&
+                            (c.amount! - bill.amount!).abs() < 0.01)));
+
+            if (!alreadyExists) {
               final newBill = VaultItem()
                 ..ownerId = bill.ownerId
                 ..itemType = bill.itemType

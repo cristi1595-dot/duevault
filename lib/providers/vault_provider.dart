@@ -126,15 +126,19 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         'VaultNotifier: Loading items for owner: $ownerId (v$loadVersion)',
       );
 
-      // Run Smart Auto-Archive (Backgrounded, non-blocking)
-      unawaited(
-        _repository
-            .autoArchiveExpiredItems(ownerId)
-            .then((_) => _markAsDirty())
-            .catchError((e) {
-              logger.e('VaultNotifier: Auto-archive error', error: e);
-            }),
-      );
+      // 1. Process Autopay bills and Smart Auto-Archive (AWAITED to guarantee DB is up to date)
+      try {
+        await _repository.processAutopayAndRecurrence(ownerId);
+      } catch (e, stack) {
+        logger.e('VaultNotifier: Auto-archive error', error: e, stackTrace: stack);
+      }
+
+      // 2. Clean up any duplicate items in the database
+      try {
+        await _repository.deduplicateItems(ownerId);
+      } catch (e, stack) {
+        logger.e('VaultNotifier: Deduplication error', error: e, stackTrace: stack);
+      }
 
       final freshItems = await _repository.getItems(ownerId);
 
@@ -247,6 +251,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
       notificationsEnabled: notificationsEnabled,
       userAccessToken: token,
     );
+
+    // If the saved item is paid and recurring (e.g. autopaid past bill), generate the next instance
+    if (item.isPaid && item.recurrence != 'None' && item.itemType == 'Bill' && item.dueDate != null) {
+      await _repository.generateNextRecurringInstance(item);
+    }
 
     await _markAsDirty();
     // Wait for any in-progress background load to finish, then force a fresh reload

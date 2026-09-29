@@ -52,7 +52,7 @@ class HomeHeader extends ConsumerWidget {
                           ],
                         ),
                         Text(
-                          'Smart Bill Manager',
+                          'Personal Organizer',
                           style: TextStyle(
                             color: Theme.of(
                               context,

@@ -20,6 +20,7 @@ import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
+import '../utils/category_matcher.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -340,7 +341,16 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 child: TextFormField(
                   controller: _titleController,
                   textCapitalization: TextCapitalization.sentences,
-                  onChanged: (val) => setState(() {}),
+                  onChanged: (val) {
+                    final isEdit = widget.item != null && widget.item!.id != Isar.autoIncrement;
+                    if (!isEdit) {
+                      final matched = CategoryMatcher.detectCategory(val);
+                      if (matched != null && matched != _category) {
+                        _category = matched;
+                      }
+                    }
+                    setState(() {});
+                  },
                   style: TextStyle(
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 19,
@@ -371,6 +381,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               CategorySelector(
                 selectedCategory: _category,
                 categories: _categories,
+                itemType: 'Document',
                 onCategorySelected: (cat) => setState(() => _category = cat),
               ),
               const SizedBox(height: 10),

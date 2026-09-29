@@ -268,6 +268,18 @@ class VaultRepository {
     await _automationManager.autoArchiveExpiredItems(ownerId);
   }
 
+  Future<void> processAutopayAndRecurrence(String ownerId) async {
+    await _automationManager.processAutopayAndRecurrence(ownerId);
+  }
+
+  Future<int> deduplicateItems(String ownerId) async {
+    return _automationManager.deduplicateItems(ownerId);
+  }
+
+  Future<void> generateNextRecurringInstance(VaultItem item) async {
+    await _automationManager.generateNextRecurringInstance(item);
+  }
+
   Future<void> _deleteCloudFile(String fileId, String token) async {
     final driveService = DriveService(
       GoogleAuthClient({'Authorization': 'Bearer $token'}),

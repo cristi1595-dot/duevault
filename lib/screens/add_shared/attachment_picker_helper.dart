@@ -25,9 +25,6 @@ class AttachmentPickerHelper {
     if (source == ImageSource.camera) {
       final granted = await PermissionHelper.requestCameraPermission(context);
       if (!granted) return;
-    } else {
-      final granted = await PermissionHelper.requestGalleryPermission(context);
-      if (!granted) return;
     }
 
     try {
@@ -77,9 +74,6 @@ class AttachmentPickerHelper {
     required Function(OcrResult result) onOcrResult,
     required Function(String error) onError,
   }) async {
-    final granted = await PermissionHelper.requestGalleryPermission(context);
-    if (!granted) return;
-
     try {
       final result = await FilePicker.pickFiles(
         type: FileType.custom,

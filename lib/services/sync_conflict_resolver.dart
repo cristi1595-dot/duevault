@@ -59,9 +59,31 @@ class SyncConflictResolver {
       await localIsar.writeTxn(() async {
         for (var cloudItem in cloudItems) {
           // Match by UUID for rock-solid identification
-          final localItem = cloudItem.uuid.isNotEmpty
+          VaultItem? localItem = cloudItem.uuid.isNotEmpty
               ? localItemsByUuid[cloudItem.uuid]
               : null;
+
+          // Semantic matching fallback: match by title, type, dueDate (day), and amount
+          if (localItem == null && cloudItem.dueDate != null) {
+            final due = cloudItem.dueDate!;
+            for (final loc in localItems) {
+              if (!loc.isDeleted &&
+                  loc.title.trim().toLowerCase() == cloudItem.title.trim().toLowerCase() &&
+                  loc.itemType == cloudItem.itemType &&
+                  loc.dueDate != null &&
+                  loc.dueDate!.year == due.year &&
+                  loc.dueDate!.month == due.month &&
+                  loc.dueDate!.day == due.day &&
+                  (loc.amount == cloudItem.amount ||
+                      (loc.amount != null &&
+                          cloudItem.amount != null &&
+                          (loc.amount! - cloudItem.amount!).abs() < 0.01))) {
+                localItem = loc;
+                localItem.uuid = cloudItem.uuid; // Harmonize UUIDs
+                break;
+              }
+            }
+          }
 
           if (localItem == null) {
             // If localItem is null and we don't have a record of it, it's new from cloud.
