@@ -1,5 +1,5 @@
-// ignore_for_file: non_const_argument_for_const_parameter
 import 'package:flutter/material.dart';
+import '../widgets/categories/category_icon_picker.dart';
 
 class CategoryItem {
   final String name;
@@ -18,10 +18,7 @@ class CategoryItem {
     this.isCustom = false,
   });
 
-  IconData get icon => IconData(
-        iconCodePoint,
-        fontFamily: iconFontFamily ?? 'MaterialIcons',
-      );
+  IconData get icon => CategoryIconPicker.getIcon(iconCodePoint);
 
   Color get color => Color(colorValue);
 

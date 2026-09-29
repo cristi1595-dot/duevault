@@ -30,7 +30,21 @@ class CategoryIconPicker extends StatelessWidget {
     Icons.phone_iphone_outlined,
     Icons.savings_outlined,
     Icons.folder_outlined,
+    Icons.account_balance_outlined,
+    Icons.subscriptions_outlined,
+    Icons.health_and_safety_outlined,
+    Icons.badge_outlined,
+    Icons.verified_outlined,
+    Icons.home_work_outlined,
+    Icons.more_horiz_outlined,
   ];
+
+  static IconData getIcon(int codePoint) {
+    for (final icon in icons) {
+      if (icon.codePoint == codePoint) return icon;
+    }
+    return Icons.folder_outlined;
+  }
 
   const CategoryIconPicker({
     super.key,
@@ -49,7 +63,7 @@ class CategoryIconPicker extends StatelessWidget {
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
         ),
-        itemCount: icons.length,
+        itemCount: 24, // Show the primary 24 curated icons in the picker grid
         itemBuilder: (context, index) {
           final iconData = icons[index];
           final isSelected = iconData.codePoint == selectedIconCode;
