@@ -50,6 +50,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   bool _useOcr = true;
   bool _isProcessingOcr = false;
   bool _isSaving = false;
+  bool _showAdvanced = false;
   String? _attachmentsDirPath;
 
   final List<CategoryData> _categories = AppCategories.billCategories;
@@ -58,6 +59,12 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   void initState() {
     super.initState();
     _loadAttachmentsDirectory();
+
+    if (widget.item != null) {
+      _showAdvanced = widget.item!.recurrence != 'None' ||
+          widget.item!.directDebit ||
+          (widget.item!.notes != null && widget.item!.notes!.isNotEmpty);
+    }
     
     // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
@@ -429,41 +436,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
               ),
               const SizedBox(height: 10),
 
-              BillRecurrenceAutoPayRow(
-                recurrence: _recurrence,
-                directDebit: _directDebit,
-                onRecurrenceChanged: (v) {
-                  if (v != null) setState(() => _recurrence = v);
-                },
-                onDirectDebitChanged: (val) => setState(() => _directDebit = val),
-              ),
-              const SizedBox(height: 10),
-
-              BentoInputWrapper(
-                label: 'NOTES',
-                child: TextFormField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                  textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 17,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Add details...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
               AttachmentSection(
                 attachedFiles: _resolvedAttachedFiles,
                 useOcr: _useOcr,
@@ -490,6 +462,89 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                   });
                 },
               ),
+              const SizedBox(height: 10),
+
+              // Advanced Options Collapsible (Recurrence, AutoPay, Notes)
+              InkWell(
+                onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.tune_rounded,
+                        size: 20,
+                        color: AppTheme.primaryAction,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _showAdvanced
+                              ? 'Opțiuni avansate (Recurență, Notițe)'
+                              : (_recurrence != 'None' || _directDebit || _notesController.text.isNotEmpty
+                                  ? 'Opțiuni avansate (Configurate ✓)'
+                                  : 'Opțiuni avansate (Recurență, Notițe)'),
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _showAdvanced
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_showAdvanced) ...[
+                const SizedBox(height: 10),
+                BillRecurrenceAutoPayRow(
+                  recurrence: _recurrence,
+                  directDebit: _directDebit,
+                  onRecurrenceChanged: (v) {
+                    if (v != null) setState(() => _recurrence = v);
+                  },
+                  onDirectDebitChanged: (val) => setState(() => _directDebit = val),
+                ),
+                const SizedBox(height: 10),
+                BentoInputWrapper(
+                  label: 'NOTES',
+                  child: TextFormField(
+                    controller: _notesController,
+                    maxLines: 2,
+                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+                    textCapitalization: TextCapitalization.sentences,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 17,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Add details...',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
 
               PrimaryButton(

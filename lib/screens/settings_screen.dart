@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'archive/archive_screen.dart';
 import 'settings/compact_profile_card.dart';
 import 'settings/developer_options_section.dart';
 import 'settings/drive_sync_section.dart';
@@ -105,14 +106,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
@@ -138,6 +141,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 return const SizedBox.shrink();
               },
             ),
+
+            // 1.2 Quick Vault Actions (Arhivă & Istoric)
+            const SettingsSectionHeader(title: 'SEIF & ARHIVĂ'),
+            const SizedBox(height: 5),
+            _buildCategoryCard(
+              context,
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final vaultItems = ref.watch(vaultProvider);
+                  final today = DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day,
+                  );
+                  final historyCount = vaultItems.where((item) {
+                    if (item.isDeleted) return false;
+                    final isExpired = item.dueDate != null && item.dueDate!.isBefore(today);
+                    return item.isArchived || (item.isPaid && isExpired);
+                  }).length;
+
+                  return SettingsListTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Arhivă & Istoric plăți',
+                    subtitle: 'Facturi plătite și documente arhivate ($historyCount)',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ArchiveScreen()),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
 
             // 1.5 Biometric Lock (Security)
             const SettingsSectionHeader(title: 'SECURITY'),
