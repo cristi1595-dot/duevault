@@ -81,29 +81,29 @@ class _WalkthroughOverlayState extends State<WalkthroughOverlay>
         'cardAlignment': Alignment.topCenter,
         'cardOffset': const Offset(0, 16.0),
       },
-      // Step 3: Bills & Docs Tabs
+      // Step 3: Vault Tab
       {
-        'left': (size.width * 0.28) - 24.0,
+        'left': (size.width * 0.725) - 28.0,
         'top': size.height - bottomPadding - 70.0,
         'width': 56.0,
         'height': 56.0,
         'radius': 16.0,
-        'title': 'Facturi & Documente',
-        'desc': 'Secțiuni dedicate pentru facturi și acte, cu filtre rapide de plată și expirare.',
-        'cardAlignment': Alignment.topCenter,
-        'cardOffset': const Offset(0, 16.0),
-      },
-      // Step 4: Settings & Hub
-      {
-        'left': size.width - 72.0,
-        'top': size.height - bottomPadding - 70.0,
-        'width': 56.0,
-        'height': 56.0,
-        'radius': 16.0,
-        'title': 'Setări & Arhivă',
-        'desc': 'Accesează istoricul plăților trecute, securitatea biometrică și backup-ul securizat în Google Drive.',
+        'title': 'Your Secure Vault',
+        'desc': 'Navigate here to view all stored bills, archives, and files, categorized and encrypted with device-lock security.',
         'cardAlignment': Alignment.topRight,
         'cardOffset': const Offset(-16.0, 16.0),
+      },
+      // Step 4: Settings
+      {
+        'left': size.width - 60.0,
+        'top': topPadding + 6.0,
+        'width': 48.0,
+        'height': 48.0,
+        'radius': 24.0,
+        'title': 'App Customization',
+        'desc': 'Tap the Settings icon to manage security locks, cloud sync, notifications, and customize system theme settings.',
+        'cardAlignment': Alignment.bottomRight,
+        'cardOffset': const Offset(-16.0, -16.0),
       },
     ];
 

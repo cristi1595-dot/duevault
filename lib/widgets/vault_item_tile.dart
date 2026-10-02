@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vault_item.dart';
 import '../screens/item_detail_screen.dart';
@@ -65,10 +64,38 @@ class VaultItemTile extends ConsumerWidget {
       );
     }
 
-    final displayTitle = item.title.isEmpty ? item.category : item.title;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double textColumnWidth = screenWidth -
+        20 - // List horizontal padding
+        57 - // Left Icon Box
+        13 - // Left padding of the middle section
+        ((onCheckPressed != null) ? 3 : 13) - // Right padding of the middle section
+        9 - // Gap between text and right columns
+        110 - // Right column width
+        ((onCheckPressed != null) ? 56 : 0); // Right checkmark button
+
+    final rawTitle = item.title.isEmpty ? item.category : item.title;
+    final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
+    final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
     final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
         ? ' • ${item.recurrence}'
         : '';
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: displayTitle,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontSize: fontSize,
+              height: 1.1,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+      maxLines: 2,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: textColumnWidth > 0 ? textColumnWidth : 150);
+
+    final isTwoLines = textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
+    final gapHeight = isTwoLines ? 2.0 : 10.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -214,29 +241,25 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                   );
                 },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             child: Opacity(
               opacity: item.isPaid ? 0.6 : 1.0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: isDark
                       ? (isHomeScreen && !isInHistory
                           ? Border.all(
-                              color: statusColor.withValues(alpha: 0.20),
-                              width: 1.0,
+                              color: statusColor.withValues(alpha: 0.15),
+                              width: 1.2,
                             )
-                          : Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              width: 1.0,
-                            ))
+                          : null)
                       : Border.all(
                           color: isHomeScreen && !isInHistory
-                              ? statusColor.withValues(alpha: 0.20)
+                              ? statusColor.withValues(alpha: 0.10)
                               : const Color(0xFFE2E8F0),
-                          width: 1.0,
+                          width: 1,
                         ),
                   boxShadow: !isDark
                       ? [
@@ -248,160 +271,183 @@ class VaultItemTile extends ConsumerWidget {
                         ]
                       : null,
                 ),
+              child: IntrinsicHeight(
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Left Icon
-                    _VaultItemThumbnail(
-                      item: item,
-                      categoryColor: category.color,
-                      categoryIcon: category.icon,
-                      isBill: isBill,
+                    // Left Icon Box: occupies full height
+                    Container(
+                      width: 57,
+                      constraints: const BoxConstraints(minHeight: 60),
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(18),
+                          bottomLeft: Radius.circular(18),
+                        ),
+                      ),
+                      child: Center(
+                        child: _VaultItemThumbnail(
+                          item: item,
+                          categoryColor: category.color,
+                          categoryIcon: category.icon,
+                          isBill: isBill,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 12),
-
-                    // Middle: Title & Metadata
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            displayTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: item.isPaid
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  color: item.isPaid
-                                      ? Theme.of(context).textTheme.bodyMedium?.color
-                                      : Theme.of(context).textTheme.bodyLarge?.color,
-                                ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          13,
+                          2,
+                          (onCheckPressed != null) ? 3 : 13,
+                          2,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayTitle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                          fontSize: fontSize,
+                                          height: 1.1,
+                                          decoration: item.isPaid
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          color: item.isPaid
+                                              ? Theme.of(context).textTheme.bodyMedium?.color
+                                              : Theme.of(context).textTheme.bodyLarge?.color,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  SizedBox(height: gapHeight),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: category.color.withValues(alpha: 0.14),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          category.name,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: category.color,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          item.dueDate != null
+                                              ? '${isBill ? "Due" : "Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
+                                              : '${isBill ? "No due date" : "Permanent"}$recurrenceSuffix',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontSize: 12.5,
+                                                color: Theme.of(context).brightness == Brightness.dark
+                                                    ? Colors.white.withValues(alpha: 0.45)
+                                                    : Colors.black.withValues(alpha: 0.45),
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            SizedBox(
+                              width: 110,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (isBill) ...[
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        currency.formatAmount(item.amount ?? 0.0),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 20,
+                                          letterSpacing: -0.2,
+                                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                                        ),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                  ],
+                                  StatusBadge(
+                                    isDocument: !isBill,
+                                    label: item.isPaid
+                                        ? (isBill ? 'PAID' : 'RENEWED')
+                                        : (item.dueDate == null
+                                            ? 'PERMANENT'
+                                            : (isOverdue
+                                                ? (isBill ? 'OVERDUE' : 'EXPIRED')
+                                                : (daysLeft == 0
+                                                    ? 'TODAY'
+                                                    : '$daysLeft DAYS'))),
+                                    isPaid: item.isPaid,
+                                    daysLeft: (item.isPaid || item.dueDate == null) ? null : daysLeft,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Right Checkmark Button: occupies full height, flush to edge
+                    if (onCheckPressed != null)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onCheckPressed,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(18),
+                            bottomRight: Radius.circular(18),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 1.5,
-                                ),
+                          child: SizedBox(
+                            width: 56,
+                            child: Center(
+                              child: Container(
+                                width: 33,
+                                height: 33,
                                 decoration: BoxDecoration(
-                                  color: category.color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
+                                  shape: BoxShape.circle,
+                                  color: item.isPaid
+                                      ? AppTheme.getSafeGreen(context)
+                                      : const Color(0xFF6366F1).withValues(alpha: 0.06),
+                                  border: Border.all(
+                                    color: item.isPaid
+                                        ? AppTheme.getSafeGreen(context)
+                                        : const Color(0xFF6366F1).withValues(alpha: 0.25),
+                                    width: 1.3,
+                                  ),
                                 ),
-                                child: Text(
-                                  category.name,
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: category.color,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.check_rounded,
+                                    color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
+                                    size: 23,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  item.dueDate != null
-                                      ? '${isBill ? "Due" : "Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
-                                      : '${isBill ? "No due date" : "Permanent"}$recurrenceSuffix',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                  ),
-                                ),
-                              ),
-                              if (item.attachedFiles.isNotEmpty) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.attach_file_rounded,
-                                  size: 13,
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Right: Amount & Status Badge
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isBill) ...[
-                          Text(
-                            currency.formatAmount(item.amount ?? 0.0),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              letterSpacing: -0.2,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                        ],
-                        StatusBadge(
-                          isDocument: !isBill,
-                          label: item.isPaid
-                              ? (isBill ? 'PAID' : 'RENEWED')
-                              : (item.dueDate == null
-                                  ? 'PERMANENT'
-                                  : (isOverdue
-                                      ? (isBill ? 'OVERDUE' : 'EXPIRED')
-                                      : (daysLeft == 0
-                                          ? 'TODAY'
-                                          : '$daysLeft DAYS'))),
-                          isPaid: item.isPaid,
-                          daysLeft: (item.isPaid || item.dueDate == null) ? null : daysLeft,
-                        ),
-                      ],
-                    ),
-
-                    // Checkmark Action
-                    if (onCheckPressed != null) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          onCheckPressed!();
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: item.isPaid
-                                ? AppTheme.getSafeGreen(context)
-                                : (isDark ? const Color(0xFF252A36) : const Color(0xFFEFF2F6)),
-                            border: Border.all(
-                              color: item.isPaid
-                                  ? AppTheme.getSafeGreen(context)
-                                  : (isDark ? const Color(0xFF3B4254) : const Color(0xFFCBD5E1)),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.check_rounded,
-                              color: item.isPaid
-                                  ? Colors.white
-                                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                              size: 18,
                             ),
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -409,8 +455,9 @@ class VaultItemTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   int _calculateDaysLeft(DateTime? dueDate) {
     if (dueDate == null) return 999;

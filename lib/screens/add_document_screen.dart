@@ -41,7 +41,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool _useOcr = true;
   bool _isProcessingOcr = false;
   bool _isSaving = false;
-  bool _showNotes = false;
   String? _attachmentsDirPath;
 
   final List<CategoryData> _categories = AppCategories.docCategories;
@@ -50,10 +49,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   void initState() {
     super.initState();
     _loadAttachmentsDirectory();
-
-    if (widget.item != null) {
-      _showNotes = widget.item!.notes != null && widget.item!.notes!.isNotEmpty;
-    }
 
     // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
@@ -427,6 +422,31 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               ),
               const SizedBox(height: 10),
 
+              BentoInputWrapper(
+                label: 'NOTES',
+                child: TextFormField(
+                  controller: _notesController,
+                  maxLines: 2,
+                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+                  textCapitalization: TextCapitalization.sentences,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: 17,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Add details...',
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
               AttachmentSection(
                 attachedFiles: _resolvedAttachedFiles,
                 useOcr: _useOcr,
@@ -453,80 +473,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   });
                 },
               ),
-              const SizedBox(height: 10),
-
-              // Optional Notes Section
-              InkWell(
-                onTap: () => setState(() => _showNotes = !_showNotes),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.edit_note_rounded,
-                        size: 20,
-                        color: AppTheme.accentPurple,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _showNotes
-                              ? 'Notițe private'
-                              : (_notesController.text.isNotEmpty
-                                  ? 'Notițe (Salvate ✓)'
-                                  : 'Adaugă notițe private (Opțional)'),
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        _showNotes
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (_showNotes) ...[
-                const SizedBox(height: 10),
-                BentoInputWrapper(
-                  label: 'NOTES',
-                  child: TextFormField(
-                    controller: _notesController,
-                    maxLines: 2,
-                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                    textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontSize: 17,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Add details...',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 16),
 
               PrimaryButton(

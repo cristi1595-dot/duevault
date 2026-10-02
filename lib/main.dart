@@ -11,9 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
-import 'screens/bills/bills_screen.dart';
-import 'screens/documents/documents_screen.dart';
-import 'screens/settings_screen.dart';
+import 'screens/vault_screen.dart';
 import 'screens/login_screen.dart';
 import 'models/user.dart';
 import 'models/vault_item.dart';
@@ -336,12 +334,7 @@ class MainNavigation extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    BillsScreen(),
-    DocumentsScreen(),
-    SettingsScreen(),
-  ];
+  final List<Widget> _screens = const [HomeScreen(), VaultScreen()];
 
   @override
   void initState() {
@@ -386,56 +379,40 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                 context: context,
                 backgroundColor: Theme.of(context).cardTheme.color,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 builder: (context) => Container(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
                       Text(
-                        'Adaugă element nou',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
+                        'Add New Item',
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        'Alege tipul elementului pe care vrei să-l salvezi.',
+                        'Select the type of item you want to vault.',
                         style: TextStyle(
                           color: Theme.of(context).textTheme.bodyMedium?.color,
-                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       _buildPopupItem(
                         context,
-                        'Factură',
-                        'Urmărește plățile și scadențele financiare',
-                        Icons.receipt_long_rounded,
                         'Bill',
+                        'Track payments & due dates',
+                        Icons.receipt_long,
                       ),
                       const SizedBox(height: 12),
                       _buildPopupItem(
                         context,
                         'Document',
-                        'Salvează acte, garanții, contracte și buletine',
-                        Icons.folder_shared_rounded,
-                        'Document',
+                        'Store IDs, contracts & more',
+                        Icons.description,
                       ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -480,44 +457,35 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     String title,
     String subtitle,
     IconData icon,
-    String itemType,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = itemType == 'Bill' ? AppTheme.primaryAction : AppTheme.accentPurple;
-
     return InkWell(
       onTap: () {
-        HapticFeedback.lightImpact();
         Navigator.pop(context);
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => itemType == 'Document'
+            builder: (_) => title == 'Document'
                 ? const AddDocumentScreen()
-                : AddBillScreen(item: VaultItem()..itemType = itemType),
+                : AddBillScreen(item: VaultItem()..itemType = title),
           ),
         );
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: isDark ? 0.2 : 0.4),
-            width: 1.0,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: AppTheme.primaryAction),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -528,7 +496,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                     title,
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontSize: 15.5,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -536,7 +504,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 12,
                     ),
                   ),
@@ -544,9 +512,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
-              size: 22,
+              Icons.chevron_right,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
           ],
         ),

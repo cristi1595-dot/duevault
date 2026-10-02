@@ -1,7 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../theme/app_theme.dart';
 
 class IntegratedBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -19,98 +17,49 @@ class IntegratedBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final inactiveColor = isDark ? const Color(0xFF8E99A8) : const Color(0xFF64748B);
-    const activeColor = AppTheme.primaryAction;
-
-    final barBg = isDark
-        ? const Color(0xFF12151C).withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.90);
-
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : Colors.black.withValues(alpha: 0.08);
+    final inactiveColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
 
     return SafeArea(
       bottom: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
-              height: 66,
+              height: 68,
               decoration: BoxDecoration(
-                color: barBg,
-                borderRadius: BorderRadius.circular(26),
+                color: Colors.black.withValues(alpha: 0.65), // Dark semi-transparent background
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: borderColor,
-                  width: 1.0,
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Tab 0: Home / Acasă
                   Expanded(
                     child: _buildNavItem(
-                      context: context,
-                      index: 0,
-                      icon: Icons.home_rounded,
-                      label: 'Acasă',
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
+                      0,
+                      Icons.home_rounded,
+                      'Home',
+                      inactiveColor,
                     ),
                   ),
-                  // Tab 1: Bills / Facturi
+                  PulsingAddButton(
+                    onPressed: onAddPressed,
+                    shouldPulse: isVaultEmpty,
+                  ),
                   Expanded(
                     child: _buildNavItem(
-                      context: context,
-                      index: 1,
-                      icon: Icons.receipt_long_rounded,
-                      label: 'Facturi',
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                  ),
-                  // Center Button: Quick Add (+)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: PulsingAddButton(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        onAddPressed();
-                      },
-                      shouldPulse: isVaultEmpty,
-                    ),
-                  ),
-                  // Tab 2: Docs / Documente
-                  Expanded(
-                    child: _buildNavItem(
-                      context: context,
-                      index: 2,
-                      icon: Icons.folder_shared_rounded,
-                      label: 'Documente',
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
-                    ),
-                  ),
-                  // Tab 3: Settings / Hub
-                  Expanded(
-                    child: _buildNavItem(
-                      context: context,
-                      index: 3,
-                      icon: Icons.tune_rounded,
-                      label: 'Setări',
-                      activeColor: activeColor,
-                      inactiveColor: inactiveColor,
+                      1,
+                      Icons.folder_rounded,
+                      'Vault',
+                      inactiveColor,
                     ),
                   ),
                 ],
@@ -122,55 +71,45 @@ class IntegratedBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem({
-    required BuildContext context,
-    required int index,
-    required IconData icon,
-    required String label,
-    required Color activeColor,
-    required Color inactiveColor,
-  }) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label,
+    Color inactiveColor,
+  ) {
     final isSelected = currentIndex == index;
-    final color = isSelected ? activeColor : inactiveColor;
+    const activeColor = Colors.greenAccent;
+    final color = isSelected ? activeColor : inactiveColor.withValues(alpha: 0.5);
 
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap(index);
-      },
+      onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedScale(
-            duration: const Duration(milliseconds: 180),
-            scale: isSelected ? 1.08 : 1.0,
-            child: Icon(
-              icon,
-              color: color,
-              size: 22,
-            ),
+          Icon(
+            icon,
+            color: color,
+            size: 26,
           ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: color,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            width: isSelected ? 12 : 0,
-            height: 2.5,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            width: isSelected ? 16 : 0,
+            height: 3,
             decoration: BoxDecoration(
-              color: activeColor,
+              color: Colors.greenAccent,
               borderRadius: BorderRadius.circular(2),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.greenAccent.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         ],
@@ -204,14 +143,14 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    _glowAnimation = Tween<double>(begin: 8.0, end: 18.0).animate(
+    _glowAnimation = Tween<double>(begin: 12.0, end: 24.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
@@ -245,39 +184,41 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
       animation: _controller,
       builder: (context, child) {
         final scale = widget.shouldPulse ? _scaleAnimation.value : 1.0;
-        final glow = widget.shouldPulse ? _glowAnimation.value : 8.0;
+        final glow = widget.shouldPulse ? _glowAnimation.value : 12.0;
+        final spread = widget.shouldPulse ? 2.0 + (_controller.value * 2.0) : 2.0;
 
         return Transform.scale(
           scale: scale,
           child: GestureDetector(
             onTap: widget.onPressed,
             child: Container(
-              width: 46,
-              height: 46,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: const RadialGradient(
                   colors: [
-                    Color(0xFF3B82F6),
-                    Color(0xFF1D4ED8),
+                    Colors.greenAccent,
+                    Color(0xFF00E676),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  center: Alignment.center,
+                  radius: 0.85,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF3B82F6).withValues(alpha: widget.shouldPulse ? 0.6 : 0.35),
+                    color: Colors.greenAccent.withValues(
+                      alpha: widget.shouldPulse ? 0.35 + (_controller.value * 0.15) : 0.35,
+                    ),
                     blurRadius: glow,
-                    offset: const Offset(0, 3),
+                    spreadRadius: spread,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.black,
+                size: 28,
               ),
             ),
           ),
@@ -286,3 +227,5 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
     );
   }
 }
+
+

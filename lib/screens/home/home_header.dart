@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/navigation_provider.dart';
 import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
+import '../settings_screen.dart';
 
 class HomeHeader extends ConsumerWidget {
   const HomeHeader({super.key});
@@ -11,7 +11,7 @@ class HomeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -24,10 +24,10 @@ class HomeHeader extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const DueVaultLogo(
-                      size: 40,
+                      size: 53,
                       showGlow: false,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -44,7 +44,7 @@ class HomeHeader extends ConsumerWidget {
                                       context,
                                     ).textTheme.bodyLarge?.color,
                                     letterSpacing: -0.5,
-                                    fontSize: 21,
+                                    fontSize: 24,
                                   ),
                             ),
                             const SizedBox(width: 8),
@@ -57,7 +57,7 @@ class HomeHeader extends ConsumerWidget {
                             color: Theme.of(
                               context,
                             ).textTheme.bodySmall?.color,
-                            fontSize: 12.5,
+                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -68,7 +68,12 @@ class HomeHeader extends ConsumerWidget {
               Flexible(
                 child: GestureDetector(
                   onTap: () {
-                    ref.read(bottomNavIndexProvider.notifier).state = 3;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    );
                   },
                   child: Consumer(
                     builder: (context, ref, child) {
@@ -90,7 +95,7 @@ class HomeHeader extends ConsumerWidget {
                                   color: Theme.of(
                                     context,
                                   ).textTheme.bodySmall?.color,
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -108,7 +113,7 @@ class HomeHeader extends ConsumerWidget {
                               ),
                             ),
                             child: CircleAvatar(
-                              radius: 17,
+                              radius: 18,
                               backgroundColor: Theme.of(
                                 context,
                               ).dividerColor.withValues(alpha: 0.1),
@@ -118,7 +123,7 @@ class HomeHeader extends ConsumerWidget {
                               child: photoUrl == null
                                   ? Icon(
                                       Icons.person_outline,
-                                      size: 18,
+                                      size: 20,
                                       color: Theme.of(
                                         context,
                                       ).textTheme.bodySmall?.color,
@@ -134,7 +139,7 @@ class HomeHeader extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
         ],
       ),
     );
