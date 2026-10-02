@@ -373,23 +373,17 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                     fontSize: 19,
                   ),
-                  decoration: InputDecoration(
-                    hintText: _getCategoryHint(),
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. Electricity, Rent, Internet',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 6,
                     ),
                   ),
                   onChanged: (val) {
-                    if (!_isEdit) {
-                      final matched = CategoryMatcher.detectCategory(val);
-                      if (matched != null && matched != _category) {
-                        _category = matched;
-                      }
-                    }
                     setState(() {});
                   },
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
@@ -404,28 +398,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 currencyCode: currency.code,
                 onDateTap: _pickDate,
                 onAmountChanged: (val) => setState(() {}),
-              ),
-              const SizedBox(height: 10),
-
-              BillCategorySelector(
-                selectedCategory: _category,
-                categories: _categories,
-                onCategorySelected: (catName) {
-                  setState(() {
-                    _category = catName;
-                    // Auto-set recurrence based on category
-                    if ([
-                      'Housing',
-                      'Utilities',
-                      'Subscriptions',
-                      'Telecom',
-                    ].contains(_category)) {
-                      _recurrence = 'Monthly';
-                    } else {
-                      _recurrence = 'None';
-                    }
-                  });
-                },
               ),
               const SizedBox(height: 10),
 

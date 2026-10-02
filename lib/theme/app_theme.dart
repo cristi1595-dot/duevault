@@ -3,25 +3,24 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // --- MASTER COLORS ---
-  static const Color primaryAction = Color(0xFF3B82F6);
+  // --- MASTER COLORS (Material 3 Emerald Palette) ---
+  static const Color primaryAction = Color(0xFF10B981); // Emerald accent
+  static const Color primaryActionDark = Color(0xFF059669);
   static const Color urgentRed = Color(0xFFEF4444);
-  static const Color urgentRedAlert = Color(0xFFA62121);
+  static const Color urgentRedAlert = Color(0xFFDC2626);
   static const Color warningYellow = Color(0xFFF59E0B);
   static const Color safeGreen = Color(0xFF10B981);
   static const Color accentPurple = Color(0xFF8B5CF6);
 
-  // --- DARK MODE PALETTE ---
-  static const Color darkBackground = Color(
-    0xFF0F1115,
-  ); // Deeper, more modern dark
-  static const Color darkSurface = Color(0xFF1B1F26); // Tonal surface
-  static const Color darkBorder = Color(0xFF2D333D);
-  static const Color darkTextPrimary = Colors.white;
+  // --- DARK MODE PALETTE (Neutral Slate/Zinc) ---
+  static const Color darkBackground = Color(0xFF0C0E12);
+  static const Color darkSurface = Color(0xFF161A22);
+  static const Color darkBorder = Color(0xFF222734);
+  static const Color darkTextPrimary = Color(0xFFF1F5F9);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
 
-  // --- LIGHT MODE PALETTE ---
-  static const Color lightBackground = Color(0xFFF1F5F9);
+  // --- LIGHT MODE PALETTE (Clean Neutral) ---
+  static const Color lightBackground = Color(0xFFF8FAFC);
   static const Color lightSurface = Colors.white;
   static const Color lightBorder = Color(0xFFE2E8F0);
   static const Color lightTextPrimary = Color(0xFF0F172A);
@@ -37,6 +36,21 @@ class AppTheme {
       border: darkBorder,
       textPrimary: darkTextPrimary,
       textSecondary: darkTextSecondary,
+    ).copyWith(
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? primaryAction : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? primaryAction.withValues(alpha: 0.5)
+              : null,
+        ),
+      ),
+      sliderTheme: const SliderThemeData(
+        activeTrackColor: primaryAction,
+        thumbColor: primaryAction,
+      ),
     );
   }
 
@@ -50,12 +64,18 @@ class AppTheme {
       textSecondary: lightTextSecondary,
     ).copyWith(
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal : null),
-        trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? Colors.teal.withValues(alpha: 0.5) : null),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? primaryActionDark : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? primaryActionDark.withValues(alpha: 0.5)
+              : null,
+        ),
       ),
       sliderTheme: const SliderThemeData(
-        activeTrackColor: Colors.teal,
-        thumbColor: Colors.teal,
+        activeTrackColor: primaryActionDark,
+        thumbColor: primaryActionDark,
       ),
     );
   }
@@ -146,7 +166,7 @@ class AppTheme {
         color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24), // M3 Radius
+          borderRadius: BorderRadius.circular(16), // Clean M3 Radius
           side: BorderSide(color: border, width: 1),
         ),
       ),
@@ -157,9 +177,9 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30), // Pill-shaped M3 button
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

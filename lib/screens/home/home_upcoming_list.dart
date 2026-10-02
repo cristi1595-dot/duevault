@@ -5,7 +5,6 @@ import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../widgets/global_components.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/category_provider.dart';
 import '../item_detail_screen.dart';
 
 class HomeUpcomingList extends ConsumerWidget {
@@ -122,7 +121,6 @@ class HomeUpcomingList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
-    final selectedCategory = ref.watch(selectedCategoryFilterProvider);
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -133,11 +131,6 @@ class HomeUpcomingList extends ConsumerWidget {
     final sortedCandidates = vaultItems
         .where(
           (item) => !item.isArchived && !item.isDeleted && item.dueDate != null,
-        )
-        .where(
-          (item) =>
-              selectedCategory == null ||
-              item.category.toLowerCase() == selectedCategory.toLowerCase(),
         )
         .toList()
       ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
@@ -195,22 +188,10 @@ class HomeUpcomingList extends ConsumerWidget {
                         size: 38,
                         color: AppTheme.safeGreen.withValues(alpha: 0.8),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        selectedCategory != null
-                            ? 'No upcoming items for "$selectedCategory"'
-                            : 'All caught up! No items due.',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      const Text(
+                        'All caught up! No items due.',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                       ),
-                      if (selectedCategory != null) ...[
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            ref.read(selectedCategoryFilterProvider.notifier).state = null;
-                          },
-                          child: const Text('Show all categories'),
-                        ),
-                      ],
                     ],
                   ),
                 ),

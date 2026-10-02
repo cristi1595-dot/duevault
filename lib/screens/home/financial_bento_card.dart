@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../theme/app_theme.dart';
@@ -11,13 +12,13 @@ class FinancialBentoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Calculate Stats
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final next7Days = today.add(const Duration(days: 7));
     final next30Days = today.add(const Duration(days: 30));
 
+    // Overdue bills
     final overdueBills = vaultItems.where((item) {
       if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
         return false;
@@ -25,478 +26,173 @@ class FinancialBentoCard extends ConsumerWidget {
       return item.dueDate!.isBefore(today);
     }).toList();
 
-    final expiredDocs = vaultItems.where((item) {
-      if (item.itemType != 'Document' ||
-          item.isArchived ||
-          item.dueDate == null) {
-        return false;
-      }
-      return item.dueDate!.isBefore(today);
-    }).toList();
-
-    final upcomingBills = vaultItems.where((item) {
+    // Upcoming 30 days
+    final upcomingBills30Days = vaultItems.where((item) {
       if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
         return false;
       }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      return (due.isBefore(next7Days) || due.isAtSameMomentAs(next7Days)) &&
-          (due.isAfter(today) || due.isAtSameMomentAs(today));
-    }).toList();
-
-    final totalDueOverdue = overdueBills.fold(
-      0.0,
-      (sum, item) => sum + (item.amount ?? 0),
-    );
-
-    final totalDue7Days =
-        (upcomingBills.fold(0.0, (sum, item) => sum + (item.amount ?? 0))) +
-        totalDueOverdue;
-
-    final items30Days = vaultItems.where((item) {
-      if (item.itemType != 'Bill' || item.isPaid || item.isArchived || item.dueDate == null) {
-        return false;
-      }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
+      final due = DateTime(item.dueDate!.year, item.dueDate!.month, item.dueDate!.day);
       return (due.isBefore(next30Days) || due.isAtSameMomentAs(next30Days)) &&
           (due.isAfter(today) || due.isAtSameMomentAs(today));
     }).toList();
 
-    final totalDue30Days =
-        (items30Days.fold(0.0, (sum, item) => sum + (item.amount ?? 0))) +
-        totalDueOverdue;
+    final totalDueMonth = (upcomingBills30Days.fold<double>(0.0, (s, i) => s + (i.amount ?? 0))) +
+        (overdueBills.fold<double>(0.0, (s, i) => s + (i.amount ?? 0)));
 
-    // Calculate Document Expirations
-    final expiredDocs7Days = vaultItems.where((item) {
-      if (item.itemType != 'Document' ||
-          item.isArchived ||
-          item.isPaid ||
-          item.dueDate == null) {
-        return false;
-      }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      return (due.isBefore(next7Days) || due.isAtSameMomentAs(next7Days)) &&
-          (due.isAfter(today) || due.isAtSameMomentAs(today));
+    // Auto-Pay / Funds reserved
+    final autoPayBills = upcomingBills30Days.where((i) => i.directDebit).toList();
+    final autoPayTotal = autoPayBills.fold<double>(0.0, (s, i) => s + (i.amount ?? 0));
+
+    // Expiring docs
+    final expiringDocs = vaultItems.where((i) {
+      if (i.itemType != 'Document' || i.isArchived || i.isPaid || i.dueDate == null) return false;
+      final due = DateTime(i.dueDate!.year, i.dueDate!.month, i.dueDate!.day);
+      return due.isBefore(next30Days) || due.isAtSameMomentAs(next30Days);
     }).toList();
 
-    final expiredDocs30Days = vaultItems.where((item) {
-      if (item.itemType != 'Document' ||
-          item.isArchived ||
-          item.isPaid ||
-          item.dueDate == null) {
-        return false;
-      }
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      return (due.isBefore(next30Days) || due.isAtSameMomentAs(next30Days)) &&
-          (due.isAfter(today) || due.isAtSameMomentAs(today));
-    }).toList();
+    final monthName = DateFormat('MMMM yyyy').format(now);
 
-    // Check urgency states
-    final totalDocs7Days = expiredDocs.length + expiredDocs7Days.length;
-    final totalDocs30Days = expiredDocs.length + expiredDocs30Days.length;
-
-    // Calculate days remaining across active unpaid items to determine status
-    final activeBills = vaultItems.where((item) {
-      return item.itemType == 'Bill' && !item.isPaid && !item.isArchived && item.dueDate != null;
-    }).toList();
-
-    int billMinDaysLeft = 99999;
-    for (final item in activeBills) {
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      final days = due.difference(today).inDays;
-      if (days < billMinDaysLeft) {
-        billMinDaysLeft = days;
-      }
-    }
-
-    final bool billUrgent = overdueBills.isNotEmpty || billMinDaysLeft <= 3;
-    final bool billWarning = !billUrgent && billMinDaysLeft <= 7;
-
-    final Color billColor;
-    if (billUrgent) {
-      billColor = AppTheme.urgentRed;
-    } else if (billWarning) {
-      billColor = AppTheme.warningYellow;
-    } else {
-      billColor = AppTheme.safeGreen;
-    }
-
-    final activeDocs = vaultItems.where((item) {
-      return item.itemType == 'Document' && !item.isArchived && !item.isPaid && item.dueDate != null;
-    }).toList();
-
-    int docMinDaysLeft = 99999;
-    for (final item in activeDocs) {
-      final due = DateTime(
-        item.dueDate!.year,
-        item.dueDate!.month,
-        item.dueDate!.day,
-      );
-      final days = due.difference(today).inDays;
-      if (days < docMinDaysLeft) {
-        docMinDaysLeft = days;
-      }
-    }
-
-    final bool docUrgent = expiredDocs.isNotEmpty || docMinDaysLeft <= 3;
-    final bool docWarning = !docUrgent && docMinDaysLeft <= 7;
-
-    final Color docColor;
-    if (docUrgent) {
-      docColor = AppTheme.urgentRed;
-    } else if (docWarning) {
-      docColor = AppTheme.warningYellow;
-    } else {
-      docColor = AppTheme.safeGreen;
-    }
-
-    final bool isUrgentRed = billUrgent || docUrgent;
-    final bool isWarningYellow = !isUrgentRed && (billWarning || docWarning);
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color statusColor;
-    final String statusLabel;
-    final IconData statusIcon;
-
-    if (isUrgentRed) {
-      statusColor = AppTheme.urgentRed;
-      statusLabel = 'ACTION REQUIRED';
-      statusIcon = Icons.error_outline_rounded;
-    } else if (isWarningYellow) {
-      statusColor = AppTheme.warningYellow;
-      statusLabel = 'UPCOMING DUE';
-      statusIcon = Icons.warning_amber_rounded;
-    } else {
-      statusColor = AppTheme.safeGreen;
-      statusLabel = 'ALL CLEAR';
-      statusIcon = Icons.check_circle_outline_rounded;
-    }
-
-    final Color startColor;
-    final Color endColor;
-
-    if (isDark) {
-      const Color baseStartColor = Color(0xFF1C2028);
-      const Color baseEndColor = Color(0xFF101217);
-      startColor = Color.alphaBlend(
-        statusColor.withValues(alpha: 0.08),
-        baseStartColor,
-      );
-      endColor = Color.alphaBlend(
-        statusColor.withValues(alpha: 0.02),
-        baseEndColor,
-      );
-    } else {
-      startColor = Color.alphaBlend(
-        statusColor.withValues(alpha: 0.05),
-        Colors.white,
-      );
-      endColor = Colors.white;
-    }
-
-    final cardGradient = LinearGradient(
-      colors: [startColor, endColor],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
-    final double borderOpacity = isDark ? 0.15 : 0.22;
-    final Color borderColor = statusColor.withValues(alpha: borderOpacity);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        decoration: BoxDecoration(
-          gradient: cardGradient,
-          borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(
-            color: borderColor,
-            width: 1.0,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161A22) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF222734) : const Color(0xFFE2E8F0),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? statusColor.withValues(alpha: 0.04)
-                  : Colors.black.withValues(alpha: 0.05),
-              blurRadius: isDark ? 16 : 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header Row: Global Status & Title
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: statusColor.withValues(alpha: 0.5),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'THIS MONTH',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+              Text(
+                monthName,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '${currency.symbol}${totalDueMonth.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '7-DAY OUTLOOK',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        fontSize: 12.6,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                      ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'to pay',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
-                  ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Clean Pill Badges
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Upcoming Count
+              _buildBadge(
+                context,
+                icon: Icons.receipt_long_outlined,
+                label: '${upcomingBills30Days.length} upcoming',
+                color: AppTheme.primaryAction,
+                bgColor: AppTheme.primaryAction.withValues(alpha: 0.1),
+              ),
+              // Overdue Alert (if any)
+              if (overdueBills.isNotEmpty)
+                _buildBadge(
+                  context,
+                  icon: Icons.error_outline,
+                  label: '${overdueBills.length} overdue',
+                  color: AppTheme.urgentRed,
+                  bgColor: AppTheme.urgentRed.withValues(alpha: 0.12),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.15),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        statusIcon,
-                        size: 13.2,
-                        color: statusColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusLabel,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 10.8,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
+              // Auto-Pay / Funds reserved in bank
+              if (autoPayBills.isNotEmpty)
+                _buildBadge(
+                  context,
+                  icon: Icons.savings_outlined,
+                  label: 'Auto-Pay: ${currency.symbol}${autoPayTotal.toStringAsFixed(0)} reserved',
+                  color: AppTheme.safeGreen,
+                  bgColor: AppTheme.safeGreen.withValues(alpha: 0.12),
                 ),
-              ],
+              // Expiring Docs (if any)
+              if (expiringDocs.isNotEmpty)
+                _buildBadge(
+                  context,
+                  icon: Icons.description_outlined,
+                  label: '${expiringDocs.length} docs expiring',
+                  color: Colors.amber.shade700,
+                  bgColor: Colors.amber.withValues(alpha: 0.12),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
-            const SizedBox(height: 14),
-
-            // Bento Columns inside a Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Column 1: Financial (Bills)
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'BILLS',
-                            style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          Icon(
-                            Icons.receipt_long_rounded,
-                            size: 18,
-                            color: billColor,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          currency.formatAmount(totalDue7Days),
-                          style: TextStyle(
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 32.0,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'due bills',
-                        style: TextStyle(
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                          fontSize: 13.0,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(
-                            totalDueOverdue > 0
-                                ? Icons.warning_amber_rounded
-                                : Icons.analytics_outlined,
-                            size: 12,
-                            color: totalDueOverdue > 0
-                                ? AppTheme.urgentRed
-                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '30d: ${currency.formatAmount(totalDue30Days)}',
-                              style: TextStyle(
-                                color: totalDueOverdue > 0
-                                    ? AppTheme.urgentRed
-                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-                                fontSize: 11.5,
-                                fontWeight: totalDueOverdue > 0
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Vertical Divider
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Container(
-                    width: 1,
-                    height: 90,
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                  ),
-                ),
-
-                // Column 2: Documents
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'DOCUMENTS',
-                            style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          Icon(
-                            Icons.description_rounded,
-                            size: 18,
-                            color: docColor,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '$totalDocs7Days',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 32.0,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'expiring soon',
-                        style: TextStyle(
-                          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                          fontSize: 13.0,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(
-                            expiredDocs.isNotEmpty
-                                ? Icons.warning_amber_rounded
-                                : Icons.analytics_outlined,
-                            size: 12,
-                            color: expiredDocs.isNotEmpty
-                                ? AppTheme.urgentRed
-                                : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '30d: $totalDocs30Days expiring',
-                              style: TextStyle(
-                                color: expiredDocs.isNotEmpty
-                                    ? AppTheme.urgentRed
-                                    : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
-                                fontSize: 11.5,
-                                fontWeight: expiredDocs.isNotEmpty
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -11,6 +11,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'screens/bills/bills_screen.dart';
+import 'screens/documents/documents_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/vault_screen.dart';
 import 'screens/login_screen.dart';
 import 'models/user.dart';
@@ -334,7 +337,12 @@ class MainNavigation extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
-  final List<Widget> _screens = const [HomeScreen(), VaultScreen()];
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    BillsScreen(),
+    DocumentsScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   void initState() {

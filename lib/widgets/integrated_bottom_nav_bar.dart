@@ -20,46 +20,90 @@ class IntegratedBottomNavBar extends StatelessWidget {
     final inactiveColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBg = isDark
+        ? const Color(0xFF161A22).withValues(alpha: 0.88)
+        : Colors.white.withValues(alpha: 0.92);
+    final borderColor = isDark
+        ? const Color(0xFF222734)
+        : const Color(0xFFE2E8F0);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return SafeArea(
       bottom: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
-              height: 68,
+              height: 66,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65), // Dark semi-transparent background
+                color: navBg,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 1.5,
+                  color: borderColor,
+                  width: 1.0,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Tab 0: Home
                   Expanded(
                     child: _buildNavItem(
                       0,
                       Icons.home_rounded,
                       'Home',
                       inactiveColor,
+                      primaryColor,
                     ),
                   ),
-                  PulsingAddButton(
-                    onPressed: onAddPressed,
-                    shouldPulse: isVaultEmpty,
-                  ),
+                  // Tab 1: Bills
                   Expanded(
                     child: _buildNavItem(
                       1,
-                      Icons.folder_rounded,
-                      'Vault',
+                      Icons.receipt_long_rounded,
+                      'Bills',
                       inactiveColor,
+                      primaryColor,
+                    ),
+                  ),
+                  // Center (+) Add Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: PulsingAddButton(
+                      onPressed: onAddPressed,
+                      shouldPulse: isVaultEmpty,
+                    ),
+                  ),
+                  // Tab 2: Documents
+                  Expanded(
+                    child: _buildNavItem(
+                      2,
+                      Icons.description_rounded,
+                      'Documents',
+                      inactiveColor,
+                      primaryColor,
+                    ),
+                  ),
+                  // Tab 3: Settings
+                  Expanded(
+                    child: _buildNavItem(
+                      3,
+                      Icons.tune_rounded,
+                      'Settings',
+                      inactiveColor,
+                      primaryColor,
                     ),
                   ),
                 ],
@@ -76,10 +120,10 @@ class IntegratedBottomNavBar extends StatelessWidget {
     IconData icon,
     String label,
     Color inactiveColor,
+    Color activeColor,
   ) {
     final isSelected = currentIndex == index;
-    const activeColor = Colors.greenAccent;
-    final color = isSelected ? activeColor : inactiveColor.withValues(alpha: 0.5);
+    final color = isSelected ? activeColor : inactiveColor.withValues(alpha: 0.65);
 
     return GestureDetector(
       onTap: () => onTap(index),
@@ -87,29 +131,35 @@ class IntegratedBottomNavBar extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 26,
+          AnimatedScale(
+            duration: const Duration(milliseconds: 180),
+            scale: isSelected ? 1.08 : 1.0,
+            child: Icon(
+              icon,
+              color: color,
+              size: 22,
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 2),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            width: isSelected ? 16 : 0,
-            height: 3,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            width: isSelected ? 12 : 0,
+            height: 2.5,
             decoration: BoxDecoration(
-              color: Colors.greenAccent,
+              color: activeColor,
               borderRadius: BorderRadius.circular(2),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: Colors.greenAccent.withValues(alpha: 0.4),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
             ),
           ),
         ],
@@ -192,22 +242,22 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
           child: GestureDetector(
             onTap: widget.onPressed,
             child: Container(
-              width: 48,
-              height: 48,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(
+                gradient: const LinearGradient(
                   colors: [
-                    Colors.greenAccent,
-                    Color(0xFF00E676),
+                    Color(0xFF10B981),
+                    Color(0xFF059669),
                   ],
-                  center: Alignment.center,
-                  radius: 0.85,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.greenAccent.withValues(
-                      alpha: widget.shouldPulse ? 0.35 + (_controller.value * 0.15) : 0.35,
+                    color: const Color(0xFF10B981).withValues(
+                      alpha: widget.shouldPulse ? 0.45 : 0.25,
                     ),
                     blurRadius: glow,
                     spreadRadius: spread,
@@ -215,10 +265,12 @@ class _PulsingAddButtonState extends State<PulsingAddButton>
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.black,
-                size: 28,
+              child: const Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
           ),

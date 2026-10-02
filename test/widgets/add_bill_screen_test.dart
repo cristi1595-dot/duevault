@@ -105,11 +105,10 @@ void main() {
     },
   );
 
-  testWidgets('AddBillScreen displays category selection', (tester) async {
+  testWidgets('AddBillScreen displays Auto-Pay selection', (tester) async {
     await tester.pumpWidget(createTestWidget());
 
-    expect(find.text('BILL CATEGORY'), findsOneWidget);
-    expect(find.text('Housing'), findsOneWidget);
-    expect(find.text('Utilities'), findsOneWidget);
+    expect(find.text('Auto-Pay (Funds Reserved)'), findsOneWidget);
+    expect(find.text('RECURRENCE'), findsOneWidget);
   });
 }

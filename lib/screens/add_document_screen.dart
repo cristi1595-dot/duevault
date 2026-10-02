@@ -358,7 +358,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   validator: (value) => ValidationHelper.validateTitle(value),
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
                   decoration: InputDecoration(
-                    hintText: _getCategoryHint(),
+                    hintText: 'e.g. Passport, Driver License, Insurance',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -368,21 +368,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-
-              Text(
-                'CATEGORY',
-                style: AppTheme.labelCapsStyle(
-                  context,
-                ).copyWith(fontSize: 14, letterSpacing: 1.2),
-              ),
-              const SizedBox(height: 6),
-              CategorySelector(
-                selectedCategory: _category,
-                categories: _categories,
-                itemType: 'Document',
-                onCategorySelected: (cat) => setState(() => _category = cat),
               ),
               const SizedBox(height: 10),
 

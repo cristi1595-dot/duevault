@@ -4,7 +4,6 @@ import '../providers/navigation_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/vault_provider.dart';
 import '../widgets/notification_health_banner.dart';
-import '../widgets/categories/category_filter_bar.dart';
 import 'home/home_header.dart';
 import 'home/financial_bento_card.dart';
 import 'home/home_upcoming_list.dart';
@@ -75,8 +74,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             const NotificationHealthBanner(),
             const FinancialBentoCard(),
             const SizedBox(height: 6),
-            CategoryFilterBar(items: vaultItems),
-            const SizedBox(height: 4),
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
