@@ -2,23 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'settings/compact_profile_card.dart';
-import 'settings/developer_options_section.dart';
-import 'settings/drive_sync_section.dart';
 import 'settings/google_sign_in_section.dart';
 import 'settings/interface_customization_section.dart';
-import 'settings/security_lock_section.dart';
 import 'settings/settings_permission_helper.dart';
 import 'settings/settings_section_header.dart';
 import 'settings/settings_version_footer.dart';
 import 'settings/smart_alerts_section.dart';
-import 'settings/storage_integrity_section.dart';
 import 'settings/settings_list_tile.dart';
 import '../services/app_review_service.dart';
-
 import '../providers/auth_provider.dart';
 import '../providers/sync_provider.dart';
-import '../providers/vault_provider.dart';
-import '../main.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -29,8 +22,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
-  bool _isDevModeEnabled = false;
-
   @override
   void initState() {
     super.initState();
@@ -67,12 +58,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Widget _buildCategoryCard(BuildContext context, {required Widget child}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
           width: 1.0,
         ),
         boxShadow: [
@@ -84,7 +75,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: child,
       ),
     );
@@ -105,25 +96,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Profile Header
+            // 1. Account Section: Google Account or Guest Status
             const CompactProfileCard(),
             const SizedBox(height: 10),
 
-            // 1.1 Sign In Option (Only for Guests) - Directly under Guest User
+            // Sign In with Google Option (visible only when in Guest mode)
             Consumer(
               builder: (context, ref, child) {
                 final authState = ref.watch(authStateProvider);
@@ -139,15 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               },
             ),
 
-            // 1.5 Biometric Lock (Security)
-            const SettingsSectionHeader(title: 'SECURITY'),
-            const SizedBox(height: 5),
-            _buildCategoryCard(
-              context,
-              child: const SecurityLockSection(),
-            ),
-
-            // 3. Preferences (Interface) Section
+            // 2. Interface (Theme & Currency)
             const SettingsSectionHeader(title: 'INTERFACE'),
             const SizedBox(height: 5),
             _buildCategoryCard(
@@ -155,8 +140,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               child: const InterfaceCustomizationSection(),
             ),
 
-            // 4. Alerts & Notifications Section
-            const SettingsSectionHeader(title: 'SMART ALERTS'),
+            // 3. Alerts & Reminders
+            const SettingsSectionHeader(title: 'ALERTS & NOTIFICATIONS'),
             const SizedBox(height: 5),
             _buildCategoryCard(
               context,
@@ -165,81 +150,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
             ),
 
-            // 5. Storage & Cloud Sync Section
-            const SettingsSectionHeader(title: 'STORAGE'),
-            const SizedBox(height: 5),
-            Consumer(
-              builder: (context, ref, child) {
-                final authState = ref.watch(authStateProvider);
-                final user = authState.valueOrNull;
-                final isGuest = user == null;
-                return _buildCategoryCard(
-                  context,
-                  child: Column(
-                    children: [
-                      if (!isGuest) ...[
-                        const DriveSyncSection(),
-                      ],
-                      const StorageIntegritySection(),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            // 6. Support & Feedback Section
-            const SettingsSectionHeader(title: 'SUPPORT & FEEDBACK'),
+            // 4. Rate DueVault
+            const SettingsSectionHeader(title: 'SUPPORT'),
             const SizedBox(height: 5),
             _buildCategoryCard(
               context,
-              child: Column(
-                children: [
-                  SettingsListTile(
-                    icon: Icons.star_rate_rounded,
-                    title: 'Rate DueVault',
-                    subtitle: 'Love the app? Let us know or suggest updates',
-                    onTap: () {
-                      ref.read(appReviewServiceProvider).showRatingDialog(context);
-                    },
-                  ),
-                  SettingsListTile(
-                    icon: Icons.help_outline_rounded,
-                    title: 'Replay Tutorial',
-                    subtitle: 'Take a quick guided tour of key features',
-                    onTap: () async {
-                      ref.read(showWalkthroughProvider.notifier).state = true;
-                      
-                      final repository = ref.read(vaultRepositoryProvider);
-                      final config = await repository.getConfig();
-                      config.hasSeenWalkthrough = false;
-                      await repository.updateConfig(config);
-
-                      if (context.mounted) {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      }
-                    },
-                  ),
-                ],
+              child: SettingsListTile(
+                icon: Icons.star_rate_rounded,
+                title: 'Rate DueVault',
+                subtitle: 'Love the app? Leave a review or suggest an idea',
+                onTap: () {
+                  ref.read(appReviewServiceProvider).showRatingDialog(context);
+                },
               ),
             ),
 
-            if (_isDevModeEnabled) ...[
-              const SettingsSectionHeader(title: 'DEVELOPER'),
-              const SizedBox(height: 5),
-              _buildCategoryCard(
-                context,
-                child: const DeveloperOptionsSection(),
-              ),
-            ],
-            const SizedBox(height: 16),
-            SettingsVersionFooter(
-              onDevModeEnabled: () {
-                setState(() {
-                  _isDevModeEnabled = true;
-                });
-              },
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            const SettingsVersionFooter(),
+            const SizedBox(height: 100),
           ],
         ),
       ),

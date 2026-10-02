@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 class SettingsVersionFooter extends StatefulWidget {
-  final VoidCallback onDevModeEnabled;
+  final VoidCallback? onDevModeEnabled;
 
-  const SettingsVersionFooter({super.key, required this.onDevModeEnabled});
+  const SettingsVersionFooter({super.key, this.onDevModeEnabled});
 
   @override
   State<SettingsVersionFooter> createState() => _SettingsVersionFooterState();
@@ -24,7 +24,7 @@ class _SettingsVersionFooterState extends State<SettingsVersionFooter> {
             if (_devModeTaps >= 7) {
               if (!_isDevModeEnabled) {
                 _isDevModeEnabled = true;
-                widget.onDevModeEnabled();
+                widget.onDevModeEnabled?.call();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Developer Options enabled! 🛠️'),
