@@ -47,6 +47,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
     final borderColor = isDark ? const Color(0xFF222734) : const Color(0xFFE2E8F0);
 
+    final Color dueDateColor;
+    if (currentItem.isPaid) {
+      dueDateColor = AppTheme.safeGreen;
+    } else if (currentItem.dueDate == null) {
+      dueDateColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    } else if (daysLeft <= 3) {
+      dueDateColor = AppTheme.urgentRed;
+    } else if (daysLeft <= 7) {
+      dueDateColor = const Color(0xFFF59E0B);
+    } else {
+      dueDateColor = AppTheme.safeGreen;
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -109,11 +122,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Type Chip
+                      // Type Chip (Uniform Emerald for Bill, Slate Indigo for Document)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryAction.withValues(alpha: 0.12),
+                          color: (isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1))
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -122,13 +136,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             Icon(
                               isBill ? Icons.receipt_long_rounded : Icons.description_rounded,
                               size: 14,
-                              color: AppTheme.primaryAction,
+                              color: isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               isBill ? 'BILL' : 'DOCUMENT',
-                              style: const TextStyle(
-                                color: AppTheme.primaryAction,
+                              style: TextStyle(
+                                color: isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.6,
@@ -297,6 +311,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
+                                    color: dueDateColor,
                                   ),
                             ),
                             const SizedBox(height: 4),
@@ -555,24 +570,28 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       );
     }
 
+    final Color activeColor = daysLeft <= 3
+        ? AppTheme.urgentRed
+        : (daysLeft <= 7 ? const Color(0xFFF59E0B) : AppTheme.safeGreen);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppTheme.primaryAction.withValues(alpha: 0.1),
+        color: activeColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primaryAction.withValues(alpha: 0.2)),
+        border: Border.all(color: activeColor.withValues(alpha: 0.3)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule_rounded, size: 14, color: AppTheme.primaryAction),
-          SizedBox(width: 5),
+          Icon(Icons.schedule_rounded, size: 14, color: activeColor),
+          const SizedBox(width: 5),
           Text(
             'ACTIVE',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.primaryAction,
+              color: activeColor,
             ),
           ),
         ],
@@ -595,20 +614,24 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       final count = daysLeft.abs();
       text = count == 1 ? '1 day late' : '$count days late';
     } else if (daysLeft == 0) {
-      color = const Color(0xFFF59E0B);
-      bg = const Color(0xFFF59E0B).withValues(alpha: 0.12);
+      color = AppTheme.urgentRed;
+      bg = AppTheme.urgentRed.withValues(alpha: 0.12);
       text = 'Due Today';
     } else if (daysLeft == 1) {
-      color = const Color(0xFFF59E0B);
-      bg = const Color(0xFFF59E0B).withValues(alpha: 0.12);
+      color = AppTheme.urgentRed;
+      bg = AppTheme.urgentRed.withValues(alpha: 0.12);
       text = 'Tomorrow';
     } else if (daysLeft <= 3) {
+      color = AppTheme.urgentRed;
+      bg = AppTheme.urgentRed.withValues(alpha: 0.12);
+      text = 'In $daysLeft days';
+    } else if (daysLeft <= 7) {
       color = const Color(0xFFF59E0B);
       bg = const Color(0xFFF59E0B).withValues(alpha: 0.12);
       text = 'In $daysLeft days';
     } else {
-      color = AppTheme.primaryAction;
-      bg = AppTheme.primaryAction.withValues(alpha: 0.12);
+      color = AppTheme.safeGreen;
+      bg = AppTheme.safeGreen.withValues(alpha: 0.12);
       text = 'In $daysLeft days';
     }
 

@@ -4,17 +4,9 @@ import '../models/vault_item.dart';
 import '../screens/item_detail_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/vault_provider.dart';
-import '../constants/app_categories.dart';
-import '../providers/category_provider.dart';
 import 'status_badge.dart';
 import 'vault_snackbar.dart';
 import '../theme/app_theme.dart';
-
-class CategoryUtils {
-  static IconData getIcon(String category) {
-    return AppCategories.getIcon(category);
-  }
-}
 
 class VaultItemTile extends ConsumerWidget {
   final VaultItem item;
@@ -34,7 +26,6 @@ class VaultItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final category = ref.watch(categoryProvider.notifier).getCategory(item.category);
     final daysLeft = _calculateDaysLeft(item.dueDate);
     final isOverdue = item.isOverdue;
     final bool isExpired = item.isExpired;
@@ -46,15 +37,30 @@ class VaultItemTile extends ConsumerWidget {
     if (item.isPaid) {
       statusColor = AppTheme.getMintGreen(context); // Mint Sage
     } else if (isOverdue || (daysLeft <= 3)) {
-      statusColor = const Color(0xFFE11D48); // Red
+      statusColor = const Color(0xFFE11D48); // Red: < 3 days or overdue
     } else if (daysLeft <= 7) {
-      statusColor = const Color(0xFFF59E0B); // Amber
+      statusColor = const Color(0xFFF59E0B); // Amber: 3-7 days
     } else {
-      statusColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
+      statusColor = AppTheme.getSafeGreen(context); // Green: > 7 days
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     Color cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
+
+    final Color dueDateColor;
+    if (item.isPaid) {
+      dueDateColor = AppTheme.getMintGreen(context);
+    } else if (item.dueDate == null) {
+      dueDateColor = isDark
+          ? Colors.white.withValues(alpha: 0.45)
+          : Colors.black.withValues(alpha: 0.45);
+    } else if (isOverdue || daysLeft <= 3) {
+      dueDateColor = const Color(0xFFE11D48); // Red: under 3 days
+    } else if (daysLeft <= 7) {
+      dueDateColor = const Color(0xFFF59E0B); // Yellow: 3-7 days
+    } else {
+      dueDateColor = AppTheme.getSafeGreen(context); // Green: over 7 days
+    }
 
     if (isHomeScreen && !isInHistory) {
       final double tintOpacity = isDark ? 0.04 : 0.03;
@@ -288,8 +294,6 @@ class VaultItemTile extends ConsumerWidget {
                       child: Center(
                         child: _VaultItemThumbnail(
                           item: item,
-                          categoryColor: category.color,
-                          categoryIcon: category.icon,
                           isBill: isBill,
                         ),
                       ),
@@ -328,22 +332,16 @@ class VaultItemTile extends ConsumerWidget {
                                   SizedBox(height: gapHeight),
                                   Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                        decoration: BoxDecoration(
-                                          color: category.color.withValues(alpha: 0.14),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          category.name,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: category.color,
-                                          ),
-                                        ),
+                                      Icon(
+                                        item.dueDate != null
+                                            ? (daysLeft <= 3 && !item.isPaid
+                                                ? Icons.warning_amber_rounded
+                                                : Icons.schedule_rounded)
+                                            : Icons.all_inclusive_rounded,
+                                        size: 13,
+                                        color: dueDateColor,
                                       ),
-                                      const SizedBox(width: 6),
+                                      const SizedBox(width: 5),
                                       Expanded(
                                         child: Text(
                                           item.dueDate != null
@@ -351,12 +349,13 @@ class VaultItemTile extends ConsumerWidget {
                                               : '${isBill ? "No due date" : "Permanent"}$recurrenceSuffix',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                fontSize: 12.5,
-                                                color: Theme.of(context).brightness == Brightness.dark
-                                                    ? Colors.white.withValues(alpha: 0.45)
-                                                    : Colors.black.withValues(alpha: 0.45),
-                                              ),
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: (item.dueDate != null && !item.isPaid)
+                                                ? FontWeight.w600
+                                                : FontWeight.w500,
+                                            color: dueDateColor,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -488,31 +487,34 @@ class VaultItemTile extends ConsumerWidget {
 
 class _VaultItemThumbnail extends StatelessWidget {
   final VaultItem item;
-  final Color categoryColor;
-  final IconData categoryIcon;
   final bool isBill;
 
   const _VaultItemThumbnail({
     required this.item,
-    required this.categoryColor,
-    required this.categoryIcon,
     required this.isBill,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color iconColor = item.isPaid
+        ? AppTheme.getMintGreen(context)
+        : (isBill ? AppTheme.primaryAction : const Color(0xFF6366F1));
+
+    final IconData iconData = item.isPaid
+        ? Icons.check_circle_rounded
+        : (isBill ? Icons.receipt_long_rounded : Icons.description_rounded);
+
     return Container(
-      width: 40,
-      height: 40,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
-        color: categoryColor.withValues(alpha: 0.12),
-        shape: isBill ? BoxShape.circle : BoxShape.rectangle,
-        borderRadius: isBill ? null : BorderRadius.circular(10),
+        color: iconColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
         child: Icon(
-          categoryIcon,
-          color: categoryColor,
+          iconData,
+          color: iconColor,
           size: 22,
         ),
       ),

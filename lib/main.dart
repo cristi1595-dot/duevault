@@ -594,7 +594,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
               ..amount = ocr.probableAmount
               ..dueDate = ocr.probableDate,
             initialAttachments: [scanData.imagePath],
-            initialIsPaid: ocr.isReceipt,
             initialOcrResult: ocr,
           ),
         ),

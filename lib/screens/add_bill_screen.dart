@@ -28,14 +28,12 @@ import '../services/app_review_service.dart';
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
   final List<String>? initialAttachments;
-  final bool? initialIsPaid;
   final OcrResult? initialOcrResult;
 
   const AddBillScreen({
     super.key,
     this.item,
     this.initialAttachments,
-    this.initialIsPaid,
     this.initialOcrResult,
   });
 
@@ -49,7 +47,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   String _category = AppCategories.billCategories.first.name;
   String _recurrence = 'None';
   bool _directDebit = false;
-  bool _isAlreadyPaid = false;
   DateTime? _dueDate;
 
   final _titleController = TextEditingController();
@@ -75,9 +72,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     if (widget.initialAttachments != null) {
       _attachedFiles.addAll(widget.initialAttachments!);
     }
-    if (widget.initialIsPaid == true) {
-      _isAlreadyPaid = true;
-    }
 
     if (widget.item != null) {
       _itemType = widget.item!.itemType ?? 'Bill';
@@ -85,9 +79,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       _recurrence = widget.item!.recurrence;
       _directDebit = widget.item!.directDebit;
       _dueDate = widget.item!.dueDate;
-      if (widget.item!.isPaid) {
-        _isAlreadyPaid = true;
-      }
       _titleController.text = widget.item!.title;
       _amountController.text = widget.item!.amount?.formatAmount() ?? '';
       _attachedFiles = List.from(widget.item!.attachedFiles);
@@ -168,9 +159,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       } else {
         _titleController.text = 'Scanned Bill';
       }
-    }
-    if (result.isReceipt && !_isAlreadyPaid) {
-      _isAlreadyPaid = true;
     }
     _showOcrFeedback(result);
   }
@@ -329,11 +317,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         (dueDayOnly.isBefore(today) || dueDayOnly.isAtSameMomentAs(today));
 
     // Proper Autopay & Paid state logic:
-    if (_isAlreadyPaid) {
-      item.isPaid = true;
-      item.isArchived = true;
-      item.directDebit = false;
-    } else if (_directDebit) {
+    if (_directDebit) {
       if (isDuePassed) {
         // Autopay is ON and payment date has arrived or passed -> marked as paid!
         item.isPaid = true;
@@ -447,73 +431,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                   validator: (value) => ValidationHelper.validateTitle(value),
                 ),
               ),
-              const SizedBox(height: 10),
-
-              // Already Paid (Receipt) Card
-              Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _isAlreadyPaid
-                      ? AppTheme.primaryAction.withValues(alpha: 0.12)
-                      : (Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _isAlreadyPaid
-                        ? AppTheme.primaryAction.withValues(alpha: 0.45)
-                        : Theme.of(context).dividerColor.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _isAlreadyPaid ? Icons.check_circle : Icons.receipt_long_outlined,
-                      color: _isAlreadyPaid
-                          ? AppTheme.primaryAction
-                          : Theme.of(context).textTheme.bodyMedium?.color,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Already Paid (Receipt)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
-                          ),
-                          Text(
-                            _isAlreadyPaid
-                                ? 'Saves to Paid & Settled (no reminder alarms)'
-                                : 'For past receipts, warranties & expense records',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).textTheme.bodyMedium?.color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch(
-                      value: _isAlreadyPaid,
-                      activeTrackColor: AppTheme.primaryAction,
-                      activeThumbColor: Colors.white,
-                      onChanged: (val) {
-                        setState(() {
-                          _isAlreadyPaid = val;
-                          if (val && _dueDate == null) {
-                            _dueDate = DateTime.now();
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 12),
 
               BillAmountDateRow(
                 amountController: _amountController,

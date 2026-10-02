@@ -21,14 +21,14 @@ class StatusBadge extends StatelessWidget {
 
     if (isPaid) {
       textColor = AppTheme.getMintGreen(context); // Elegant Mint Sage
-    } else if (label == 'EXPIRED' || (daysLeft != null && daysLeft! <= 3)) {
-      textColor = const Color(0xFFE11D48); // Crimson Coral
+    } else if (label == 'EXPIRED' || label == 'OVERDUE' || (daysLeft != null && daysLeft! <= 3)) {
+      textColor = const Color(0xFFE11D48); // Red: under 3 days or overdue
     } else if (daysLeft != null && daysLeft! <= 7) {
-      textColor = const Color(0xFFF59E0B); // Warm Amber
+      textColor = const Color(0xFFF59E0B); // Yellow/Amber: 4 to 7 days
     } else if (label == 'PERMANENT' || label == 'RENEWED') {
       textColor = AppTheme.getMintGreen(context); // Valid Green
     } else {
-      textColor = AppTheme.getSafeGreen(context); // Green (safe zone > 7 days)
+      textColor = AppTheme.getSafeGreen(context); // Green: over 7 days
     }
 
     final Color bgColor = textColor.withValues(alpha: 0.12);

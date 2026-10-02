@@ -100,7 +100,7 @@ class HomeUpcomingList extends ConsumerWidget {
             final notifier = ref.read(vaultProvider.notifier);
             final nextPaidState = !item.isPaid;
             notifier.updatePaidStatus(item.id, nextPaidState);
-            final name = item.title.isEmpty ? item.category : item.title;
+            final name = item.title.isEmpty ? (item.itemType == 'Bill' ? 'Bill' : 'Document') : item.title;
             final actionText = nextPaidState
                 ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
                 : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
@@ -152,7 +152,7 @@ class HomeUpcomingList extends ConsumerWidget {
     }
 
     final urgentItems = allUpcoming
-        .where((item) => item.isOverdue || getDaysLeft(item.dueDate!) <= 0)
+        .where((item) => item.isOverdue || getDaysLeft(item.dueDate!) <= 3)
         .toList();
     final thisWeekItems = allUpcoming
         .where((item) =>
@@ -202,7 +202,7 @@ class HomeUpcomingList extends ConsumerWidget {
           ..._buildSection(
             context: context,
             ref: ref,
-            title: 'Urgent / Due Today',
+            title: 'Urgent (≤ 3 Days)',
             items: urgentItems,
             color: AppTheme.urgentRed,
             currency: currency,
@@ -210,7 +210,7 @@ class HomeUpcomingList extends ConsumerWidget {
           ..._buildSection(
             context: context,
             ref: ref,
-            title: 'This Week',
+            title: 'This Week (4-7 Days)',
             items: thisWeekItems,
             color: const Color(0xFFF59E0B),
             currency: currency,
