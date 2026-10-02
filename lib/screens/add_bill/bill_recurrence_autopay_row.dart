@@ -19,37 +19,63 @@ class BillRecurrenceAutoPayRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final options = ['None', 'Weekly', 'Monthly', 'Yearly'];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Recurrence
+        // Recurrence Chips
         BentoInputWrapper(
           label: 'RECURRENCE',
-          child: Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            alignment: Alignment.center,
-            child: DropdownButton<String>(
-              value: recurrence,
-              isExpanded: true,
-              isDense: true,
-              underline: const SizedBox(),
-              icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-              dropdownColor: Theme.of(context).cardTheme.color,
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-              items: ['None', 'Weekly', 'Monthly', 'Yearly'].map((
-                String value,
-              ) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: options.map((opt) {
+                final isSelected = recurrence == opt;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: InkWell(
+                      onTap: () => onRecurrenceChanged(opt),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.primaryAction.withValues(alpha: 0.2)
+                              : (isDark
+                                  ? const Color(0xFF1B202A)
+                                  : const Color(0xFFF1F5F9)),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primaryAction
+                                : (isDark
+                                    ? const Color(0xFF2D333D)
+                                    : const Color(0xFFE2E8F0)),
+                            width: isSelected ? 1.2 : 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          opt,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? AppTheme.primaryAction
+                                : (isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
-              onChanged: onRecurrenceChanged,
             ),
           ),
         ),

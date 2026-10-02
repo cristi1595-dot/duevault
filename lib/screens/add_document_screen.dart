@@ -40,6 +40,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool _isProcessingOcr = false;
   bool _isSaving = false;
   String? _attachmentsDirPath;
+  bool _showNotes = false;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
       // Decrypt notes asynchronously to keep the UI perfectly responsive
       if (widget.item!.notes != null && widget.item!.notes!.isNotEmpty) {
+        _showNotes = true;
         _notesController.text = 'Loading notes...';
         EncryptionService.decryptText(widget.item!.notes).then((decrypted) {
           if (mounted) {
@@ -373,31 +375,96 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
-              BentoInputWrapper(
-                label: 'NOTES',
-                child: TextFormField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                  textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 17,
+              // Quick Validity Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildValidityChip(
+                      label: '6 Months',
+                      targetDate: DateTime(
+                        DateTime.now().year,
+                        DateTime.now().month + 6,
+                        DateTime.now().day,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildValidityChip(
+                      label: '1 Year',
+                      targetDate: DateTime(
+                        DateTime.now().year + 1,
+                        DateTime.now().month,
+                        DateTime.now().day,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildValidityChip(
+                      label: '5 Years',
+                      targetDate: DateTime(
+                        DateTime.now().year + 5,
+                        DateTime.now().month,
+                        DateTime.now().day,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildValidityChip(
+                      label: '10 Years',
+                      targetDate: DateTime(
+                        DateTime.now().year + 10,
+                        DateTime.now().month,
+                        DateTime.now().day,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (!_showNotes)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _showNotes = true),
+                    icon: const Icon(Icons.note_add_outlined, size: 18),
+                    label: const Text('Add Notes & Remarks'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primaryAction,
+                    ),
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'Add details...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
+                )
+              else
+                BentoInputWrapper(
+                  label: 'NOTES',
+                  child: TextFormField(
+                    controller: _notesController,
+                    maxLines: 2,
+                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+                    textCapitalization: TextCapitalization.sentences,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 16,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Add document number, remarks...',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          _notesController.clear();
+                          setState(() => _showNotes = false);
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 10),
 
               AttachmentSection(
@@ -437,6 +504,50 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
               ),
               const SizedBox(height: 20),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidityChip({
+    required String label,
+    required DateTime targetDate,
+  }) {
+    final isSelected = _expiryDate != null &&
+        _expiryDate!.year == targetDate.year &&
+        _expiryDate!.month == targetDate.month &&
+        _expiryDate!.day == targetDate.day;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () {
+        setState(() => _expiryDate = targetDate);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primaryAction.withValues(alpha: 0.2)
+              : (isDark ? const Color(0xFF1B202A) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.primaryAction
+                : (isDark ? const Color(0xFF2D333D) : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? AppTheme.primaryAction
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
           ),
         ),
       ),

@@ -49,6 +49,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   bool _isProcessingOcr = false;
   bool _isSaving = false;
   String? _attachmentsDirPath;
+  bool _showNotes = false;
 
   @override
   void initState() {
@@ -72,6 +73,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
       // Decrypt notes asynchronously to keep the UI perfectly responsive
       if (widget.item!.notes != null && widget.item!.notes!.isNotEmpty) {
+        _showNotes = true;
         _notesController.text = 'Loading notes...';
         EncryptionService.decryptText(widget.item!.notes).then((decrypted) {
           if (mounted) {
@@ -394,8 +396,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 currencyCode: currency.code,
                 onDateTap: _pickDate,
                 onAmountChanged: (val) => setState(() {}),
+                onQuickDateSelected: (date) => setState(() => _dueDate = date),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               BillRecurrenceAutoPayRow(
                 recurrence: _recurrence,
@@ -405,31 +408,51 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 },
                 onDirectDebitChanged: (val) => setState(() => _directDebit = val),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              BentoInputWrapper(
-                label: 'NOTES',
-                child: TextFormField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                  textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 17,
+              if (!_showNotes)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _showNotes = true),
+                    icon: const Icon(Icons.note_add_outlined, size: 18),
+                    label: const Text('Add Notes & Remarks'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primaryAction,
+                    ),
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'Add details...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
+                )
+              else
+                BentoInputWrapper(
+                  label: 'NOTES',
+                  child: TextFormField(
+                    controller: _notesController,
+                    maxLines: 2,
+                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+                    textCapitalization: TextCapitalization.sentences,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 16,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Add invoice number, payment details...',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          _notesController.clear();
+                          setState(() => _showNotes = false);
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 10),
 
               AttachmentSection(
