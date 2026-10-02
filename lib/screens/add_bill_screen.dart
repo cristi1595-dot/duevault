@@ -20,12 +20,10 @@ import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
 import 'add_bill/bill_amount_date_row.dart';
 import 'add_bill/bill_recurrence_autopay_row.dart';
-import 'add_bill/bill_category_selector.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
-import '../utils/category_matcher.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -51,8 +49,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   bool _isProcessingOcr = false;
   bool _isSaving = false;
   String? _attachmentsDirPath;
-
-  final List<CategoryData> _categories = AppCategories.billCategories;
 
   @override
   void initState() {
@@ -477,26 +473,5 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         ),
       ),
     );
-  }
-
-  String _getCategoryHint() {
-    switch (_category) {
-      case 'Housing':
-        return 'e.g. Monthly Rent';
-      case 'Utilities':
-        return 'e.g. Electricity Bill';
-      case 'Loans':
-        return 'e.g. Bank Loan';
-      case 'Subscriptions':
-        return 'e.g. Netflix';
-      case 'Auto':
-        return 'e.g. Insurance';
-      case 'Telecom':
-        return 'e.g. Internet Bill';
-      case 'Health':
-        return 'e.g. Medical Bill';
-      default:
-        return 'e.g. Grocery Bill';
-    }
   }
 }

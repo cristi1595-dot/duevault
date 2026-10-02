@@ -14,7 +14,6 @@ import 'screens/home_screen.dart';
 import 'screens/bills/bills_screen.dart';
 import 'screens/documents/documents_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/vault_screen.dart';
 import 'screens/login_screen.dart';
 import 'models/user.dart';
 import 'models/vault_item.dart';

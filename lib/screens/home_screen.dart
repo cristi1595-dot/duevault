@@ -63,8 +63,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
-    final vaultItems = ref.watch(vaultProvider);
-
     return Scaffold(
       body: SafeArea(
         bottom: false,

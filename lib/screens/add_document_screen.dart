@@ -13,14 +13,12 @@ import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/bento_input_wrapper.dart';
-import 'add_shared/category_selector.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
-import '../utils/category_matcher.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
   final VaultItem? item;
@@ -42,8 +40,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   bool _isProcessingOcr = false;
   bool _isSaving = false;
   String? _attachmentsDirPath;
-
-  final List<CategoryData> _categories = AppCategories.docCategories;
 
   @override
   void initState() {
@@ -82,27 +78,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     _titleController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  String _getCategoryHint() {
-    switch (_category) {
-      case 'Identity':
-        return 'e.g. My Passport';
-      case 'Health':
-        return 'e.g. Blood Test Results';
-      case 'Warranty':
-        return 'e.g. iPhone Warranty';
-      case 'Property':
-        return 'e.g. House Deed';
-      case 'Auto':
-        return 'e.g. Driving License';
-      case 'Career':
-        return 'e.g. University Diploma';
-      case 'Travel':
-        return 'e.g. Boarding Pass';
-      default:
-        return 'e.g. General Document';
-    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -342,13 +317,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   controller: _titleController,
                   textCapitalization: TextCapitalization.sentences,
                   onChanged: (val) {
-                    final isEdit = widget.item != null && widget.item!.id != Isar.autoIncrement;
-                    if (!isEdit) {
-                      final matched = CategoryMatcher.detectCategory(val);
-                      if (matched != null && matched != _category) {
-                        _category = matched;
-                      }
-                    }
                     setState(() {});
                   },
                   style: TextStyle(
@@ -357,12 +325,12 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                   ),
                   validator: (value) => ValidationHelper.validateTitle(value),
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'e.g. Passport, Driver License, Insurance',
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 6,
                     ),
