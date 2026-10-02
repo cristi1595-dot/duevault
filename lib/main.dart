@@ -21,6 +21,8 @@ import 'services/notification_service.dart';
 import 'services/background_service.dart';
 import 'screens/add_bill_screen.dart';
 import 'screens/add_document_screen.dart';
+import 'screens/add_shared/attachment_picker_helper.dart';
+import 'screens/paywall_screen.dart';
 import 'widgets/global_components.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
@@ -388,38 +390,83 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                builder: (context) => Container(
-                  padding: const EdgeInsets.all(24),
+                builder: (sheetContext) => Container(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Add New Item',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Select the type of item you want to vault.',
-                        style: TextStyle(
-                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                      Center(
+                        child: Container(
+                          width: 38,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      _buildPopupItem(
-                        context,
-                        'Bill',
-                        'Track payments & due dates',
-                        Icons.receipt_long,
+                      const SizedBox(height: 16),
+                      Text(
+                        'Add New Item',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
-                      const SizedBox(height: 12),
-                      _buildPopupItem(
-                        context,
-                        'Document',
-                        'Store IDs, contracts & more',
-                        Icons.description,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Scan or manually enter your bills & documents.',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          fontSize: 13,
+                        ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
+                      _buildQuickActionItem(
+                        context: context,
+                        title: 'Scan Bill / Receipt',
+                        subtitle: 'Instant AI scan with amount & due date extraction',
+                        icon: Icons.document_scanner_outlined,
+                        isHighlight: true,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _handleScanBill(context);
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionItem(
+                        context: context,
+                        title: 'New Bill',
+                        subtitle: 'Manual entry for upcoming & recurring payments',
+                        icon: Icons.receipt_long,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AddBillScreen(
+                                item: VaultItem()..itemType = 'Bill',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionItem(
+                        context: context,
+                        title: 'New Document',
+                        subtitle: 'Vault IDs, contracts, warranties & certificates',
+                        icon: Icons.badge_outlined,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AddDocumentScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -459,53 +506,176 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     );
   }
 
-  Widget _buildPopupItem(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => title == 'Document'
-                ? const AddDocumentScreen()
-                : AddBillScreen(item: VaultItem()..itemType = title),
+  Future<void> _handleScanBill(BuildContext context) async {
+    final isGuest = ref.read(isGuestProvider);
+    final isPremium = ref.read(isPremiumProvider);
+    if (isGuest || !isPremium) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+      );
+      return;
+    }
+
+    // Show scanning progress modal
+    unawaited(
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryAction),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Scanning with DueVault AI...',
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
+        ),
+      ),
+    );
+
+    final scanData = await AttachmentPickerHelper.scanWithOcr(
+      context: context,
+      isDocument: false,
+      onError: (err) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(err),
+              backgroundColor: AppTheme.urgentRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
-      borderRadius: BorderRadius.circular(12),
+    );
+
+    // Dismiss loading dialog
+    if (context.mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+
+    if (scanData != null && context.mounted) {
+      final ocr = scanData.ocrResult;
+      final defaultTitle = ocr.probableTitle ??
+          (ocr.probableDate != null
+              ? 'Bill - ${ocr.probableDate!.day}/${ocr.probableDate!.month}'
+              : 'Scanned Bill');
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddBillScreen(
+            item: VaultItem()
+              ..itemType = 'Bill'
+              ..title = defaultTitle
+              ..amount = ocr.probableAmount
+              ..dueDate = ocr.probableDate,
+            initialAttachments: [scanData.imagePath],
+            initialIsPaid: ocr.isReceipt,
+            initialOcrResult: ocr,
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildQuickActionItem({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isHighlight = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(12),
+          color: isHighlight
+              ? AppTheme.primaryAction.withValues(alpha: 0.08)
+              : Colors.transparent,
+          border: Border.all(
+            color: isHighlight
+                ? AppTheme.primaryAction.withValues(alpha: 0.4)
+                : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+          ),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                color: isHighlight
+                    ? AppTheme.primaryAction
+                    : AppTheme.primaryAction.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppTheme.primaryAction),
+              child: Icon(
+                icon,
+                color: isHighlight ? Colors.white : AppTheme.primaryAction,
+                size: 22,
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (isHighlight) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'AI OCR',
+                            style: TextStyle(
+                              color: AppTheme.primaryAction,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -520,7 +690,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             ),
             Icon(
               Icons.chevron_right,
-              color: Theme.of(context).textTheme.bodyMedium?.color,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+              size: 20,
             ),
           ],
         ),

@@ -10,6 +10,44 @@ import '../../utils/logger.dart';
 class AttachmentPickerHelper {
   static final ImagePicker _picker = ImagePicker();
 
+  /// Quick capture for OCR scanning flow: captures from camera/gallery, compresses,
+  /// runs OCR, and returns the result along with the image file path.
+  static Future<({String imagePath, OcrResult ocrResult})?> scanWithOcr({
+    required BuildContext context,
+    ImageSource source = ImageSource.camera,
+    bool isDocument = false,
+    Function(String error)? onError,
+  }) async {
+    if (source == ImageSource.camera) {
+      final granted = await PermissionHelper.requestCameraPermission(context);
+      if (!granted) return null;
+    }
+
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600.0,
+        maxHeight: 1600.0,
+        imageQuality: 75,
+      );
+      if (pickedFile == null) return null;
+
+      final file = File(pickedFile.path);
+      final fileSize = await file.length();
+      if (fileSize > 10485760) {
+        onError?.call('Image too large (Max 10MB)');
+        return null;
+      }
+
+      final result = await OcrService.processImage(file, isDocument: isDocument);
+      return (imagePath: pickedFile.path, ocrResult: result);
+    } catch (e, stack) {
+      logger.e('Error during OCR scan', error: e, stackTrace: stack);
+      onError?.call('Scan failed: $e');
+      return null;
+    }
+  }
+
   /// Prompts camera or gallery picker, checks file size, and runs OCR if enabled.
   static Future<void> pickImage({
     required BuildContext context,
@@ -30,9 +68,9 @@ class AttachmentPickerHelper {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 1920.0,
-        maxHeight: 1920.0,
-        imageQuality: 70,
+        maxWidth: 1600.0,
+        maxHeight: 1600.0,
+        imageQuality: 75,
       );
       if (pickedFile == null) return;
 
