@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'settings/compact_profile_card.dart';
+import 'settings/developer_options_section.dart';
+import 'settings/drive_sync_section.dart';
 import 'settings/google_sign_in_section.dart';
 import 'settings/interface_customization_section.dart';
+import 'settings/security_lock_section.dart';
 import 'settings/settings_permission_helper.dart';
 import 'settings/settings_section_header.dart';
 import 'settings/settings_version_footer.dart';
 import 'settings/smart_alerts_section.dart';
+import 'settings/storage_integrity_section.dart';
 import 'settings/settings_list_tile.dart';
 import '../services/app_review_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/sync_provider.dart';
+import '../providers/vault_provider.dart';
+import '../main.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -22,6 +28,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
+  bool _isDevModeEnabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -132,7 +140,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               },
             ),
 
-            // 2. Interface (Theme & Currency)
+            // 2. Biometric Security & App Lock
+            const SettingsSectionHeader(title: 'SECURITY'),
+            const SizedBox(height: 5),
+            _buildCategoryCard(
+              context,
+              child: const SecurityLockSection(),
+            ),
+
+            // 3. Interface (Theme & Currency)
             const SettingsSectionHeader(title: 'INTERFACE'),
             const SizedBox(height: 5),
             _buildCategoryCard(
@@ -140,7 +156,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               child: const InterfaceCustomizationSection(),
             ),
 
-            // 3. Alerts & Reminders
+            // 4. Alerts & Notifications
             const SettingsSectionHeader(title: 'ALERTS & NOTIFICATIONS'),
             const SizedBox(height: 5),
             _buildCategoryCard(
@@ -150,23 +166,80 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
             ),
 
-            // 4. Rate DueVault
-            const SettingsSectionHeader(title: 'SUPPORT'),
+            // 5. Storage & Cloud Backup
+            const SettingsSectionHeader(title: 'STORAGE & CLOUD'),
+            const SizedBox(height: 5),
+            Consumer(
+              builder: (context, ref, child) {
+                final authState = ref.watch(authStateProvider);
+                final user = authState.valueOrNull;
+                final isGuest = user == null;
+                return _buildCategoryCard(
+                  context,
+                  child: Column(
+                    children: [
+                      if (!isGuest) const DriveSyncSection(),
+                      const StorageIntegritySection(),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // 6. Support & Feedback
+            const SettingsSectionHeader(title: 'SUPPORT & FEEDBACK'),
             const SizedBox(height: 5),
             _buildCategoryCard(
               context,
-              child: SettingsListTile(
-                icon: Icons.star_rate_rounded,
-                title: 'Rate DueVault',
-                subtitle: 'Love the app? Leave a review or suggest an idea',
-                onTap: () {
-                  ref.read(appReviewServiceProvider).showRatingDialog(context);
-                },
+              child: Column(
+                children: [
+                  SettingsListTile(
+                    icon: Icons.star_rate_rounded,
+                    title: 'Rate DueVault',
+                    subtitle: 'Love the app? Leave a review or suggest an idea',
+                    onTap: () {
+                      ref.read(appReviewServiceProvider).showRatingDialog(context);
+                    },
+                  ),
+                  SettingsListTile(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Replay Tutorial',
+                    subtitle: 'Take a quick guided tour of key features',
+                    onTap: () async {
+                      ref.read(showWalkthroughProvider.notifier).state = true;
+
+                      final repository = ref.read(vaultRepositoryProvider);
+                      final config = await repository.getConfig();
+                      config.hasSeenWalkthrough = false;
+                      await repository.updateConfig(config);
+
+                      if (context.mounted) {
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
 
+            // 7. Developer Options (Unlocked on 7 taps on footer)
+            if (_isDevModeEnabled) ...[
+              const SettingsSectionHeader(title: 'DEVELOPER'),
+              const SizedBox(height: 5),
+              _buildCategoryCard(
+                context,
+                child: const DeveloperOptionsSection(),
+              ),
+            ],
+
             const SizedBox(height: 12),
-            const SettingsVersionFooter(),
+            SettingsVersionFooter(
+              onDevModeEnabled: () {
+                setState(() {
+                  _isDevModeEnabled = true;
+                });
+              },
+            ),
             const SizedBox(height: 100),
           ],
         ),
