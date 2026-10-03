@@ -52,7 +52,7 @@ class NotificationHealthBanner extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Notificări dezactivate de sistem',
+                  'Notifications disabled by system',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -60,7 +60,7 @@ class NotificationHealthBanner extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Apasă mai jos pentru a reactiva alarmele.',
+                  'Tap below to re-enable alerts and alarms.',
                   style: TextStyle(
                     fontSize: 11,
                     color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
@@ -95,7 +95,7 @@ class NotificationHealthBanner extends ConsumerWidget {
               );
               await ref.read(notificationHealthProvider.notifier).checkHealth();
             },
-            child: const Text('Reactivează'),
+            child: const Text('Re-enable'),
           ),
         ],
       ),

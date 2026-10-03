@@ -50,7 +50,7 @@ class _SettingsVersionFooterState extends State<SettingsVersionFooter> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           child: Text(
-            'Version 1.0.1 (Build 33)',
+            'Version 1.0.1 (Build 34)',
             style: TextStyle(
               color: Theme.of(context)
                   .textTheme
