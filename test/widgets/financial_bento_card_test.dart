@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:duevault_app/models/vault_item.dart';
 import 'package:duevault_app/providers/vault_provider.dart';
 import 'package:duevault_app/providers/currency_provider.dart';
+import 'package:duevault_app/providers/navigation_provider.dart';
 import 'package:duevault_app/repositories/vault_repository.dart';
 import 'package:duevault_app/screens/home/financial_bento_card.dart';
 import 'package:duevault_app/theme/app_theme.dart';
@@ -36,31 +37,41 @@ void main() {
     required List<VaultItem> items,
     Currency currency = const Currency('GBP', '£'),
     bool isDark = true,
+    ProviderContainer? container,
   }) {
+    final app = MaterialApp(
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      home: const Scaffold(
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              FinancialBentoCard(),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (container != null) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: app,
+      );
+    }
+
     return ProviderScope(
       overrides: [
         vaultProvider.overrideWith(() => MockVaultNotifier(items)),
         currencyProvider.overrideWith((ref) => FakeCurrencyNotifier(currency)),
       ],
-      child: MaterialApp(
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-        home: const Scaffold(
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                FinancialBentoCard(),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: app,
     );
   }
 
   group('FinancialBentoCard Status Tests', () {
-    testWidgets('Shows total amount and overdue badge when overdue bill exists', (tester) async {
+    testWidgets('Shows 2-column Bento Grid with Bills & Documents, and overdue badge', (tester) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -74,39 +85,74 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [overdueBill], isDark: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('THIS MONTH'), findsOneWidget);
-      expect(find.text('£100.00'), findsOneWidget);
-      expect(find.text('to pay'), findsOneWidget);
+      expect(find.text('UPCOMING OVERVIEW'), findsOneWidget);
+      expect(find.text('BILLS'), findsOneWidget);
+      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.text('£100.00'), findsNWidgets(2)); // 7d and 30d
       expect(find.text('1 overdue'), findsOneWidget);
+      expect(find.text('0'), findsOneWidget); // 0 docs expiring
     });
 
-    testWidgets('Shows upcoming count and Auto-Pay badge when enabled', (tester) async {
+    testWidgets('Shows upcoming bills and documents correctly', (tester) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
       final upcomingBill = VaultItem()
         ..itemType = 'Bill'
         ..isPaid = false
-        ..directDebit = true
         ..dueDate = today.add(const Duration(days: 5))
         ..amount = 60.0
         ..title = 'Electricity';
 
-      await tester.pumpWidget(createTestWidget(items: [upcomingBill], isDark: true));
+      final upcomingDoc = VaultItem()
+        ..itemType = 'Document'
+        ..isPaid = false
+        ..dueDate = today.add(const Duration(days: 3))
+        ..title = 'ID Card';
+
+      await tester.pumpWidget(createTestWidget(items: [upcomingBill, upcomingDoc], isDark: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('THIS MONTH'), findsOneWidget);
-      expect(find.text('£60.00'), findsOneWidget);
-      expect(find.text('1 upcoming'), findsOneWidget);
-      expect(find.text('Auto-Pay: £60 reserved'), findsOneWidget);
+      expect(find.text('BILLS'), findsOneWidget);
+      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.text('£60.00'), findsNWidgets(2));
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('expiring'), findsOneWidget);
     });
 
     testWidgets('Renders properly with empty items in light and dark mode', (tester) async {
       await tester.pumpWidget(createTestWidget(items: [], isDark: false));
       await tester.pumpAndSettle();
 
-      expect(find.text('THIS MONTH'), findsOneWidget);
-      expect(find.text('£0.00'), findsOneWidget);
+      expect(find.text('UPCOMING OVERVIEW'), findsOneWidget);
+      expect(find.text('BILLS'), findsOneWidget);
+      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.text('£0.00'), findsNWidgets(2));
+      expect(find.text('0'), findsOneWidget);
+    });
+
+    testWidgets('Tapping Bills column sets bottomNavIndex to 1, Documents sets to 2', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          vaultProvider.overrideWith(() => MockVaultNotifier([])),
+          currencyProvider.overrideWith((ref) => FakeCurrencyNotifier(const Currency('GBP', '£'))),
+        ],
+      );
+
+      await tester.pumpWidget(createTestWidget(items: [], container: container));
+      await tester.pumpAndSettle();
+
+      expect(container.read(bottomNavIndexProvider), 0);
+
+      // Tap Bills column
+      await tester.tap(find.text('BILLS'));
+      await tester.pumpAndSettle();
+      expect(container.read(bottomNavIndexProvider), 1);
+
+      // Tap Documents column
+      await tester.tap(find.text('DOCUMENTS'));
+      await tester.pumpAndSettle();
+      expect(container.read(bottomNavIndexProvider), 2);
     });
   });
 }
