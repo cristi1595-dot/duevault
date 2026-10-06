@@ -381,6 +381,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             isVaultEmpty: isVaultEmpty,
             onTap: (index) {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ref.read(navBarVisibleProvider.notifier).state = true;
               ref.read(bottomNavIndexProvider.notifier).state = index;
             },
             onAddPressed: () {

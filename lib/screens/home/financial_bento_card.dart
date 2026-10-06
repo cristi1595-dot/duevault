@@ -112,66 +112,23 @@ class FinancialBentoCard extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Header Row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: billAccent,
-                        shape: BoxShape.circle,
-                      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // === LEFT COLUMN: BILLS ===
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(20),
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      'UPCOMING OVERVIEW',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.9,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '7 Days • 30 Days',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, thickness: 1, color: borderColor),
-
-          // Two Bento Columns: Left = Bills, Right = Documents
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // === LEFT COLUMN: BILLS ===
-                Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(20),
-                      ),
-                      onTap: () {
-                        ref.read(bottomNavIndexProvider.notifier).state = 1;
-                      },
+                    onTap: () {
+                      ref.read(bottomNavIndexProvider.notifier).state = 1;
+                    },
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -339,8 +296,8 @@ class FinancialBentoCard extends ConsumerWidget {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: const BorderRadius.only(
-                        bottomRight: Radius.circular(20),
+                      borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(20),
                       ),
                       onTap: () {
                         ref.read(bottomNavIndexProvider.notifier).state = 2;
@@ -517,8 +474,7 @@ class FinancialBentoCard extends ConsumerWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      );
   }
 }

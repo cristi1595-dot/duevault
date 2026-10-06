@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/vault_item_tile.dart';
 import '../../widgets/vault_snackbar.dart';
@@ -86,8 +87,21 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: CustomScrollView(
-          slivers: [
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollUpdateNotification) {
+              final delta = notification.scrollDelta ?? 0;
+              if (delta.abs() > 2) {
+                ref.read(navBarVisibleProvider.notifier).state = false;
+              }
+            }
+            if (notification is ScrollEndNotification) {
+              ref.read(navBarVisibleProvider.notifier).state = true;
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
             // Header
             SliverToBoxAdapter(
               child: Padding(
@@ -302,6 +316,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

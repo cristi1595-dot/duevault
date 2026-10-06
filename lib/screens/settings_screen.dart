@@ -17,6 +17,7 @@ import '../services/app_review_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/vault_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../main.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -115,7 +116,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               )
             : null,
       ),
-      body: SingleChildScrollView(
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification) {
+            final delta = notification.scrollDelta ?? 0;
+            if (delta.abs() > 2) {
+              ref.read(navBarVisibleProvider.notifier).state = false;
+            }
+          }
+          if (notification is ScrollEndNotification) {
+            ref.read(navBarVisibleProvider.notifier).state = true;
+          }
+          return false;
+        },
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,6 +258,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
