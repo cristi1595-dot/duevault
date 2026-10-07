@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -9,6 +10,7 @@ import '../../widgets/global_components.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/vault_provider.dart';
+import '../../providers/sync_provider.dart';
 import '../../services/drive_service.dart';
 import '../../services/encryption_service.dart';
 import '../../services/firebase_sync_service.dart';
@@ -21,6 +23,17 @@ class DeveloperOptionsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final syncTimestamp = ref.watch(lastSyncTimestampProvider);
+    final syncState = ref.watch(syncProvider);
+
+    String syncSubtitle = 'Active & Up to date';
+    if (syncState.status == SyncStatus.syncing) {
+      syncSubtitle = 'Syncing...';
+    } else if (syncTimestamp.valueOrNull != null) {
+      final formatted = DateFormat('MMM dd, HH:mm').format(syncTimestamp.valueOrNull!.toLocal());
+      syncSubtitle = 'Last sync: $formatted';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -30,6 +43,34 @@ class DeveloperOptionsSection extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
+              _buildSettingItem(
+                context: context,
+                icon: Icons.cloud_done_rounded,
+                iconColor: AppTheme.getSettingsAccent(context),
+                title: 'Automated Cloud Sync',
+                subtitle: syncSubtitle,
+                trailing: (syncState.status == SyncStatus.syncing)
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.refresh_rounded,
+                        size: 16,
+                        color: AppTheme.primaryAction,
+                      ),
+                onTap: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Triggering cloud sync...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                  await ref.read(firebaseSyncServiceProvider).sync(force: true);
+                },
+              ),
+              const Divider(height: 1, indent: 56),
               _buildSettingItem(
                 context: context,
                 icon: Icons.cloud_sync_outlined,

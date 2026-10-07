@@ -24,7 +24,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: Colors.white,
@@ -185,7 +185,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         // Neon styled Title
                         Text(
                           'DueVault PRO',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 38,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
@@ -207,7 +207,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Get the ultimate organization & security layer',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             color: Colors.white70,
                             fontWeight: FontWeight.w400,
@@ -283,7 +283,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                                   )
                                 : Text(
                                     'Unlock PRO',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       color: Colors.white,
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -299,7 +299,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                         onPressed: _isLoading ? null : _handleRestorePurchases,
                         child: Text(
                           'Restore Purchases',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: Colors.white54,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -357,7 +357,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -366,7 +366,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: Colors.grey[400],
                     fontSize: 12.5,
                     height: 1.4,

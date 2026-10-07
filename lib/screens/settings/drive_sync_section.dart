@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_provider.dart';
@@ -21,36 +20,9 @@ class DriveSyncSection extends ConsumerWidget {
 
     final wifiOnly = ref.watch(wifiOnlyProvider);
 
-    final syncTimestamp = ref.watch(lastSyncTimestampProvider);
-    final syncState = ref.watch(syncProvider);
-
-    String subtitleText = 'Active & Up to date';
-    if (syncState.status == SyncStatus.syncing) {
-      subtitleText = 'Syncing...';
-    } else if (syncTimestamp.valueOrNull != null) {
-      final formatted = DateFormat('MMM dd, HH:mm').format(syncTimestamp.valueOrNull!.toLocal());
-      subtitleText = 'Last sync: $formatted';
-    }
-
     return Column(
       children: [
-        // --- 1. Automated Cloud Sync (Read-only) ---
-        _buildSettingItem(
-          context: context,
-          icon: Icons.cloud_done,
-          iconColor: AppTheme.getSettingsAccent(context),
-          title: 'Automated Cloud Sync',
-          subtitle: subtitleText,
-          trailing: (syncState.status == SyncStatus.syncing)
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const SizedBox.shrink(),
-        ),
-
-        // --- 2. WiFi Only ---
+        // --- WiFi Only / Optimize Mobile Data ---
         _buildSettingItem(
           context: context,
           icon: Icons.wifi_outlined,

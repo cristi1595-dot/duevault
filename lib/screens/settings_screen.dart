@@ -220,6 +220,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     title: 'Replay Tutorial',
                     subtitle: 'Take a quick guided tour of key features',
                     onTap: () async {
+                      ref.read(bottomNavIndexProvider.notifier).state = 0;
                       ref.read(showWalkthroughProvider.notifier).state = true;
 
                       final repository = ref.read(vaultRepositoryProvider);

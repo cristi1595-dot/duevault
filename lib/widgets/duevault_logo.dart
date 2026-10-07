@@ -12,22 +12,24 @@ class DueVaultLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(size * 0.25);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: radius,
         boxShadow: showGlow
             ? [
                 BoxShadow(
-                  color: const Color(0xFF00E676).withValues(alpha: 0.15),
-                  blurRadius: size * 0.3,
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  blurRadius: size * 0.25,
                   spreadRadius: 1,
                 ),
               ]
             : null,
       ),
-      child: ClipOval(
+      child: ClipRRect(
+        borderRadius: radius,
         child: Image.asset(
           'assets/images/app icon.png',
           width: size,

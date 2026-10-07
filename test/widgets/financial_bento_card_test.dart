@@ -85,7 +85,6 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [overdueBill], isDark: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('UPCOMING OVERVIEW'), findsOneWidget);
       expect(find.text('BILLS'), findsOneWidget);
       expect(find.text('DOCUMENTS'), findsOneWidget);
       expect(find.text('£100.00'), findsNWidgets(2)); // 7d and 30d
@@ -124,7 +123,6 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [], isDark: false));
       await tester.pumpAndSettle();
 
-      expect(find.text('UPCOMING OVERVIEW'), findsOneWidget);
       expect(find.text('BILLS'), findsOneWidget);
       expect(find.text('DOCUMENTS'), findsOneWidget);
       expect(find.text('£0.00'), findsNWidgets(2));

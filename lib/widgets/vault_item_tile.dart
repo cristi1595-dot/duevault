@@ -508,14 +508,14 @@ class _VaultItemThumbnail extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: iconColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        color: iconColor.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
       ),
       child: Center(
         child: Icon(
           iconData,
           color: iconColor,
-          size: 22,
+          size: 21,
         ),
       ),
     );

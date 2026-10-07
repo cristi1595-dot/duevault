@@ -102,7 +102,7 @@ class FinancialBentoCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
           BoxShadow(
@@ -113,7 +113,7 @@ class FinancialBentoCard extends ConsumerWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +124,7 @@ class FinancialBentoCard extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(20),
+                      left: Radius.circular(28),
                     ),
                     onTap: () {
                       ref.read(bottomNavIndexProvider.notifier).state = 1;
@@ -138,10 +138,10 @@ class FinancialBentoCard extends ConsumerWidget {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(5),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: billAccent.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: billAccent.withValues(alpha: 0.14),
+                                    shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
                                     Icons.receipt_long_rounded,
@@ -237,7 +237,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                 color: isDark
                                     ? const Color(0xFF222734)
                                     : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Row(
                                 children: [
@@ -297,7 +297,7 @@ class FinancialBentoCard extends ConsumerWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: const BorderRadius.horizontal(
-                        right: Radius.circular(20),
+                        right: Radius.circular(28),
                       ),
                       onTap: () {
                         ref.read(bottomNavIndexProvider.notifier).state = 2;
@@ -311,10 +311,10 @@ class FinancialBentoCard extends ConsumerWidget {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(5),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: docAccent.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: docAccent.withValues(alpha: 0.14),
+                                    shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
                                     Icons.description_rounded,
@@ -425,7 +425,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                 color: isDark
                                     ? const Color(0xFF222734)
                                     : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Row(
                                 children: [
