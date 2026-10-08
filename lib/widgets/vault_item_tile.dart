@@ -82,7 +82,8 @@ class VaultItemTile extends ConsumerWidget {
 
     final rawTitle = item.title.isEmpty ? item.category : item.title;
     final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
-    final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
+    // Pixabay typography: Scaled down by 10% (17.5 -> 15.8, 14.5 -> 13.0), bold & clean Inter
+    final fontSize = rawTitle.length > 20 ? 13.0 : 15.8;
     final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
         ? ' • ${item.recurrence}'
         : '';
@@ -92,8 +93,9 @@ class VaultItemTile extends ConsumerWidget {
         text: displayTitle,
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontSize: fontSize,
-              height: 1.1,
-              fontWeight: FontWeight.w600,
+              height: 1.15,
+              letterSpacing: -0.2,
+              fontWeight: FontWeight.w700,
             ),
       ),
       maxLines: 2,
@@ -101,7 +103,7 @@ class VaultItemTile extends ConsumerWidget {
     )..layout(maxWidth: textColumnWidth > 0 ? textColumnWidth : 150);
 
     final isTwoLines = textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
-    final gapHeight = isTwoLines ? 2.0 : 10.0;
+    final gapHeight = isTwoLines ? 2.0 : 8.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -319,14 +321,15 @@ class VaultItemTile extends ConsumerWidget {
                                     overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                           fontSize: fontSize,
-                                          height: 1.1,
+                                          height: 1.15,
+                                          letterSpacing: -0.2,
                                           decoration: item.isPaid
                                               ? TextDecoration.lineThrough
                                               : null,
                                           color: item.isPaid
                                               ? Theme.of(context).textTheme.bodyMedium?.color
                                               : Theme.of(context).textTheme.bodyLarge?.color,
-                                          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                   ),
                                   SizedBox(height: gapHeight),
@@ -338,10 +341,12 @@ class VaultItemTile extends ConsumerWidget {
                                                 ? Icons.warning_amber_rounded
                                                 : Icons.schedule_rounded)
                                             : Icons.all_inclusive_rounded,
-                                        size: 13,
-                                        color: dueDateColor,
+                                        size: 12,
+                                        color: (isOverdue && !item.isPaid)
+                                            ? dueDateColor
+                                            : dueDateColor.withValues(alpha: 0.8),
                                       ),
-                                      const SizedBox(width: 5),
+                                      const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
                                           item.dueDate != null
@@ -350,11 +355,10 @@ class VaultItemTile extends ConsumerWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: (item.dueDate != null && !item.isPaid)
-                                                ? FontWeight.w600
-                                                : FontWeight.w500,
-                                            color: dueDateColor,
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w400,
+                                            letterSpacing: 0.1,
+                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                                           ),
                                         ),
                                       ),
@@ -377,8 +381,8 @@ class VaultItemTile extends ConsumerWidget {
                                         currency.formatAmount(item.amount ?? 0.0),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 20,
-                                          letterSpacing: -0.2,
+                                          fontSize: 18.0,
+                                          letterSpacing: -0.3,
                                           color: Theme.of(context).textTheme.bodyLarge?.color,
                                         ),
                                         textAlign: TextAlign.right,

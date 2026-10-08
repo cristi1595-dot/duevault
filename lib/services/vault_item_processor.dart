@@ -94,8 +94,16 @@ class VaultItemProcessor {
         finalFiles.add(fileName);
         final file = File('${attachmentsDir.path}/$fileName');
         if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          checksums.add(md5.convert(bytes).toString());
+          // Reuse existing checksum if available to prevent redundant I/O in loop
+          final existingIdx = item.attachedFiles.indexOf(rawPath);
+          if (existingIdx >= 0 &&
+              existingIdx < item.cloudFileChecksums.length &&
+              item.cloudFileChecksums[existingIdx].isNotEmpty) {
+            checksums.add(item.cloudFileChecksums[existingIdx]);
+          } else {
+            final bytes = await file.readAsBytes();
+            checksums.add(md5.convert(bytes).toString());
+          }
         }
       }
     }

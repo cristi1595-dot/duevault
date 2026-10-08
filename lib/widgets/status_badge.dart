@@ -31,21 +31,21 @@ class StatusBadge extends StatelessWidget {
       textColor = AppTheme.getSafeGreen(context); // Green: over 7 days
     }
 
-    final Color bgColor = textColor.withValues(alpha: 0.12);
+    final Color bgColor = textColor.withValues(alpha: 0.08);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         label.toUpperCase(),
         style: TextStyle(
           color: textColor,
-          fontSize: isDocument ? 10.5 : 9.5,
+          fontSize: isDocument ? 9.5 : 8.8,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+          letterSpacing: 0.4,
         ),
       ),
     );

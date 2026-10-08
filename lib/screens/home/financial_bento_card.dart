@@ -189,7 +189,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: -0.5,
-                                      fontSize: 24,
+                                      fontSize: 21.5,
                                       color: isDark ? Colors.white : const Color(0xFF0F172A),
                                     ),
                               ),
@@ -265,7 +265,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                           child: Text(
                                             '${currency.symbol}${totalBills30Days.toStringAsFixed(2)}',
                                             style: TextStyle(
-                                              fontSize: 12.5,
+                                              fontSize: 11.3,
                                               fontWeight: FontWeight.w700,
                                               color: isDark ? Colors.white : const Color(0xFF0F172A),
                                             ),
@@ -366,7 +366,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: -0.5,
-                                          fontSize: 24,
+                                          fontSize: 21.5,
                                           color: isDark ? Colors.white : const Color(0xFF0F172A),
                                         ),
                                   ),
@@ -453,7 +453,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                           child: Text(
                                             '$totalDocs30Days expiring',
                                             style: TextStyle(
-                                              fontSize: 12.5,
+                                              fontSize: 11.3,
                                               fontWeight: FontWeight.w700,
                                               color: isDark ? Colors.white : const Color(0xFF0F172A),
                                             ),

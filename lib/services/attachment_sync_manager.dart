@@ -26,12 +26,17 @@ class AttachmentSyncManager {
         .ownerIdEqualTo(user.uid)
         .findAll();
 
+    final appDir = await getApplicationDocumentsDirectory();
+    final attachmentsDir = Directory('${appDir.path}/attachments');
+    if (!await attachmentsDir.exists()) {
+      await attachmentsDir.create(recursive: true);
+    }
+
+    final modifiedItems = <VaultItem>[];
+
     for (var item in items) {
       try {
         bool modified = false;
-
-        final appDir = await getApplicationDocumentsDirectory();
-        final attachmentsDir = Directory('${appDir.path}/attachments');
 
         // 2. UPLOAD/UPDATE files in Cloud based on Checksums
         for (int i = 0; i < item.attachedFiles.length; i++) {
@@ -95,12 +100,6 @@ class AttachmentSyncManager {
 
         // 3. DOWNLOAD missing files from Cloud
         if (item.cloudFileIds.length > item.attachedFiles.length) {
-          final appDir = await getApplicationDocumentsDirectory();
-          final attachmentsDir = Directory('${appDir.path}/attachments');
-          if (!await attachmentsDir.exists()) {
-            await attachmentsDir.create(recursive: true);
-          }
-
           for (
             int i = item.attachedFiles.length;
             i < item.cloudFileIds.length;
@@ -111,20 +110,15 @@ class AttachmentSyncManager {
                 'doc_sync_${DateTime.now().microsecondsSinceEpoch}_$i.enc';
             final localPath = '${attachmentsDir.path}/$fileName';
 
-            final success = await driveService.downloadAttachment(
+            // Senior Performance Fix: Calculate checksum during streaming download
+            final downloadedChecksum = await driveService.downloadAttachmentWithChecksum(
               cloudId,
               localPath,
             );
-            if (success) {
+            if (downloadedChecksum != null) {
               final newPaths = List<String>.from(item.attachedFiles);
               newPaths.add(fileName);
               item.attachedFiles = newPaths;
-
-              // After download, update the local checksum to match what we just got
-              final downloadedBytes = await File(localPath).readAsBytes();
-              final downloadedChecksum = md5
-                  .convert(downloadedBytes)
-                  .toString();
 
               final newChecksums = List<String>.from(item.cloudFileChecksums);
               if (i >= newChecksums.length) {
@@ -140,13 +134,17 @@ class AttachmentSyncManager {
         }
 
         if (modified) {
-          await localIsar.writeTxn(() async {
-            await localIsar.collection<VaultItem>().put(item);
-          });
+          modifiedItems.add(item);
         }
       } catch (e) {
         logger.e('Error syncing attachments for item ${item.title}', error: e);
       }
+    }
+
+    if (modifiedItems.isNotEmpty) {
+      await localIsar.writeTxn(() async {
+        await localIsar.collection<VaultItem>().putAll(modifiedItems);
+      });
     }
   }
 }

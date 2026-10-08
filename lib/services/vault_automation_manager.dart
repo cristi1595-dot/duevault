@@ -116,6 +116,7 @@ class VaultAutomationManager {
         .dueDateLessThan(today.add(const Duration(days: 1))) // includes today
         .findAll();
 
+    final updatedBills = <VaultItem>[];
     for (final bill in autopayBills) {
       if (bill.dueDate == null) continue;
       final dueDayOnly = DateTime(bill.dueDate!.year, bill.dueDate!.month, bill.dueDate!.day);
@@ -135,12 +136,18 @@ class VaultAutomationManager {
       if (needsUpdate) {
         bill.lastModified = DateTime.now();
         bill.wasSynced = false;
-        await isar.writeTxn(() async {
-          await isar.collection<VaultItem>().put(bill);
-        });
+        updatedBills.add(bill);
       }
+    }
 
-      // Generate next recurring instance if recurring
+    if (updatedBills.isNotEmpty) {
+      await isar.writeTxn(() async {
+        await isar.collection<VaultItem>().putAll(updatedBills);
+      });
+    }
+
+    // Generate next recurring instance if recurring
+    for (final bill in autopayBills) {
       if (bill.recurrence != 'None' && bill.itemType == 'Bill') {
         await generateNextRecurringInstance(bill);
       }
@@ -163,8 +170,8 @@ class VaultAutomationManager {
           item.isArchived = true;
           item.lastModified = DateTime.now();
           item.wasSynced = false;
-          await isar.collection<VaultItem>().put(item);
         }
+        await isar.collection<VaultItem>().putAll(paidExpired);
       });
       // Also ensure recurring instances exist for paid expired items
       for (var item in paidExpired) {
@@ -242,9 +249,7 @@ class VaultAutomationManager {
 
     if (toDelete.isNotEmpty) {
       await isar.writeTxn(() async {
-        for (final item in toDelete) {
-          await isar.collection<VaultItem>().put(item);
-        }
+        await isar.collection<VaultItem>().putAll(toDelete);
       });
       for (final item in toDelete) {
         await NotificationService.cancelBillNotifications(item.id);

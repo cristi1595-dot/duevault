@@ -49,6 +49,12 @@ class SyncConflictResolver {
       bool localModified = false;
       bool cloudModified = false;
 
+      final appDir = await getApplicationDocumentsDirectory();
+      final attachmentsDir = Directory('${appDir.path}/attachments');
+      if (!await attachmentsDir.exists()) {
+        await attachmentsDir.create(recursive: true);
+      }
+
       final localItemsByUuid = <String, VaultItem>{};
       for (var i in localItems) {
         if (i.uuid.isNotEmpty) {
@@ -102,9 +108,6 @@ class SyncConflictResolver {
             )) {
               // 1. Delete local files that were removed in the cloud version
               // We match by cloud ID rather than file paths because paths are device-specific.
-              final appDir = await getApplicationDocumentsDirectory();
-              final attachmentsDir = Directory('${appDir.path}/attachments');
-
               for (int i = 0; i < localItem.attachedFiles.length; i++) {
                 final fileName = p.basename(localItem.attachedFiles[i].replaceAll('\\', '/'));
                 final cloudId = i < localItem.cloudFileIds.length ? localItem.cloudFileIds[i] : null;
@@ -153,12 +156,11 @@ class SyncConflictResolver {
 
       // 2. Check for local items that don't exist in cloud -> They need to be uploaded
       // OR if they were previously synced, it means they were deleted on another device.
-      final appDir = await getApplicationDocumentsDirectory();
-      final attachmentsDir = Directory('${appDir.path}/attachments');
-
       final cloudUuids = {
         for (var i in cloudItems) if (i.uuid.isNotEmpty) i.uuid
       };
+
+      final itemsToDeleteLocally = <Id>[];
 
       for (var localItem in localItems) {
         final existsInCloud = localItem.uuid.isNotEmpty && cloudUuids.contains(localItem.uuid);
@@ -180,15 +182,19 @@ class SyncConflictResolver {
                 logger.e('Failed to delete attachment file for deleted item: $localPath', error: e);
               }
             }
-            await localIsar.writeTxn(() async {
-              await localIsar.collection<VaultItem>().delete(localItem.id);
-            });
-            localModified = true;
+            itemsToDeleteLocally.add(localItem.id);
           } else {
             // New local item that hasn't reached the cloud yet
             cloudModified = true;
           }
         }
+      }
+
+      if (itemsToDeleteLocally.isNotEmpty) {
+        await localIsar.writeTxn(() async {
+          await localIsar.collection<VaultItem>().deleteAll(itemsToDeleteLocally);
+        });
+        localModified = true;
       }
 
       return {

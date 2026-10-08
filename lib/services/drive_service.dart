@@ -309,8 +309,8 @@ class DriveService {
     }
   }
 
-  /// Downloads a file by ID to a specific local path using streaming.
-  Future<bool> downloadAttachment(String fileId, String localPath) async {
+  /// Downloads a file by ID to a specific local path using streaming and calculates MD5 during download.
+  Future<String?> downloadAttachmentWithChecksum(String fileId, String localPath) async {
     try {
       final drive.Media media =
           await driveApi.files.get(
@@ -325,17 +325,34 @@ class DriveService {
       }
 
       final iosink = outputFile.openWrite();
-      await iosink.addStream(media.stream);
+      String calculatedChecksum = '';
+      final md5Sink = md5.startChunkedConversion(
+        ChunkedConversionSink<Digest>.withCallback((accumulated) {
+          calculatedChecksum = accumulated.first.toString();
+        }),
+      );
+
+      await for (final chunk in media.stream) {
+        md5Sink.add(chunk);
+        iosink.add(chunk);
+      }
+      md5Sink.close();
       await iosink.close();
-      return true;
+      return calculatedChecksum;
     } catch (e, stack) {
       logger.e(
         'Error downloading attachment $fileId',
         error: e,
         stackTrace: stack,
       );
-      return false;
+      return null;
     }
+  }
+
+  /// Downloads a file by ID to a specific local path using streaming.
+  Future<bool> downloadAttachment(String fileId, String localPath) async {
+    final checksum = await downloadAttachmentWithChecksum(fileId, localPath);
+    return checksum != null;
   }
 
   /// Delete a specific file from Google Drive
