@@ -147,60 +147,111 @@ class VaultGuestManager {
     final now = DateTime.now();
     const uuid = Uuid();
     final samples = [
+      // BILL 1: Urgent (Due in 2 days)
       VaultItem()
         ..uuid = uuid.v4()
-        ..title = 'Electricity Bill (Demo)'
+        ..title = 'Electric Utility (National Grid)'
+        ..itemType = 'Bill'
+        ..category = 'Utilities'
+        ..amount = 125.40
+        ..dueDate = now.add(const Duration(days: 2))
+        ..recurrence = 'Monthly'
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // BILL 2: Warning (Due in 5 days)
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'High-Speed Fiber Internet'
+        ..itemType = 'Bill'
+        ..category = 'Utilities'
+        ..amount = 69.99
+        ..dueDate = now.add(const Duration(days: 5))
+        ..recurrence = 'Monthly'
+        ..directDebit = true
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // BILL 3: Safe (Due in 12 days)
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Apartment Rent'
         ..itemType = 'Bill'
         ..category = 'Housing'
-        ..amount = 45.0
-        ..dueDate = now.subtract(const Duration(days: 2))
+        ..amount = 1450.00
+        ..dueDate = now.add(const Duration(days: 12))
+        ..recurrence = 'Monthly'
+        ..directDebit = true
         ..isPaid = false
         ..isSample = true
         ..ownerId = ownerId,
+
+      // BILL 4: Safe (Due in 18 days)
       VaultItem()
         ..uuid = uuid.v4()
-        ..title = 'Internet Subscription (Demo)'
+        ..title = 'Auto Insurance (Geico)'
+        ..itemType = 'Bill'
+        ..category = 'Insurance'
+        ..amount = 185.00
+        ..dueDate = now.add(const Duration(days: 18))
+        ..recurrence = 'Monthly'
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // BILL 5: Safe (Due in 24 days)
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Spotify Family Subscription'
         ..itemType = 'Bill'
         ..category = 'Subscriptions'
-        ..amount = 29.99
-        ..dueDate = now.add(const Duration(days: 5))
+        ..amount = 16.99
+        ..dueDate = now.add(const Duration(days: 24))
+        ..recurrence = 'Monthly'
         ..isPaid = false
         ..isSample = true
         ..ownerId = ownerId,
+
+      // DOCUMENT 1: Expiring in 15 days (Warning)
       VaultItem()
         ..uuid = uuid.v4()
-        ..title = 'Visa Credit Card (Demo)'
-        ..itemType = 'Bill'
-        ..category = 'Loans'
-        ..amount = 150.0
-        ..dueDate = now.add(const Duration(days: 10))
-        ..isPaid = false
-        ..isSample = true
-        ..ownerId = ownerId,
-      VaultItem()
-        ..uuid = uuid.v4()
-        ..title = 'Car Insurance (Demo)'
-        ..itemType = 'Bill'
-        ..category = 'Auto'
-        ..amount = 85.50
+        ..title = 'Car Insurance Policy'
+        ..itemType = 'Document'
+        ..category = 'Insurance'
         ..dueDate = now.add(const Duration(days: 15))
         ..isPaid = false
         ..isSample = true
         ..ownerId = ownerId,
+
+      // DOCUMENT 2: Passport (Long expiry)
       VaultItem()
         ..uuid = uuid.v4()
-        ..title = 'Identity Card (Demo)'
+        ..title = 'Passport (US Citizen)'
         ..itemType = 'Document'
         ..category = 'Identity'
-        ..dueDate = now.add(const Duration(days: 450))
+        ..dueDate = now.add(const Duration(days: 1825))
         ..isSample = true
         ..ownerId = ownerId,
+
+      // DOCUMENT 3: Driver License
       VaultItem()
         ..uuid = uuid.v4()
-        ..title = 'Rental Agreement (Demo)'
+        ..title = "Driver's License"
         ..itemType = 'Document'
-        ..category = 'Auto'
-        ..dueDate = now.add(const Duration(days: 60))
+        ..category = 'Identity'
+        ..dueDate = now.add(const Duration(days: 340))
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // DOCUMENT 4: Apartment Lease
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Apartment Lease Agreement'
+        ..itemType = 'Document'
+        ..category = 'Housing'
+        ..dueDate = now.add(const Duration(days: 90))
         ..isSample = true
         ..ownerId = ownerId,
     ];

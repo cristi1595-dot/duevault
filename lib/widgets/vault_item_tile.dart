@@ -82,8 +82,8 @@ class VaultItemTile extends ConsumerWidget {
 
     final rawTitle = item.title.isEmpty ? item.category : item.title;
     final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
-    // Pixabay typography: Scaled down by 10% (17.5 -> 15.8, 14.5 -> 13.0), bold & clean Inter
-    final fontSize = rawTitle.length > 20 ? 13.0 : 15.8;
+    // Title typography: 17.5 for standard, 14.5 for long titles, bold & clean Inter
+    final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
     final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
         ? ' • ${item.recurrence}'
         : '';
@@ -341,7 +341,7 @@ class VaultItemTile extends ConsumerWidget {
                                                 ? Icons.warning_amber_rounded
                                                 : Icons.schedule_rounded)
                                             : Icons.all_inclusive_rounded,
-                                        size: 12,
+                                        size: 13,
                                         color: (isOverdue && !item.isPaid)
                                             ? dueDateColor
                                             : dueDateColor.withValues(alpha: 0.8),
@@ -355,7 +355,7 @@ class VaultItemTile extends ConsumerWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 11.5,
+                                            fontSize: 12.5,
                                             fontWeight: FontWeight.w400,
                                             letterSpacing: 0.1,
                                             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -381,7 +381,7 @@ class VaultItemTile extends ConsumerWidget {
                                         currency.formatAmount(item.amount ?? 0.0),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 18.0,
+                                          fontSize: 20.0,
                                           letterSpacing: -0.3,
                                           color: Theme.of(context).textTheme.bodyLarge?.color,
                                         ),

@@ -43,7 +43,7 @@ class StatusBadge extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: textColor,
-          fontSize: isDocument ? 9.5 : 8.8,
+          fontSize: isDocument ? 10.5 : 9.5,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.4,
         ),

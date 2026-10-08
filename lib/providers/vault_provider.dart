@@ -140,7 +140,11 @@ class VaultNotifier extends Notifier<List<VaultItem>> {
         logger.e('VaultNotifier: Deduplication error', error: e, stackTrace: stack);
       }
 
-      final freshItems = await _repository.getItems(ownerId);
+      var freshItems = await _repository.getItems(ownerId);
+      if (freshItems.isEmpty && ownerId == 'local_user') {
+        await _repository.generateSampleData(ownerId);
+        freshItems = await _repository.getItems(ownerId);
+      }
 
       // Senior Debug: Also check if any guest items were left behind
       if (ownerId != 'local_user') {
