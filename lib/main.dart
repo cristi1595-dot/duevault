@@ -510,7 +510,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   Future<void> _handleScanBill(BuildContext context) async {
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
-    if (isGuest || !isPremium) {
+    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const PaywallScreen()),

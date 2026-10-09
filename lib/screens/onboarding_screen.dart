@@ -216,7 +216,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   Future<void> _handleGoogleSignIn() async {
     final isPremium = ref.read(isPremiumProvider);
-    if (!isPremium) {
+    if (!kAllFeaturesFree && !isPremium) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const PaywallScreen()),

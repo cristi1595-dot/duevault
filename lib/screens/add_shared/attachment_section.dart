@@ -163,7 +163,7 @@ class AttachmentSection extends ConsumerWidget {
   Widget _buildCameraCardWithOcrToggle(BuildContext context, WidgetRef ref) {
     final isGuest = ref.watch(isGuestProvider);
     final isPremium = ref.watch(isPremiumProvider);
-    final isPro = !isGuest && isPremium;
+    final isPro = kAllFeaturesFree || (!isGuest && isPremium);
 
     return GestureDetector(
       onTap: isProcessingOcr ? null : onPickImage,

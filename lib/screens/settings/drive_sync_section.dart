@@ -34,7 +34,7 @@ class DriveSyncSection extends ConsumerWidget {
               value: wifiOnly,
               onChanged: (v) async {
                 final isPremium = ref.read(isPremiumProvider);
-                if (!isPremium) {
+                if (!kAllFeaturesFree && !isPremium) {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const PaywallScreen()),

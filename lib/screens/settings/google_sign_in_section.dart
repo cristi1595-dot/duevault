@@ -27,7 +27,7 @@ class GoogleSignInSection extends ConsumerWidget {
         
         // Gate Google Sign-In behind PRO subscription
         final isPremium = ref.read(isPremiumProvider);
-        if (!isPremium) {
+        if (!kAllFeaturesFree && !isPremium) {
           await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const PaywallScreen()),

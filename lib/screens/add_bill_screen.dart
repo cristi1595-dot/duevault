@@ -66,7 +66,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
-    _useOcr = !isGuest && isPremium;
+    _useOcr = kAllFeaturesFree || (!isGuest && isPremium);
 
     if (widget.initialAttachments != null) {
       _attachedFiles.addAll(widget.initialAttachments!);
@@ -165,7 +165,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
-    if (isGuest || !isPremium) {
+    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const PaywallScreen()),
@@ -601,7 +601,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 onOcrToggleChanged: (val) {
                   final isGuest = ref.read(isGuestProvider);
                   final isPremium = ref.read(isPremiumProvider);
-                  if (val && (isGuest || !isPremium)) {
+                  if (val && !kAllFeaturesFree && (isGuest || !isPremium)) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const PaywallScreen()),

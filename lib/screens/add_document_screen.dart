@@ -50,7 +50,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
-    _useOcr = !isGuest && isPremium;
+    _useOcr = kAllFeaturesFree || (!isGuest && isPremium);
 
     if (widget.item != null) {
       _category = widget.item!.category;
@@ -85,7 +85,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
-    if (isGuest || !isPremium) {
+    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const PaywallScreen()),
@@ -481,7 +481,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 onOcrToggleChanged: (val) {
                   final isGuest = ref.read(isGuestProvider);
                   final isPremium = ref.read(isPremiumProvider);
-                  if (val && (isGuest || !isPremium)) {
+                  if (val && !kAllFeaturesFree && (isGuest || !isPremium)) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const PaywallScreen()),

@@ -116,7 +116,7 @@ class LoginScreen extends ConsumerWidget {
       onPressed: () async {
         final isGuest = ref.read(isGuestProvider);
         final isPremium = ref.read(isPremiumProvider);
-        if (isGuest && !isPremium) {
+        if (!kAllFeaturesFree && isGuest && !isPremium) {
           await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const PaywallScreen()),
