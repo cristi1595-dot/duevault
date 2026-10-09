@@ -12,10 +12,10 @@ class AppTheme {
   static const Color safeGreen = Color(0xFF10B981);
   static const Color accentPurple = Color(0xFF8B5CF6);
 
-  // --- DARK MODE PALETTE (Neutral Slate/Zinc) ---
-  static const Color darkBackground = Color(0xFF0C0E12);
-  static const Color darkSurface = Color(0xFF161A22);
-  static const Color darkBorder = Color(0xFF222734);
+  // --- DARK MODE PALETTE (Modern Slate/Zinc Fintech) ---
+  static const Color darkBackground = Color(0xFF0B0F19);
+  static const Color darkSurface = Color(0xFF161F30);
+  static const Color darkBorder = Color(0xFF222F48);
   static const Color darkTextPrimary = Color(0xFFF1F5F9);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
 
@@ -166,7 +166,7 @@ class AppTheme {
         color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), // Clean M3 Radius
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: border, width: 1),
         ),
       ),

@@ -15,11 +15,10 @@ import '../utils/amount_formatter.dart';
 import '../services/analytics_service.dart';
 import '../services/ocr_service.dart';
 import '../constants/app_categories.dart';
-import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
-import 'add_bill/bill_amount_date_row.dart';
-import 'add_bill/bill_recurrence_autopay_row.dart';
+import 'add_bill/bill_hero_amount_input.dart';
+import 'add_bill/bill_date_recurrence_card.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
 import 'paywall_screen.dart';
@@ -405,50 +404,92 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BentoInputWrapper(
-                label: 'TITLE',
-                child: TextFormField(
-                  controller: _titleController,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 19,
+              BillHeroAmountInput(
+                amountController: _amountController,
+                currencyCode: currency.code,
+                currencySymbol: currency.symbol,
+                onAmountChanged: (val) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+
+              // CARD 1: TITLE BENTO CARD (#161F30, #222F48)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161F30),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF222F48),
+                    width: 1,
                   ),
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Electricity, Rent, Internet',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.edit_note_rounded,
+                          size: 15,
+                          color: AppTheme.primaryAction,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'BILL TITLE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  onChanged: (val) {
-                    setState(() {});
-                  },
-                  inputFormatters: [LengthLimitingTextInputFormatter(40)],
-                  validator: (value) => ValidationHelper.validateTitle(value),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      key: const Key('bill_title_field'),
+                      controller: _titleController,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. Electricity, Rent, Internet',
+                        hintStyle: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                      inputFormatters: [LengthLimitingTextInputFormatter(40)],
+                      validator: (value) => ValidationHelper.validateTitle(value),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
 
-              BillAmountDateRow(
-                amountController: _amountController,
+              // CARD 2: DUE DATE, RECURRENCE & AUTO-PAY BENTO CARD
+              BillDateRecurrenceCard(
                 dueDate: _dueDate,
-                currencyCode: currency.code,
                 onDateTap: _pickDate,
-                onAmountChanged: (val) => setState(() {}),
                 onQuickDateSelected: (date) => setState(() => _dueDate = date),
-              ),
-              const SizedBox(height: 12),
-
-              BillRecurrenceAutoPayRow(
                 recurrence: _recurrence,
-                directDebit: _directDebit,
                 onRecurrenceChanged: (v) {
                   if (v != null) setState(() => _recurrence = v);
                 },
+                directDebit: _directDebit,
                 onDirectDebitChanged: (val) => setState(() => _directDebit = val),
               ),
               const SizedBox(height: 12),
@@ -466,34 +507,82 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                   ),
                 )
               else
-                BentoInputWrapper(
-                  label: 'NOTES',
-                  child: TextFormField(
-                    controller: _notesController,
-                    maxLines: 2,
-                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                    textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontSize: 16,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161F30),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF222F48),
+                      width: 1,
                     ),
-                    decoration: InputDecoration(
-                      hintText: 'Add invoice number, payment details...',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.description_outlined,
+                                size: 15,
+                                color: AppTheme.primaryAction,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'NOTES & REMARKS',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                          InkWell(
+                            onTap: () {
+                              _notesController.clear();
+                              setState(() => _showNotes = false);
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: () {
-                          _notesController.clear();
-                          setState(() => _showNotes = false);
-                        },
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notesController,
+                        maxLines: 2,
+                        inputFormatters: [LengthLimitingTextInputFormatter(1000)],
+                        textCapitalization: TextCapitalization.sentences,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Add invoice number, payment details...',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               const SizedBox(height: 10),
@@ -525,16 +614,19 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 },
               ),
               const SizedBox(height: 16),
-
-              PrimaryButton(
-                label: _isSaving
-                    ? 'Saving...'
-                    : (!_isEdit ? 'Save Bill' : 'Update Bill'),
-                icon: _isSaving ? null : Icons.check_circle_outline,
-                onPressed: (_isSaving || !isFormValid) ? null : _submit,
-              ),
-              const SizedBox(height: 40),
             ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: PrimaryButton(
+            label: _isSaving
+                ? 'Saving...'
+                : (!_isEdit ? 'Save Bill' : 'Update Bill'),
+            icon: _isSaving ? null : Icons.check_circle_outline,
+            onPressed: (_isSaving || !isFormValid) ? null : _submit,
           ),
         ),
       ),

@@ -93,8 +93,8 @@ class FinancialBentoCard extends ConsumerWidget {
     final totalDocs30Days = expiredDocs.length + upcomingDocs30Days.length;
 
     // Card Colors & Styling
-    final cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF222734) : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? const Color(0xFF161F30) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0);
     const billAccent = Color(0xFF10B981); // Emerald
     const docAccent = Color(0xFF6366F1);  // Slate Indigo
 
@@ -102,18 +102,18 @@ class FinancialBentoCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(20),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,358 +123,286 @@ class FinancialBentoCard extends ConsumerWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    key: const Key('bento_bills_column'),
                     borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(28),
+                      left: Radius.circular(20),
                     ),
                     onTap: () {
                       ref.read(bottomNavIndexProvider.notifier).state = 1;
                     },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title + Icon + Chevron
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: billAccent.withValues(alpha: 0.14),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.receipt_long_rounded,
-                                    size: 15,
-                                    color: billAccent,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'BILLS',
-                                  style: TextStyle(
-                                    fontSize: 12,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 30 Days VEDETA Metric (Big & Bold on top)
+                          const Text(
+                            'NEXT 30 DAYS',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: billAccent,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${currency.symbol}${totalBills30Days.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                     fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.6,
-                                    color: billAccent,
+                                    letterSpacing: -0.5,
+                                    fontSize: 23,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   ),
-                                ),
-                                const Spacer(),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 10,
-                                  color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                                ),
-                              ],
                             ),
+                          ),
 
-                            const SizedBox(height: 12),
-
-                            // 7 Days Primary Metric (Big & Bold)
-                            Text(
-                              'NEXT 7 DAYS',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '${currency.symbol}${totalBills7Days.toStringAsFixed(2)}',
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.5,
-                                      fontSize: 24,
-                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                    ),
-                              ),
-                            ),
-
-                            // Overdue indicator if any
-                            if (overdueBills.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.urgentRed.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline_rounded,
-                                      size: 11,
-                                      color: AppTheme.urgentRed,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${overdueBills.length} overdue',
-                                      style: const TextStyle(
-                                        color: AppTheme.urgentRed,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-
-                            const Spacer(),
-                            const SizedBox(height: 12),
-
-                            // 30 Days Secondary Metric (Pill container)
+                          // Overdue indicator if any
+                          if (overdueBills.isNotEmpty) ...[
+                            const SizedBox(height: 4),
                             Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF222734)
-                                    : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(14),
+                                color: AppTheme.urgentRed.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    Icons.calendar_month_outlined,
-                                    size: 13,
-                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 11,
+                                    color: AppTheme.urgentRed,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '30 Days',
-                                          style: TextStyle(
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            '${currency.symbol}${totalBills30Days.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${overdueBills.length} overdue',
+                                    style: const TextStyle(
+                                      color: AppTheme.urgentRed,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
+
+                          const SizedBox(height: 10),
+
+                          // 7 Days Secondary Metric (Pill container below)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E2638)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 11,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '7 Days',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          '${currency.symbol}${totalBills7Days.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+              ),
 
-                // Vertical Divider between Columns
-                VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: borderColor,
-                ),
+              // Vertical Divider between Columns
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                color: borderColor,
+              ),
 
-                // === RIGHT COLUMN: DOCUMENTS ===
-                Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: const BorderRadius.horizontal(
-                        right: Radius.circular(28),
-                      ),
-                      onTap: () {
-                        ref.read(bottomNavIndexProvider.notifier).state = 2;
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title + Icon + Chevron
-                            Row(
+              // === RIGHT COLUMN: DOCUMENTS ===
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: const Key('bento_docs_column'),
+                    borderRadius: const BorderRadius.horizontal(
+                      right: Radius.circular(20),
+                    ),
+                    onTap: () {
+                      ref.read(bottomNavIndexProvider.notifier).state = 2;
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 30 Days VEDETA Metric (Big & Bold on top)
+                          const Text(
+                            'NEXT 30 DAYS',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: docAccent,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: docAccent.withValues(alpha: 0.14),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.description_rounded,
-                                    size: 15,
-                                    color: docAccent,
-                                  ),
+                                Text(
+                                  '$totalDocs30Days',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: -0.5,
+                                        fontSize: 23,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'DOCUMENTS',
+                                const SizedBox(width: 5),
+                                Text(
+                                  'expiring',
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.6,
-                                    color: docAccent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                   ),
-                                ),
-                                const Spacer(),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 10,
-                                  color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                                 ),
                               ],
                             ),
+                          ),
 
-                            const SizedBox(height: 12),
-
-                            // 7 Days Primary Metric (Big & Bold)
-                            Text(
-                              'NEXT 7 DAYS',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '$totalDocs7Days',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: -0.5,
-                                          fontSize: 24,
-                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                        ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'expiring',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Expired indicator if any
-                            if (expiredDocs.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.urgentRed.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline_rounded,
-                                      size: 11,
-                                      color: AppTheme.urgentRed,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${expiredDocs.length} expired',
-                                      style: const TextStyle(
-                                        color: AppTheme.urgentRed,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-
-                            const Spacer(),
-                            const SizedBox(height: 12),
-
-                            // 30 Days Secondary Metric (Pill container)
+                          // Expired indicator if any
+                          if (expiredDocs.isNotEmpty) ...[
+                            const SizedBox(height: 4),
                             Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF222734)
-                                    : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(14),
+                                color: AppTheme.urgentRed.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    Icons.calendar_month_outlined,
-                                    size: 13,
-                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 11,
+                                    color: AppTheme.urgentRed,
                                   ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '30 Days',
-                                          style: TextStyle(
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                          ),
-                                        ),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            '$totalDocs30Days expiring',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${expiredDocs.length} expired',
+                                    style: const TextStyle(
+                                      color: AppTheme.urgentRed,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
+
+                          const SizedBox(height: 10),
+
+                          // 7 Days Secondary Metric (Pill container below)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E2638)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 11,
+                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '7 Days',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          '$totalDocs7Days expiring',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 }

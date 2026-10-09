@@ -70,9 +70,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
+          color: Theme.of(context).dividerColor.withValues(alpha: isDark ? 0.6 : 0.35),
           width: 1.0,
         ),
         boxShadow: [
@@ -84,7 +84,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: child,
       ),
     );

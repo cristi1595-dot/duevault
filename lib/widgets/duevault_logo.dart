@@ -37,6 +37,17 @@ class DueVaultLogo extends StatelessWidget {
           cacheWidth: (size * 2).toInt(),
           cacheHeight: (size * 2).toInt(),
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: size,
+            height: size,
+            color: const Color(0xFF10B981),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.shield_rounded,
+              size: size * 0.6,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );

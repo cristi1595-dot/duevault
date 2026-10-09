@@ -61,8 +61,14 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // Fill in valid title and amount
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
-      await tester.enterText(find.byType(TextFormField).at(1), '100.00');
+      await tester.enterText(
+        find.byKey(const Key('bill_title_field')),
+        'Electricity Bill',
+      );
+      await tester.enterText(
+        find.byKey(const Key('bill_amount_field')),
+        '100.00',
+      );
       await tester.pumpAndSettle();
 
       final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
@@ -76,7 +82,10 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // Fill in valid title
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
+      await tester.enterText(
+        find.byKey(const Key('bill_title_field')),
+        'Electricity Bill',
+      );
       await tester.pumpAndSettle();
 
       final button = tester.widget<PrimaryButton>(find.byType(PrimaryButton));
@@ -90,8 +99,14 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // Fill in valid title and amount
-      await tester.enterText(find.byType(TextFormField).first, 'Electricity Bill');
-      await tester.enterText(find.byType(TextFormField).at(1), '100.00');
+      await tester.enterText(
+        find.byKey(const Key('bill_title_field')),
+        'Electricity Bill',
+      );
+      await tester.enterText(
+        find.byKey(const Key('bill_amount_field')),
+        '100.00',
+      );
 
       // Select date
       await tester.tap(find.text('Select'));

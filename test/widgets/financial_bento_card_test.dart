@@ -85,8 +85,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [overdueBill], isDark: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('BILLS'), findsOneWidget);
-      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.byKey(const Key('bento_bills_column')), findsOneWidget);
+      expect(find.byKey(const Key('bento_docs_column')), findsOneWidget);
       expect(find.text('£100.00'), findsNWidgets(2)); // 7d and 30d
       expect(find.text('1 overdue'), findsOneWidget);
       expect(find.text('0'), findsOneWidget); // 0 docs expiring
@@ -112,8 +112,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [upcomingBill, upcomingDoc], isDark: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('BILLS'), findsOneWidget);
-      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.byKey(const Key('bento_bills_column')), findsOneWidget);
+      expect(find.byKey(const Key('bento_docs_column')), findsOneWidget);
       expect(find.text('£60.00'), findsNWidgets(2));
       expect(find.text('1'), findsOneWidget);
       expect(find.text('expiring'), findsOneWidget);
@@ -123,8 +123,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(items: [], isDark: false));
       await tester.pumpAndSettle();
 
-      expect(find.text('BILLS'), findsOneWidget);
-      expect(find.text('DOCUMENTS'), findsOneWidget);
+      expect(find.byKey(const Key('bento_bills_column')), findsOneWidget);
+      expect(find.byKey(const Key('bento_docs_column')), findsOneWidget);
       expect(find.text('£0.00'), findsNWidgets(2));
       expect(find.text('0'), findsOneWidget);
     });
@@ -143,12 +143,12 @@ void main() {
       expect(container.read(bottomNavIndexProvider), 0);
 
       // Tap Bills column
-      await tester.tap(find.text('BILLS'));
+      await tester.tap(find.byKey(const Key('bento_bills_column')));
       await tester.pumpAndSettle();
       expect(container.read(bottomNavIndexProvider), 1);
 
       // Tap Documents column
-      await tester.tap(find.text('DOCUMENTS'));
+      await tester.tap(find.byKey(const Key('bento_docs_column')));
       await tester.pumpAndSettle();
       expect(container.read(bottomNavIndexProvider), 2);
     });

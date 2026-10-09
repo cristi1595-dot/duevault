@@ -44,8 +44,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final isBill = currentItem.itemType == 'Bill';
     final daysLeft = _calculateDaysLeft(currentItem.dueDate);
 
-    final cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF222734) : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? const Color(0xFF161F30) : Colors.white;
+    final borderColor = isDark
+        ? const Color(0xFF222F48)
+        : const Color(0xFFE2E8F0);
 
     final Color dueDateColor;
     if (currentItem.isPaid) {
@@ -65,9 +67,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       appBar: AppBar(
         title: Text(
           isBill ? 'Bill Details' : 'Document Details',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -124,25 +126,37 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     children: [
                       // Type Chip (Uniform Emerald for Bill, Slate Indigo for Document)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
-                          color: (isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1))
-                              .withValues(alpha: 0.12),
+                          color:
+                              (isBill
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF6366F1))
+                                  .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isBill ? Icons.receipt_long_rounded : Icons.description_rounded,
+                              isBill
+                                  ? Icons.receipt_long_rounded
+                                  : Icons.description_rounded,
                               size: 14,
-                              color: isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                              color: isBill
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFF6366F1),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               isBill ? 'BILL' : 'DOCUMENT',
                               style: TextStyle(
-                                color: isBill ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                                color: isBill
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF6366F1),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.6,
@@ -159,11 +173,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
                   // Item Title
                   Text(
-                    currentItem.title.isEmpty ? (isBill ? 'Bill' : 'Document') : currentItem.title,
+                    currentItem.title.isEmpty
+                        ? (isBill ? 'Bill' : 'Document')
+                        : currentItem.title,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.3,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                    ),
                   ),
 
                   // Amount (If Bill)
@@ -175,9 +191,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       children: [
                         Text(
                           currency.formatAmount(currentItem.amount!),
-                          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          style: Theme.of(context).textTheme.displayLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                                 letterSpacing: -1.0,
                               ),
                         ),
@@ -185,7 +204,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         Text(
                           currentItem.isPaid ? 'paid' : 'amount due',
                           style: TextStyle(
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -198,7 +219,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   if (isBill && currentItem.directDebit) ...[
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.safeGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -229,7 +253,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 Text(
                                   'Money is set aside; debited automatically on due date.',
                                   style: TextStyle(
-                                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                                    color: isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700,
                                     fontSize: 11.5,
                                   ),
                                 ),
@@ -266,20 +292,32 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
-                      if (currentItem.recurrence != 'None' && currentItem.recurrence.isNotEmpty)
+                      if (currentItem.recurrence != 'None' &&
+                          currentItem.recurrence.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF222734) : const Color(0xFFF1F5F9),
+                            color: isDark
+                                ? const Color(0xFF222734)
+                                : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.repeat, size: 12, color: AppTheme.primaryAction),
+                              const Icon(
+                                Icons.repeat,
+                                size: 12,
+                                color: AppTheme.primaryAction,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 currentItem.recurrence,
@@ -306,9 +344,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                           children: [
                             Text(
                               currentItem.dueDate != null
-                                  ? DateFormat('EEEE, d MMMM yyyy').format(currentItem.dueDate!)
+                                  ? DateFormat(
+                                      'EEEE, d MMMM yyyy',
+                                    ).format(currentItem.dueDate!)
                                   : 'No date specified',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                     color: dueDateColor,
@@ -319,7 +360,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               isBill ? 'Due Date' : 'Expiry Date',
                               style: TextStyle(
                                 fontSize: 12.5,
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ],
@@ -363,7 +406,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -375,9 +420,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         if (snapshot.connectionState == ConnectionState.done) {
                           return Text(
                             snapshot.data ?? '',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
                                   height: 1.4,
-                                  color: isDark ? Colors.grey.shade200 : Colors.grey.shade800,
+                                  color: isDark
+                                      ? Colors.grey.shade200
+                                      : Colors.grey.shade800,
                                 ),
                           );
                         }
@@ -421,7 +469,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -433,81 +483,96 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               ),
               const SizedBox(height: 24),
             ],
-
-            // 5. PRIMARY ACTION BUTTON: Mark as Paid / Mark as Unpaid
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                icon: _isBusy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Icon(
-                        currentItem.isPaid
-                            ? Icons.undo_rounded
-                            : Icons.check_circle_outline_rounded,
-                        size: 20,
-                      ),
-                label: Text(
-                  _isBusy
-                      ? 'Updating...'
-                      : (currentItem.isPaid
-                          ? (isBill ? 'Mark as Unpaid' : 'Mark as Not Renewed')
-                          : (isBill ? 'Mark as Paid' : 'Mark as Renewed')),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: currentItem.isPaid
-                      ? (isDark ? const Color(0xFF222734) : const Color(0xFFE2E8F0))
-                      : AppTheme.primaryAction,
-                  foregroundColor: currentItem.isPaid
-                      ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                      : Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: _isBusy ? null : () => _toggleStatus(currentItem, isBill),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Secondary Action: Archive / Restore
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                icon: Icon(
-                  currentItem.isArchived
-                      ? Icons.unarchive_outlined
-                      : Icons.archive_outlined,
-                  size: 18,
-                ),
-                label: Text(
-                  currentItem.isArchived ? 'Restore to Active' : 'Move to Archive',
-                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: borderColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: () => _toggleArchive(currentItem),
-              ),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 16),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: cardBg,
+            border: Border(top: BorderSide(color: borderColor, width: 1.0)),
+          ),
+          child: Row(
+            children: [
+              // Secondary Action: Archive / Restore Icon Button
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: borderColor),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: IconButton(
+                  tooltip: currentItem.isArchived
+                      ? 'Restore to Active'
+                      : 'Archive Item',
+                  icon: Icon(
+                    currentItem.isArchived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                  ),
+                  onPressed: _isBusy ? null : () => _toggleArchive(currentItem),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Primary Sticky Button: Mark as Paid
+              Expanded(
+                child: SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    icon: _isBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            currentItem.isPaid
+                                ? Icons.undo_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 20,
+                          ),
+                    label: Text(
+                      _isBusy
+                          ? 'Updating...'
+                          : (currentItem.isPaid
+                                ? (isBill
+                                      ? 'Mark as Unpaid'
+                                      : 'Mark as Not Renewed')
+                                : (isBill
+                                      ? 'Mark as Paid'
+                                      : 'Mark as Renewed')),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: currentItem.isPaid
+                          ? (isDark
+                                ? const Color(0xFF222F48)
+                                : const Color(0xFFE2E8F0))
+                          : AppTheme.primaryAction,
+                      foregroundColor: currentItem.isPaid
+                          ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                          : Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: _isBusy
+                        ? null
+                        : () => _toggleStatus(currentItem, isBill),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -525,7 +590,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_rounded, size: 14, color: AppTheme.safeGreen),
+            const Icon(
+              Icons.check_circle_rounded,
+              size: 14,
+              color: AppTheme.safeGreen,
+            ),
             const SizedBox(width: 5),
             Text(
               isBill ? 'PAID' : 'RENEWED',
@@ -555,7 +624,11 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 14, color: AppTheme.urgentRed),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 14,
+              color: AppTheme.urgentRed,
+            ),
             const SizedBox(width: 5),
             Text(
               isBill ? 'OVERDUE' : 'EXPIRED',
@@ -668,7 +741,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           message: '${currentItem.title} marked as $actionText',
           actionLabel: 'UNDO',
           backgroundColor: AppTheme.safeGreen,
-          onAction: () => notifier.updatePaidStatus(currentItem.id, !nextStatus),
+          onAction: () =>
+              notifier.updatePaidStatus(currentItem.id, !nextStatus),
         );
       }
     } finally {
@@ -685,7 +759,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       message: willArchive ? 'Moved to Archive' : 'Restored to Active',
       actionLabel: 'UNDO',
       backgroundColor: AppTheme.primaryAction,
-      onAction: () => notifier.toggleArchiveStatus(currentItem.id, !willArchive),
+      onAction: () =>
+          notifier.toggleArchiveStatus(currentItem.id, !willArchive),
     );
 
     Navigator.pop(context);
@@ -696,8 +771,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     WidgetRef ref,
     VaultItem currentItem,
   ) async {
-    final title = currentItem.title.isEmpty ? currentItem.category : currentItem.title;
-    final confirm = await ItemDetailDialogs.showDeleteItemDialog(context, title);
+    final title = currentItem.title.isEmpty
+        ? currentItem.category
+        : currentItem.title;
+    final confirm = await ItemDetailDialogs.showDeleteItemDialog(
+      context,
+      title,
+    );
 
     if (confirm == true) {
       unawaited(ref.read(vaultProvider.notifier).deleteItem(currentItem.id));

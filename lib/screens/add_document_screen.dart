@@ -494,16 +494,19 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 },
               ),
               const SizedBox(height: 16),
-
-              PrimaryButton(
-                label: _isSaving
-                    ? 'Saving...'
-                    : (_isEdit ? 'Update Document' : 'Save Document'),
-                icon: _isSaving ? null : Icons.check_circle_outline,
-                onPressed: (_isFormValid && !_isSaving) ? _submit : null,
-              ),
-              const SizedBox(height: 20),
             ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: PrimaryButton(
+            label: _isSaving
+                ? 'Saving...'
+                : (_isEdit ? 'Update Document' : 'Save Document'),
+            icon: _isSaving ? null : Icons.check_circle_outline,
+            onPressed: (_isFormValid && !_isSaving) ? _submit : null,
           ),
         ),
       ),

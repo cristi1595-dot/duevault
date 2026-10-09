@@ -22,10 +22,10 @@ class IntegratedBottomNavBar extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final navBg = isDark
-        ? const Color(0xFF161A22).withValues(alpha: 0.88)
-        : Colors.white.withValues(alpha: 0.92);
+        ? const Color(0xFF161F30).withValues(alpha: 0.92)
+        : Colors.white.withValues(alpha: 0.94);
     final borderColor = isDark
-        ? const Color(0xFF222734)
+        ? const Color(0xFF222F48)
         : const Color(0xFFE2E8F0);
     final primaryColor = Theme.of(context).colorScheme.primary;
 

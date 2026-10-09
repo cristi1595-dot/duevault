@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
@@ -17,7 +18,7 @@ class HomeUpcomingList extends ConsumerWidget {
 
   Widget _buildGroupHeader(String title, int count, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
+      padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -42,29 +43,25 @@ class HomeUpcomingList extends ConsumerWidget {
               Text(
                 title.toUpperCase(),
                 style: const TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: Colors.grey,
+                  letterSpacing: 0.9,
+                  color: Color(0xFF94A3B8),
                 ),
               ),
             ],
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: color.withValues(alpha: 0.2),
-                width: 1,
-              ),
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '$count ${count == 1 ? "item" : "items"}',
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
@@ -97,6 +94,7 @@ class HomeUpcomingList extends ConsumerWidget {
             );
           },
           onCheckPressed: () {
+            HapticFeedback.mediumImpact();
             final notifier = ref.read(vaultProvider.notifier);
             final nextPaidState = !item.isPaid;
             notifier.updatePaidStatus(item.id, nextPaidState);
@@ -121,11 +119,12 @@ class HomeUpcomingList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vaultItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Upcoming list: Both paid and unpaid items sorted by dueDate (defensively deduplicated)
+    // Upcoming list: sorted by dueDate (defensively deduplicated)
     final seenSignatures = <String>{};
     final allUpcoming = <VaultItem>[];
     final sortedCandidates = vaultItems
@@ -151,19 +150,21 @@ class HomeUpcomingList extends ConsumerWidget {
       return due.difference(today).inDays;
     }
 
-    final urgentItems = allUpcoming
-        .where((item) => item.isOverdue || getDaysLeft(item.dueDate!) <= 3)
+    final overdueItems = allUpcoming
+        .where((item) => (item.isOverdue || getDaysLeft(item.dueDate!) < 0) && !item.isPaid)
         .toList();
-    final thisWeekItems = allUpcoming
-        .where((item) =>
-            !urgentItems.contains(item) && getDaysLeft(item.dueDate!) <= 7)
+
+    final nonOverdueItems = allUpcoming
+        .where((item) => !overdueItems.contains(item))
         .toList();
-    final thisMonthItems = allUpcoming.where((item) {
-      final days = getDaysLeft(item.dueDate!);
-      return days > 7 && days <= 30;
-    }).toList();
-    final laterItems =
-        allUpcoming.where((item) => getDaysLeft(item.dueDate!) > 30).toList();
+
+    final thisWeekItems = nonOverdueItems
+        .where((item) => getDaysLeft(item.dueDate!) <= 7)
+        .toList();
+
+    final upcomingItems = nonOverdueItems
+        .where((item) => getDaysLeft(item.dueDate!) > 7)
+        .toList();
 
     if (vaultItems.isEmpty) {
       return const EmptyState();
@@ -188,6 +189,7 @@ class HomeUpcomingList extends ConsumerWidget {
                         size: 38,
                         color: AppTheme.safeGreen.withValues(alpha: 0.8),
                       ),
+                      const SizedBox(height: 8),
                       const Text(
                         'All caught up! No items due.',
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
@@ -199,38 +201,33 @@ class HomeUpcomingList extends ConsumerWidget {
             ),
           )
         else ...[
-          ..._buildSection(
-            context: context,
-            ref: ref,
-            title: 'Urgent (≤ 3 Days)',
-            items: urgentItems,
-            color: AppTheme.urgentRed,
-            currency: currency,
-          ),
-          ..._buildSection(
-            context: context,
-            ref: ref,
-            title: 'This Week (4-7 Days)',
-            items: thisWeekItems,
-            color: const Color(0xFFF59E0B),
-            currency: currency,
-          ),
-          ..._buildSection(
-            context: context,
-            ref: ref,
-            title: 'Later This Month',
-            items: thisMonthItems,
-            color: AppTheme.safeGreen,
-            currency: currency,
-          ),
-          ..._buildSection(
-            context: context,
-            ref: ref,
-            title: 'Upcoming',
-            items: laterItems,
-            color: const Color(0xFF6366F1),
-            currency: currency,
-          ),
+          if (overdueItems.isNotEmpty)
+            ..._buildSection(
+              context: context,
+              ref: ref,
+              title: 'Overdue',
+              items: overdueItems,
+              color: AppTheme.urgentRed,
+              currency: currency,
+            ),
+          if (thisWeekItems.isNotEmpty)
+            ..._buildSection(
+              context: context,
+              ref: ref,
+              title: 'This Week',
+              items: thisWeekItems,
+              color: const Color(0xFFF59E0B),
+              currency: currency,
+            ),
+          if (upcomingItems.isNotEmpty)
+            ..._buildSection(
+              context: context,
+              ref: ref,
+              title: 'Upcoming',
+              items: upcomingItems,
+              color: isDark ? Colors.white : const Color(0xFF475569),
+              currency: currency,
+            ),
         ],
       ],
     );

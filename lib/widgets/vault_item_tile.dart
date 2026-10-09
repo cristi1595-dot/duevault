@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../models/vault_item.dart';
 import '../screens/item_detail_screen.dart';
 import '../providers/currency_provider.dart';
 import '../providers/vault_provider.dart';
-import 'status_badge.dart';
 import 'vault_snackbar.dart';
 import '../theme/app_theme.dart';
 
@@ -24,97 +24,125 @@ class VaultItemTile extends ConsumerWidget {
     this.isHomeScreen = false,
   });
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  int _calculateDaysLeft(DateTime? dueDate) {
+    if (dueDate == null) return 999;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return due.difference(today).inDays;
+  }
+
+  String _formatRemainingTime(DateTime? dueDate, bool isPaid, bool isBill) {
+    final now = DateTime.now();
+    if (isPaid) {
+      if (dueDate == null) return isBill ? 'Paid' : 'Renewed';
+      final dateStr = (dueDate.year == now.year)
+          ? DateFormat('d MMM').format(dueDate)
+          : DateFormat('d MMM yyyy').format(dueDate);
+      return isBill ? 'Paid • $dateStr' : 'Exp: $dateStr';
+    }
+    if (dueDate == null) return isBill ? 'No due date' : 'Permanent';
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final days = due.difference(today).inDays;
+
+    if (days < 0) {
+      final dateStr = (dueDate.year == now.year)
+          ? DateFormat('d MMM').format(dueDate)
+          : DateFormat('d MMM yyyy').format(dueDate);
+      return isBill ? 'Overdue • $dateStr' : 'Exp: $dateStr';
+    }
+    if (days == 0) return 'Today';
+    if (days == 1) return 'Tomorrow';
+    // Până la 3 luni -> '14 days left', '23 days left', etc.
+    if (days <= 90) {
+      return '$days days left';
+    }
+    // Peste 3 luni, până la 1 an -> '3 months', '11 months', etc.
+    if (days <= 365) {
+      final months = (days / 30).round();
+      return months <= 1 ? '1 month' : '$months months';
+    }
+    // Peste 1 an -> '1 year', '5 years', etc.
+    final years = (days / 365).round();
+    return years <= 1 ? '1 year' : '$years years';
+  }
+
+  Widget _buildDuePill(BuildContext context, VaultItem item, bool isBill, bool isDark) {
+    final label = _formatRemainingTime(item.dueDate, item.isPaid, isBill);
     final daysLeft = _calculateDaysLeft(item.dueDate);
     final isOverdue = item.isOverdue;
-    final bool isExpired = item.isExpired;
-    final bool isBill = item.itemType == 'Bill';
 
-    final bool isInHistory = item.isArchived || (item.isPaid && isExpired);
+    final Color dotColor;
 
-    final Color statusColor;
     if (item.isPaid) {
-      statusColor = AppTheme.getMintGreen(context); // Mint Sage
-    } else if (isOverdue || (daysLeft <= 3)) {
-      statusColor = const Color(0xFFE11D48); // Red: < 3 days or overdue
-    } else if (daysLeft <= 7) {
-      statusColor = const Color(0xFFF59E0B); // Amber: 3-7 days
-    } else {
-      statusColor = AppTheme.getSafeGreen(context); // Green: > 7 days
-    }
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    Color cardBg = isDark ? const Color(0xFF161A22) : Colors.white;
-
-    final Color dueDateColor;
-    if (item.isPaid) {
-      dueDateColor = AppTheme.getMintGreen(context);
+      dotColor = AppTheme.primaryAction;
     } else if (item.dueDate == null) {
-      dueDateColor = isDark
-          ? Colors.white.withValues(alpha: 0.45)
-          : Colors.black.withValues(alpha: 0.45);
-    } else if (isOverdue || daysLeft <= 3) {
-      dueDateColor = const Color(0xFFE11D48); // Red: under 3 days
-    } else if (daysLeft <= 7) {
-      dueDateColor = const Color(0xFFF59E0B); // Yellow: 3-7 days
+      dotColor = isDark ? Colors.grey.shade500 : Colors.grey.shade400;
+    } else if (isOverdue) {
+      dotColor = AppTheme.urgentRed;
+    } else if (daysLeft <= 3) {
+      dotColor = AppTheme.warningYellow;
     } else {
-      dueDateColor = AppTheme.getSafeGreen(context); // Green: over 7 days
+      dotColor = AppTheme.primaryAction;
     }
 
-    if (isHomeScreen && !isInHistory) {
-      final double tintOpacity = isDark ? 0.04 : 0.03;
-      cardBg = Color.alphaBlend(
-        statusColor.withValues(alpha: tintOpacity),
-        cardBg,
-      );
-    }
+    final Color pillBg = isDark ? const Color(0xFF1E2838) : const Color(0xFFF1F5F9);
+    final Color textColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final double textColumnWidth = screenWidth -
-        20 - // List horizontal padding
-        57 - // Left Icon Box
-        13 - // Left padding of the middle section
-        ((onCheckPressed != null) ? 3 : 13) - // Right padding of the middle section
-        9 - // Gap between text and right columns
-        110 - // Right column width
-        ((onCheckPressed != null) ? 56 : 0); // Right checkmark button
-
-    final rawTitle = item.title.isEmpty ? item.category : item.title;
-    final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
-    // Title typography: 17.5 for standard, 14.5 for long titles, bold & clean Inter
-    final fontSize = rawTitle.length > 20 ? 14.5 : 17.5;
-    final recurrenceSuffix = (item.recurrence != 'None' && item.recurrence.isNotEmpty)
-        ? ' • ${item.recurrence}'
-        : '';
-
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: displayTitle,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: fontSize,
-              height: 1.15,
-              letterSpacing: -0.2,
-              fontWeight: FontWeight.w700,
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+      decoration: BoxDecoration(
+        color: pillBg,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: const Color(0xFF27354A), width: 0.8) : null,
       ),
-      maxLines: 2,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: textColumnWidth > 0 ? textColumnWidth : 150);
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    final isTwoLines = textPainter.didExceedMaxLines || textPainter.height > (fontSize * 1.5);
-    final gapHeight = isTwoLines ? 2.0 : 8.0;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isBill = item.itemType == 'Bill';
+    final isInHistory = item.isArchived || (item.isPaid && item.isExpired);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardBg = isDark ? const Color(0xFF161F30) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0);
+
+    final rawTitle = item.title.isEmpty ? (isBill ? item.category : 'Document') : item.title;
+    final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Dismissible(
           key: ValueKey(item.id),
           direction: DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             if (direction == DismissDirection.endToStart) {
-              // Show confirmation only for DELETE
               return showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -130,7 +158,7 @@ class VaultItemTile extends ConsumerWidget {
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFE11D48),
+                        foregroundColor: AppTheme.urgentRed,
                       ),
                       child: const Text('DELETE'),
                     ),
@@ -138,18 +166,13 @@ class VaultItemTile extends ConsumerWidget {
                 ),
               );
             }
-            // For Archive, we don't need a dialog as it's easily reversible
             return true;
           },
           onDismissed: (direction) {
             final notifier = ref.read(vaultProvider.notifier);
             if (direction == DismissDirection.startToEnd) {
-              // ARCHIVE / RESTORE Logic (Swipe Right)
               if (isInHistory) {
-                // If it's in history, "Restore to Vault" means unarchive AND unpay (if it was paid/expired)
-                // toggleArchiveStatus(item.id, false) now handles both atomically.
                 notifier.toggleArchiveStatus(item.id, false);
-                
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
@@ -164,13 +187,12 @@ class VaultItemTile extends ConsumerWidget {
                   },
                 );
               } else {
-                // Normal Archive
                 final wasPaid = item.isPaid;
                 notifier.toggleArchiveStatus(item.id, true);
                 VaultSnackBar.show(
                   message: 'Moved to History',
                   actionLabel: 'UNDO',
-                  backgroundColor: const Color(0xFF34D399),
+                  backgroundColor: AppTheme.primaryAction,
                   onAction: () async {
                     await notifier.toggleArchiveStatus(item.id, false);
                     if (wasPaid) {
@@ -180,19 +202,18 @@ class VaultItemTile extends ConsumerWidget {
                 );
               }
             } else {
-              // DELETE Logic (Swipe Left)
               final deletedItem = item;
               notifier.deleteItem(item.id);
               VaultSnackBar.show(
                 message: 'Item deleted',
                 actionLabel: 'UNDO',
-                backgroundColor: const Color(0xFFE11D48),
+                backgroundColor: AppTheme.urgentRed,
                 onAction: () => notifier.addItem(deletedItem),
               );
             }
           },
           background: Container(
-            color: isInHistory ? const Color(0xFF6366F1) : const Color(0xFF34D399),
+            color: isInHistory ? const Color(0xFF6366F1) : AppTheme.primaryAction,
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -200,22 +221,22 @@ class VaultItemTile extends ConsumerWidget {
                 Icon(
                   isInHistory ? Icons.unarchive_rounded : Icons.archive_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 26,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Text(
                   isInHistory ? 'Vault' : 'Archive',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
               ],
             ),
           ),
           secondaryBackground: Container(
-            color: const Color(0xFFE11D48),
+            color: AppTheme.urgentRed,
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: const Row(
@@ -226,21 +247,20 @@ class VaultItemTile extends ConsumerWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
-                SizedBox(width: 16),
+                SizedBox(width: 14),
                 Icon(
                   Icons.delete_outline_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 26,
                 ),
               ],
             ),
           ),
           child: InkWell(
-            onTap:
-                onTap ??
+            onTap: onTap ??
                 () {
                   Navigator.push(
                     context,
@@ -249,208 +269,137 @@ class VaultItemTile extends ConsumerWidget {
                     ),
                   );
                 },
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             child: Opacity(
-              opacity: item.isPaid ? 0.6 : 1.0,
+              opacity: item.isPaid ? 0.65 : 1.0,
               child: Container(
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(18),
-                  border: isDark
-                      ? (isHomeScreen && !isInHistory
-                          ? Border.all(
-                              color: statusColor.withValues(alpha: 0.15),
-                              width: 1.2,
-                            )
-                          : null)
-                      : Border.all(
-                          color: isHomeScreen && !isInHistory
-                              ? statusColor.withValues(alpha: 0.10)
-                              : const Color(0xFFE2E8F0),
-                          width: 1,
-                        ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.0,
+                  ),
                   boxShadow: !isDark
                       ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
                         ]
                       : null,
                 ),
-              child: IntrinsicHeight(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Left Icon Box: occupies full height
-                    Container(
-                      width: 57,
-                      constraints: const BoxConstraints(minHeight: 60),
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(18),
-                          bottomLeft: Radius.circular(18),
-                        ),
-                      ),
-                      child: Center(
-                        child: _VaultItemThumbnail(
-                          item: item,
-                          isBill: isBill,
-                        ),
-                      ),
-                    ),
+                    // 1. Icon Container
+                    _VaultItemThumbnail(item: item, isBill: isBill),
+                    const SizedBox(width: 12),
+
+                    // 2. Center Column: Row 1 = Name, Row 2 = Amount (Bold & Star) / Category
                     Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          13,
-                          2,
-                          (onCheckPressed != null) ? 3 : 13,
-                          2,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayTitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                          fontSize: fontSize,
-                                          height: 1.15,
-                                          letterSpacing: -0.2,
-                                          decoration: item.isPaid
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                          color: item.isPaid
-                                              ? Theme.of(context).textTheme.bodyMedium?.color
-                                              : Theme.of(context).textTheme.bodyLarge?.color,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                  SizedBox(height: gapHeight),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        item.dueDate != null
-                                            ? (daysLeft <= 3 && !item.isPaid
-                                                ? Icons.warning_amber_rounded
-                                                : Icons.schedule_rounded)
-                                            : Icons.all_inclusive_rounded,
-                                        size: 13,
-                                        color: (isOverdue && !item.isPaid)
-                                            ? dueDateColor
-                                            : dueDateColor.withValues(alpha: 0.8),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          item.dueDate != null
-                                              ? '${isBill ? "Due" : "Exp"} ${item.dueDate!.day} ${_getMonthName(item.dueDate!.month)}$recurrenceSuffix'
-                                              : '${isBill ? "No due date" : "Permanent"}$recurrenceSuffix',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w400,
-                                            letterSpacing: 0.1,
-                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: isBill ? 14 : 18,
+                              fontWeight: isBill ? FontWeight.w500 : FontWeight.w600,
+                              letterSpacing: -0.2,
+                              decoration: item.isPaid ? TextDecoration.lineThrough : null,
+                              color: item.isPaid
+                                  ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+                                  : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                             ),
-                            const SizedBox(width: 9),
-                            SizedBox(
-                              width: 110,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (isBill) ...[
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        currency.formatAmount(item.amount ?? 0.0),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 20.0,
-                                          letterSpacing: -0.3,
-                                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                                        ),
-                                        textAlign: TextAlign.right,
-                                      ),
+                          ),
+                          if (isBill) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  currency.formatAmount(item.amount ?? 0.0),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.3,
+                                    color: item.isPaid
+                                        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+                                        : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                  ),
+                                ),
+                                if (item.recurrence.isNotEmpty && item.recurrence != 'None') ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '• ${item.recurrence}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B),
                                     ),
-                                    const SizedBox(height: 2),
-                                  ],
-                                  StatusBadge(
-                                    isDocument: !isBill,
-                                    label: item.isPaid
-                                        ? (isBill ? 'PAID' : 'RENEWED')
-                                        : (item.dueDate == null
-                                            ? 'PERMANENT'
-                                            : (isOverdue
-                                                ? (isBill ? 'OVERDUE' : 'EXPIRED')
-                                                : (daysLeft == 0
-                                                    ? 'TODAY'
-                                                    : '$daysLeft DAYS'))),
-                                    isPaid: item.isPaid,
-                                    daysLeft: (item.isPaid || item.dueDate == null) ? null : daysLeft,
                                   ),
                                 ],
-                              ),
+                              ],
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
-                    // Right Checkmark Button: occupies full height, flush to edge
-                    if (onCheckPressed != null)
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: onCheckPressed,
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(18),
-                            bottomRight: Radius.circular(18),
-                          ),
-                          child: SizedBox(
-                            width: 56,
-                            child: Center(
-                              child: Container(
-                                width: 33,
-                                height: 33,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: item.isPaid
-                                      ? AppTheme.getSafeGreen(context)
-                                      : const Color(0xFF6366F1).withValues(alpha: 0.06),
-                                  border: Border.all(
-                                    color: item.isPaid
-                                        ? AppTheme.getSafeGreen(context)
-                                        : const Color(0xFF6366F1).withValues(alpha: 0.25),
-                                    width: 1.3,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.check_rounded,
-                                    color: item.isPaid ? Colors.white : const Color(0xFF6366F1),
-                                    size: 23,
-                                  ),
-                                ),
+                    const SizedBox(width: 8),
+
+                    // 3. Right Block: Due Date / Remaining Time Pill
+                    _buildDuePill(context, item, isBill, isDark),
+
+                    // 4. Quick Checkmark Button (if onCheckPressed != null)
+                    if (onCheckPressed != null) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: onCheckPressed,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: item.isPaid
+                                  ? AppTheme.primaryAction
+                                  : (isDark
+                                      ? const Color(0xFF1E2638)
+                                      : const Color(0xFFF1F5F9)),
+                              border: Border.all(
+                                color: item.isPaid
+                                    ? AppTheme.primaryAction
+                                    : (isDark
+                                        ? const Color(0xFF334155)
+                                        : const Color(0xFFCBD5E1)),
+                                width: 1.4,
                               ),
+                            ),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: item.isPaid
+                                  ? Colors.white
+                                  : (isDark
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade400),
                             ),
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -458,34 +407,7 @@ class VaultItemTile extends ConsumerWidget {
           ),
         ),
       ),
-    ),
-  );
-}
-
-  int _calculateDaysLeft(DateTime? dueDate) {
-    if (dueDate == null) return 999;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
-    return due.difference(today).inDays;
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
+    );
   }
 }
 
@@ -498,28 +420,83 @@ class _VaultItemThumbnail extends StatelessWidget {
     required this.isBill,
   });
 
+  IconData _resolveIcon() {
+    if (item.isPaid) return Icons.check_circle_rounded;
+    final cat = item.category.trim().toLowerCase();
+    final title = item.title.trim().toLowerCase();
+
+    if (cat.contains('housing') || cat.contains('rent') || title.contains('rent') || title.contains('lease')) {
+      return Icons.home_outlined;
+    }
+    if (cat.contains('utilit') || cat.contains('electr') || cat.contains('power') || title.contains('electr') || title.contains('power') || title.contains('energy')) {
+      return Icons.bolt_outlined;
+    }
+    if (cat.contains('telecom') || cat.contains('internet') || cat.contains('wifi') || title.contains('internet') || title.contains('wifi')) {
+      return Icons.wifi_rounded;
+    }
+    if (cat.contains('auto') || cat.contains('car') || cat.contains('vehic') || title.contains('car') || title.contains('auto')) {
+      return Icons.directions_car_outlined;
+    }
+    if (cat.contains('subscri') || cat.contains('stream') || title.contains('netflix') || title.contains('spotify') || title.contains('subscri')) {
+      return Icons.subscriptions_outlined;
+    }
+    if (cat.contains('loan') || cat.contains('bank') || cat.contains('financ')) {
+      return Icons.account_balance_outlined;
+    }
+    if (cat.contains('health') || cat.contains('medic')) {
+      return Icons.health_and_safety_outlined;
+    }
+    if (!isBill) {
+      if (cat.contains('ident') || title.contains('license') || title.contains('passport') || title.contains('id')) {
+        return Icons.badge_outlined;
+      }
+      return Icons.description_outlined;
+    }
+    return Icons.receipt_long_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = item.isPaid
-        ? AppTheme.getMintGreen(context)
-        : (isBill ? AppTheme.primaryAction : const Color(0xFF6366F1));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconData = _resolveIcon();
 
-    final IconData iconData = item.isPaid
-        ? Icons.check_circle_rounded
-        : (isBill ? Icons.receipt_long_rounded : Icons.description_rounded);
+    final Color containerBg = item.isPaid
+        ? (isBill
+            ? AppTheme.primaryAction.withValues(alpha: 0.15)
+            : const Color(0xFF6366F1).withValues(alpha: 0.15))
+        : (isDark ? const Color(0xFF1E2838) : const Color(0xFFF1F5F9));
+
+    final Color iconColor;
+    if (item.isPaid) {
+      iconColor = isBill ? AppTheme.primaryAction : const Color(0xFF6366F1);
+    } else {
+      if (isDark) {
+        // Verdele de la next 30 days bills (#10B981) si indigo-ul de la docs (#6366F1), ceva mai sters
+        iconColor = isBill
+            ? const Color(0xFF10B981).withValues(alpha: 0.72)
+            : const Color(0xFF6366F1).withValues(alpha: 0.72);
+      } else {
+        iconColor = isBill
+            ? const Color(0xFF059669).withValues(alpha: 0.80)
+            : const Color(0xFF4F46E5).withValues(alpha: 0.80);
+      }
+    }
 
     return Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: iconColor.withValues(alpha: 0.14),
-        shape: BoxShape.circle,
+        color: containerBg,
+        borderRadius: BorderRadius.circular(12),
+        border: isDark && !item.isPaid
+            ? Border.all(color: const Color(0xFF27354A), width: 1.0)
+            : null,
       ),
       child: Center(
         child: Icon(
           iconData,
           color: iconColor,
-          size: 21,
+          size: 20,
         ),
       ),
     );
