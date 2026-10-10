@@ -1,48 +1,71 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
+/// DueVault BentoCard Component
+/// Modern fintech card container featuring subtle borders, optional interaction,
+/// and theme-adaptive elevation.
 class BentoCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
   final Color? color;
   final Color? borderColor;
+  final VoidCallback? onTap;
+  final List<BoxShadow>? shadows;
+  final Clip clipBehavior;
 
   const BentoCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(12.0),
-    this.borderRadius = 16.0,
+    this.padding = AppSpacing.cardPadding,
+    this.borderRadius = AppRadius.lg,
     this.color,
     this.borderColor,
+    this.onTap,
+    this.shadows,
+    this.clipBehavior = Clip.antiAlias,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
+    final cardBg = color ?? (isDark ? AppColors.slate850 : Colors.white);
+    final cardBorder = borderColor ??
+        (isDark
+            ? Theme.of(context).dividerColor.withValues(alpha: 0.5)
+            : AppColors.slate200);
+
+    final defaultShadows = isDark ? null : AppShadows.sm;
+
+    final content = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? (isDark ? Theme.of(context).cardTheme.color : Colors.white),
+        color: cardBg,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color:
-              borderColor ??
-              (isDark
-                  ? Theme.of(context).dividerColor.withValues(alpha: 0.5)
-                  : const Color(0xFFE2E8F0)),
+          color: cardBorder,
           width: 1,
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        boxShadow: shadows ?? defaultShadows,
       ),
       child: child,
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(borderRadius),
+        clipBehavior: clipBehavior,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(borderRadius),
+          splashColor: AppColors.emerald500.withValues(alpha: 0.08),
+          highlightColor: AppColors.emerald500.withValues(alpha: 0.04),
+          child: content,
+        ),
+      );
+    }
+
+    return content;
   }
 }

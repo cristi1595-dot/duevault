@@ -1,22 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../theme/app_theme.dart';
-import '../providers/auth_provider.dart';
-import '../providers/database_provider.dart';
-import '../models/app_config.dart';
-import '../services/auto_sync_service.dart';
-import '../services/firebase_sync_service.dart';
-import '../providers/notification_provider.dart';
-import '../providers/vault_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:app_settings/app_settings.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
+import '../providers/notification_provider.dart';
+import '../services/auth_flow_helper.dart';
 import 'onboarding/onboarding_notifications_page.dart';
 import 'onboarding/onboarding_sync_page.dart';
 import 'onboarding/onboarding_tutorial_page.dart';
-import 'paywall_screen.dart';
-import '../providers/premium_provider.dart';
+import 'onboarding/onboarding_permission_dialog.dart';
 import '../utils/logger.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -69,82 +63,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     }
   }
 
-  Future<void> _completeOnboarding({bool isGuest = false}) async {
-    try {
-      final isar = ref.read(isarProvider);
-      await isar.writeTxn(() async {
-        final config = await isar.appConfigs.get(0) ?? AppConfig();
-        config.hasSeenOnboarding = true;
-        config.isGuest = isGuest;
-        await isar.appConfigs.put(config);
-      });
-      if (isGuest) {
-        ref.read(isGuestProvider.notifier).state = true;
-      }
-      ref.read(hasSeenOnboardingProvider.notifier).state = true;
-    } catch (e, stack) {
-      logger.e('Failed to complete onboarding', error: e, stackTrace: stack);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to set up Guest mode.')),
-        );
-      }
-    }
-  }
-
-  Future<void> _showAppSettingsDialog() async {
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('Notifications Disabled'),
-        content: const Text(
-          'To enable notifications, please allow them for DueVault in your device settings.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() {
-                _didOpenSettings = true;
-              });
-              await AppSettings.openAppSettings(type: AppSettingsType.notification);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryAction,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _requestNotificationPermission() async {
     if (_isRequestingPermission) return;
-    setState(() {
-      _isRequestingPermission = true;
-    });
+    setState(() => _isRequestingPermission = true);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     try {
       final status = await Permission.notification.status;
-      
+
       if (status.isGranted) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
         if (mounted) {
@@ -160,7 +87,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
       if (status.isPermanentlyDenied) {
         if (mounted) {
-          await _showAppSettingsDialog();
+          final opened = await OnboardingPermissionDialog.show(context, isDark);
+          if (mounted) setState(() => _didOpenSettings = opened);
         }
         return;
       }
@@ -172,6 +100,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         logger.w('OnboardingScreen: Permission request threw exception: $e');
         requestStatus = await Permission.notification.status;
       }
+
       if (requestStatus.isGranted) {
         await ref.read(globalNotificationsProvider.notifier).toggle(true);
         if (mounted) {
@@ -184,7 +113,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         }
       } else if (requestStatus.isPermanentlyDenied) {
         if (mounted) {
-          await _showAppSettingsDialog();
+          final opened = await OnboardingPermissionDialog.show(context, isDark);
+          if (mounted) setState(() => _didOpenSettings = opened);
         }
       } else {
         if (mounted) {
@@ -200,139 +130,65 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isRequestingPermission = false;
-        });
+        setState(() => _isRequestingPermission = false);
       }
     }
   }
 
   void _goToNextPage() {
+    HapticFeedback.lightImpact();
     _pageController.nextPage(
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    final isPremium = ref.read(isPremiumProvider);
-    if (!kAllFeaturesFree && !isPremium) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context);
-    unawaited(
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryAction),
-        ),
-      ),
+  void _skipToFinalPage() {
+    HapticFeedback.lightImpact();
+    _pageController.animateToPage(
+      2,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOut,
     );
-
-    UserCredential? userCredential;
-    try {
-      userCredential = await ref
-          .read(authServiceProvider)
-          .signInWithGoogle();
-    } catch (e, stack) {
-      logger.e('Google Sign-In failed during onboarding with exception', error: e, stackTrace: stack);
-      if (mounted) {
-        Navigator.pop(context); // Pop loading indicator
-      }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Sign in error: ${e.toString().split('\n').first}'),
-          backgroundColor: AppTheme.urgentRed,
-        ),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-
-    if (userCredential != null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Account secured. Syncing your vault...'),
-        ),
-      );
-
-      // Run synchronization synchronously
-      try {
-        final syncResult = await ref
-            .read(autoSyncServiceProvider)
-            .syncAfterLogin();
-        
-        // Also trigger Firebase Firestore sync immediately after onboarding login to pull user items
-        await ref.read(firebaseSyncServiceProvider).sync(force: true);
-
-        // Refresh UI state to load the newly downloaded items from Isar
-        await ref.read(vaultProvider.notifier).refreshVault();
-        
-        if (mounted) {
-          final items = ref.read(vaultProvider);
-          messenger.clearSnackBars();
-          String syncMsg;
-          Color? bgColor;
-
-          if (syncResult == 'restored') {
-            syncMsg = '✓ Vault restored successfully!';
-            bgColor = AppTheme.safeGreen;
-          } else if (syncResult == 'uploaded') {
-            syncMsg = '✓ Local data secured in your cloud!';
-            bgColor = AppTheme.primaryAction;
-          } else if (syncResult == 'empty' && items.isEmpty) {
-            syncMsg = '✓ Vault ready!';
-            bgColor = null;
-          } else {
-            syncMsg = '✓ Vault ready!';
-            bgColor = AppTheme.primaryAction;
-          }
-
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(syncMsg),
-              backgroundColor: bgColor,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } catch (e, stack) {
-        logger.e('Error during onboarding login sync', error: e, stackTrace: stack);
-      }
-
-      // Pop loading indicator
-      if (mounted) {
-        Navigator.pop(context);
-      }
-
-      // Complete onboarding immediately to trigger navigation to MainNavigation
-      await _completeOnboarding();
-    } else {
-      // Pop loading indicator
-      if (mounted) {
-        Navigator.pop(context);
-      }
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Sign in failed or was canceled')),
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('DueVault: Building OnboardingScreen (Page: $_currentPage)');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppColors.background(isDark),
       body: SafeArea(
         child: Column(
           children: [
+            // Top Bar with Skip Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: SizedBox(
+                height: 36,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_currentPage < 2)
+                      TextButton(
+                        onPressed: _skipToFinalPage,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: Text(
+                          'Skip',
+                          style: AppTypography.labelMedium(AppColors.textSecondary(isDark)).copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Main Page Content
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -349,36 +205,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     onDecideLater: _goToNextPage,
                   ),
                   OnboardingSyncPage(
-                    onGoogleSignInPressed: _handleGoogleSignIn,
+                    onGoogleSignInPressed: () =>
+                        AuthFlowHelper.handleGoogleSignIn(context, ref, isDark),
                     onGuestLoginPressed: () async {
-                      await _completeOnboarding(isGuest: true);
+                      await HapticFeedback.mediumImpact();
+                      await AuthFlowHelper.completeOnboarding(ref, isGuest: true);
                     },
                   ),
                 ],
               ),
             ),
-            _buildPageIndicator(),
+
+            // Fluid Animated Page Indicator
+            _buildPageIndicator(isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPageIndicator() {
+  Widget _buildPageIndicator(bool isDark) {
     return Container(
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: const EdgeInsets.only(bottom: 24, top: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(3, (index) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            width: _currentPage == index ? 32 : 10,
-            height: 10,
+          final isSelected = _currentPage == index;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: isSelected ? 26 : 8,
+            height: 8,
             decoration: BoxDecoration(
-              color: _currentPage == index
-                  ? AppTheme.primaryAction
-                  : AppTheme.textSecondary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(5),
+              color: isSelected
+                  ? AppColors.emerald500
+                  : (isDark ? AppColors.slate700 : AppColors.slate300),
+              borderRadius: BorderRadius.circular(4),
             ),
           );
         }),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../theme/app_theme.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/security_provider.dart';
 
 /// Centralized confirmation dialogs used across the Settings screen.
@@ -14,37 +17,46 @@ class SettingsDialogs {
   /// Dialog shown when notification permission is denied.
   /// Directs user to system app settings and optionally to battery optimization.
   static Future<void> showAppSettingsDialog(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
+        backgroundColor: AppColors.surface(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
         ),
-        title: const Text('Notifications Disabled'),
-        content: const Text(
+        title: Text(
+          'Notifications Disabled',
+          style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+        ),
+        content: Text(
           'To enable global reminders, please allow notifications for DueVault in your device settings.',
+          style: TextStyle(color: AppColors.textSecondary(isDark)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(ctx);
+            },
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           ElevatedButton(
             onPressed: () async {
+              await HapticFeedback.lightImpact();
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
               await openAppSettings();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryAction,
+              backgroundColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
             child: const Text('Open Settings'),
@@ -57,37 +69,44 @@ class SettingsDialogs {
   /// Sign-out confirmation dialog.
   /// Returns `true` if the user confirmed sign-out.
   static Future<bool?> showSignOutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return showDialog<bool>(
       context: context,
       useRootNavigator: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
         ),
-        title: const Text('Sign Out'),
-        content: const Text(
+        title: Text(
+          'Sign Out',
+          style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+        ),
+        content: Text(
           'Are you sure you want to sign out? Your encrypted data will remain safe on this device.',
+          style: TextStyle(color: AppColors.textSecondary(isDark)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(ctx, false);
+            },
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(ctx, true);
+            },
             child: const Text(
               'Sign Out',
               style: TextStyle(
-                color: AppTheme.urgentRed,
+                color: AppColors.urgentRose600,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -100,37 +119,47 @@ class SettingsDialogs {
   /// Dialog shown when the device has no PIN/Pattern/Biometric set up.
   /// Offers to open system security settings.
   static void showNoSecurityDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Security Required'),
-        content: const Text(
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface(isDark),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
+        ),
+        title: Text(
+          'Security Required',
+          style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+        ),
+        content: Text(
           'To enable App Lock, your device must have a PIN, Pattern, or Biometric lock enabled. Would you like to set one up now?',
+          style: TextStyle(color: AppColors.textSecondary(isDark)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(ctx);
+            },
             child: Text(
               'Later',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodySmall?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           Consumer(
-            builder: (context, ref, _) {
+            builder: (ctx, ref, _) {
               return ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(ctx);
                   ref.read(securityProvider.notifier).openSecuritySettings();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryAction,
+                  backgroundColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
                 child: const Text('Open Settings'),
@@ -145,26 +174,26 @@ class SettingsDialogs {
   /// Backup-now confirmation dialog showing Google Drive destination.
   /// Returns `true` if the user confirmed the backup.
   static Future<bool?> showBackupNowDialog(BuildContext context, String userEmail) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
+        backgroundColor: AppColors.surface(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
         ),
         title: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_upload_outlined,
-              color: AppTheme.primaryAction,
+              color: isDark ? AppColors.emerald400 : AppColors.emerald600,
               size: 24,
             ),
             const SizedBox(width: 12),
             Text(
               'Backup Now',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-              ),
+              style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
             ),
           ],
         ),
@@ -174,28 +203,26 @@ class SettingsDialogs {
           children: [
             Text(
               'This will upload a copy of your vault to:',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.surfaceElevated(isDark),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: Theme.of(context).dividerColor,
+                  color: AppColors.border(isDark),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.folder_outlined,
-                    color: AppTheme.primaryAction,
+                    color: isDark ? AppColors.emerald400 : AppColors.emerald600,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,9 +230,7 @@ class SettingsDialogs {
                         Text(
                           'Google Drive › App Data',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.color,
+                            color: AppColors.textPrimary(isDark),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -213,9 +238,7 @@ class SettingsDialogs {
                         Text(
                           userEmail,
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.color,
+                            color: AppColors.textSecondary(isDark),
                             fontSize: 11,
                           ),
                         ),
@@ -229,23 +252,27 @@ class SettingsDialogs {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(ctx, false);
+            },
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           ElevatedButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(ctx, true);
+            },
             icon: const Icon(Icons.cloud_upload, size: 16),
             label: const Text('Backup Now'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryAction,
+              backgroundColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
           ),
@@ -257,37 +284,47 @@ class SettingsDialogs {
   /// Crash-test confirmation dialog for Crashlytics verification.
   /// Returns `true` if the user confirmed the crash.
   static Future<bool?> showCrashTestDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).cardTheme.color,
+        backgroundColor: AppColors.surface(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
         ),
-        title: const Text('Simulate Crash?'),
-        content: const Text(
+        title: Text(
+          'Simulate Crash?',
+          style: AppTypography.headlineMedium(AppColors.urgentRose600),
+        ),
+        content: Text(
           'This will trigger an immediate hard crash of the application using FirebaseCrashlytics.instance.crash() to verify your integration online. Make sure you saved your changes.',
+          style: TextStyle(color: AppColors.textSecondary(isDark)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(ctx, false);
+            },
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(ctx, true);
+            },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.urgentRed,
+              backgroundColor: AppColors.urgentRose600,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
-            child: const Text('CRASH NOW'),
+            child: const Text('CRASH NOW', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

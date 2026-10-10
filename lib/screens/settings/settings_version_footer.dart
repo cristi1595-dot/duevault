@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import 'package:flutter/services.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 
 class SettingsVersionFooter extends StatefulWidget {
   final VoidCallback? onDevModeEnabled;
@@ -16,20 +18,25 @@ class _SettingsVersionFooterState extends State<SettingsVersionFooter> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
+          HapticFeedback.lightImpact();
           setState(() {
             _devModeTaps++;
             if (_devModeTaps >= 7) {
               if (!_isDevModeEnabled) {
                 _isDevModeEnabled = true;
+                HapticFeedback.mediumImpact();
                 widget.onDevModeEnabled?.call();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Developer Options enabled! 🛠️'),
-                    backgroundColor: AppTheme.safeGreen,
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: const Text('Developer Options enabled! 🛠️'),
+                    backgroundColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -48,16 +55,10 @@ class _SettingsVersionFooterState extends State<SettingsVersionFooter> {
           });
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
           child: Text(
-            'Version 1.0.1 (Build 36)',
-            style: TextStyle(
-              color: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.color
-                  ?.withValues(alpha: 0.5),
-              fontSize: 12,
+            'Version 1.0.1',
+            style: AppTypography.labelSmall(AppColors.textMuted(isDark)).copyWith(
               letterSpacing: 0.5,
             ),
           ),

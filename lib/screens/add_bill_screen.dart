@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import '../models/vault_item.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/vault_item.dart';
 import '../providers/vault_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
-import 'package:image_picker/image_picker.dart';
 import '../providers/currency_provider.dart';
 import '../services/encryption_service.dart';
-import 'package:flutter/services.dart';
 import '../utils/validation_helper.dart';
 import '../utils/amount_formatter.dart';
 import '../services/analytics_service.dart';
@@ -17,11 +17,12 @@ import '../services/ocr_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
+import 'add_shared/notes_input_card.dart';
 import 'add_bill/bill_hero_amount_input.dart';
+import 'add_bill/bill_title_input.dart';
 import 'add_bill/bill_date_recurrence_card.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
-import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
@@ -62,8 +63,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   void initState() {
     super.initState();
     _loadAttachmentsDirectory();
-    
-    // Default OCR to false for Guest or Free tier users
+
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
     _useOcr = kAllFeaturesFree || (!isGuest && isPremium);
@@ -82,7 +82,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       _amountController.text = widget.item!.amount?.formatAmount() ?? '';
       _attachedFiles = List.from(widget.item!.attachedFiles);
 
-      // Decrypt notes asynchronously to keep the UI perfectly responsive
       if (widget.item!.notes != null && widget.item!.notes!.isNotEmpty) {
         _showNotes = true;
         _notesController.text = 'Loading notes...';
@@ -163,15 +162,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final isGuest = ref.read(isGuestProvider);
-    final isPremium = ref.read(isPremiumProvider);
-    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      return;
-    }
     await AttachmentPickerHelper.pickImage(
       context: context,
       source: source,
@@ -179,16 +169,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       isDocument: false,
       currentCount: _attachedFiles.length,
       onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
-      onFileAdded: (path) {
-        setState(() {
-          _attachedFiles.add(path);
-        });
-      },
-      onOcrResult: (result) {
-        setState(() {
-          _handleOcrResult(result);
-        });
-      },
+      onFileAdded: (path) => setState(() => _attachedFiles.add(path)),
+      onOcrResult: (result) => setState(() => _handleOcrResult(result)),
       onError: _showValidationError,
     );
   }
@@ -200,16 +182,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       isDocument: false,
       currentCount: _attachedFiles.length,
       onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
-      onFilesAdded: (paths) {
-        setState(() {
-          _attachedFiles.addAll(paths);
-        });
-      },
-      onOcrResult: (result) {
-        setState(() {
-          _handleOcrResult(result);
-        });
-      },
+      onFilesAdded: (paths) => setState(() => _attachedFiles.addAll(paths)),
+      onOcrResult: (result) => setState(() => _handleOcrResult(result)),
       onError: _showValidationError,
     );
   }
@@ -243,7 +217,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     if (picked != null) {
       setState(() => _dueDate = picked);
     }
-    // Force keyboard down globally
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
@@ -268,8 +241,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
   Future<void> _submit() async {
     if (_isSaving) return;
-
-    // Force keyboard down globally before validating
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (!_formKey.currentState!.validate()) return;
@@ -295,9 +266,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       return;
     }
 
-    // Use existing item for edit, or create new for addition
     final item = _isEdit ? widget.item! : VaultItem();
-
     item.itemType = _itemType;
     final rawTitle = _titleController.text.trim();
     item.title = rawTitle.isEmpty ? _category : rawTitle;
@@ -315,24 +284,19 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     final isDuePassed = dueDayOnly != null &&
         (dueDayOnly.isBefore(today) || dueDayOnly.isAtSameMomentAs(today));
 
-    // Proper Autopay & Paid state logic:
     if (_directDebit) {
       if (isDuePassed) {
-        // Autopay is ON and payment date has arrived or passed -> marked as paid!
         item.isPaid = true;
         if (dueDayOnly.isBefore(today)) {
-          // If strictly in the past, also mark as archived
           item.isArchived = true;
         }
       } else {
-        // Autopay is ON but payment date is in the future -> NOT paid yet!
         item.isPaid = false;
       }
     } else {
       if (!_isEdit) {
         item.isPaid = false;
       }
-      // If editing and autopay is OFF, retain user's previous manual isPaid status
     }
 
     item.notes = notesStr.isEmpty ? null : notesStr;
@@ -344,7 +308,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       await ref.read(analyticsServiceProvider).logItemAdded(item.itemType ?? 'Bill');
       if (mounted) {
         final rootContext = Navigator.of(context).context;
-        // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (rootContext.mounted) {
@@ -374,17 +337,19 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   @override
   Widget build(BuildContext context) {
     final currency = ref.watch(currencyProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isFormValid = _titleController.text.trim().isNotEmpty &&
         _amountController.text.trim().isNotEmpty &&
         _dueDate != null;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           !_isEdit ? 'Add New Bill' : 'Edit Bill',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.titleMedium(AppColors.textPrimary(isDark)).copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -392,13 +357,17 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
+            color: AppColors.textPrimary(isDark),
+            size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base,
+          vertical: AppSpacing.sm,
+        ),
         child: Form(
           key: _formKey,
           child: Column(
@@ -410,77 +379,15 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 currencySymbol: currency.symbol,
                 onAmountChanged: (val) => setState(() {}),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
-              // CARD 1: TITLE BENTO CARD (#161F30, #222F48)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161F30),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF222F48),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.edit_note_rounded,
-                          size: 15,
-                          color: AppTheme.primaryAction,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'BILL TITLE',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      key: const Key('bill_title_field'),
-                      controller: _titleController,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Electricity, Rent, Internet',
-                        hintStyle: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 4),
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        setState(() {});
-                      },
-                      inputFormatters: [LengthLimitingTextInputFormatter(40)],
-                      validator: (value) => ValidationHelper.validateTitle(value),
-                    ),
-                  ],
-                ),
+              BillTitleInput(
+                controller: _titleController,
+                isDark: isDark,
+                onChanged: (val) => setState(() {}),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
-              // CARD 2: DUE DATE, RECURRENCE & AUTO-PAY BENTO CARD
               BillDateRecurrenceCard(
                 dueDate: _dueDate,
                 onDateTap: _pickDate,
@@ -492,100 +399,20 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 directDebit: _directDebit,
                 onDirectDebitChanged: (val) => setState(() => _directDebit = val),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
-              if (!_showNotes)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: TextButton.icon(
-                    onPressed: () => setState(() => _showNotes = true),
-                    icon: const Icon(Icons.note_add_outlined, size: 18),
-                    label: const Text('Add Notes & Remarks'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.primaryAction,
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161F30),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF222F48),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(
-                                Icons.description_outlined,
-                                size: 15,
-                                color: AppTheme.primaryAction,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'NOTES & REMARKS',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
-                                  color: Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ],
-                          ),
-                          InkWell(
-                            onTap: () {
-                              _notesController.clear();
-                              setState(() => _showNotes = false);
-                            },
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 18,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _notesController,
-                        maxLines: 2,
-                        inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                        textCapitalization: TextCapitalization.sentences,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'Add invoice number, payment details...',
-                          hintStyle: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 14,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 10),
+              NotesInputCard(
+                notesController: _notesController,
+                showNotes: _showNotes,
+                isDark: isDark,
+                isBill: true,
+                onAddNotesPressed: () => setState(() => _showNotes = true),
+                onClosePressed: () {
+                  _notesController.clear();
+                  setState(() => _showNotes = false);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
 
               AttachmentSection(
                 attachedFiles: _resolvedAttachedFiles,
@@ -594,39 +421,43 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 onPickImage: () => _pickImage(ImageSource.camera),
                 onPickFiles: _pickFiles,
                 onRemoveAttachment: (index) {
-                  setState(() {
-                    _attachedFiles.removeAt(index);
-                  });
+                  setState(() => _attachedFiles.removeAt(index));
                 },
-                onOcrToggleChanged: (val) {
-                  final isGuest = ref.read(isGuestProvider);
-                  final isPremium = ref.read(isPremiumProvider);
-                  if (val && !kAllFeaturesFree && (isGuest || !isPremium)) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                    );
-                    return;
-                  }
-                  setState(() {
-                    _useOcr = val;
-                  });
-                },
+                onOcrToggleChanged: (val) => setState(() => _useOcr = val),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
             ],
           ),
         ),
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base,
+            AppSpacing.sm,
+            AppSpacing.base,
+            AppSpacing.base,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface(isDark),
+            border: Border(
+              top: BorderSide(color: AppColors.border(isDark), width: 1.0),
+            ),
+          ),
           child: PrimaryButton(
             label: _isSaving
                 ? 'Saving...'
                 : (!_isEdit ? 'Save Bill' : 'Update Bill'),
             icon: _isSaving ? null : Icons.check_circle_outline,
-            onPressed: (_isSaving || !isFormValid) ? null : _submit,
+            isLoading: _isSaving,
+            height: 52,
+            borderRadius: AppRadius.lg,
+            onPressed: (_isSaving || !isFormValid)
+                ? null
+                : () {
+                    HapticFeedback.mediumImpact();
+                    _submit();
+                  },
           ),
         ),
       ),

@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../theme/app_theme.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/vault_provider.dart';
@@ -18,6 +21,7 @@ import '../../utils/logger.dart';
 /// Shows the Storage & Reset bottom sheet allowing cache clearing, data wiping,
 /// and complete account deletion.
 void showStorageResetBottomSheet(BuildContext context, WidgetRef ref) {
+  HapticFeedback.lightImpact();
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
@@ -33,75 +37,81 @@ class StorageResetSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isGuest = FirebaseAuth.instance.currentUser == null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authStateProvider);
+    final isGuest = authState.valueOrNull == null;
     final isPremium = ref.watch(isPremiumProvider);
     final isPro = !isGuest && isPremium;
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? AppTheme.darkSurface,
+        color: AppColors.surface(isDark),
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
+          topLeft: Radius.circular(AppRadius.xl),
+          topRight: Radius.circular(AppRadius.xl),
         ),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+          color: AppColors.border(isDark),
           width: 1,
         ),
       ),
       padding: const EdgeInsets.only(
-        top: 10,
-        left: 20,
-        right: 20,
-        bottom: 32,
+        top: AppSpacing.sm,
+        left: AppSpacing.base,
+        right: AppSpacing.base,
+        bottom: AppSpacing.xl,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Top Pull Indicator
           Container(
-            width: 48,
+            width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.3) ?? Colors.white24,
+              color: AppColors.slate500.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
 
           // Header
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryAction.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: AppColors.border(isDark).withValues(alpha: 0.6),
+                    width: 0.8,
+                  ),
                 ),
-                child: const Icon(
+                alignment: Alignment.center,
+                child: Icon(
                   Icons.storage_rounded,
-                  color: AppTheme.primaryAction,
-                  size: 24,
+                  color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Storage & Reset',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                      style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)).copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Manage your database and cloud space',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 13,
-                      ),
+                      style: AppTypography.bodySmall(AppColors.textSecondary(isDark)),
                     ),
                   ],
                 ),
@@ -109,36 +119,36 @@ class StorageResetSheet extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.lg),
 
-          // Option 2: Erase All Data
+          // Option 1: Erase All Data
           _StorageOptionTile(
             title: isPro ? 'Erase All Data (Cloud & Local)' : 'Erase All Data (Local)',
             subtitle: isPro
                 ? 'WIPE EVERYTHING. Cloud and local data will be permanently deleted.'
                 : 'WIPE EVERYTHING. Local data will be permanently deleted.',
             icon: Icons.delete_forever_rounded,
-            iconColor: AppTheme.urgentRed,
-            iconBgColor: AppTheme.urgentRed.withValues(alpha: 0.15),
-            backgroundColor: AppTheme.urgentRed.withValues(alpha: 0.08),
-            borderColor: AppTheme.urgentRed.withValues(alpha: 0.3),
-            textColor: AppTheme.urgentRed,
+            iconColor: AppColors.urgentRose600,
+            iconBgColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.35 : 0.15),
+            backgroundColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.15 : 0.08),
+            borderColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.35 : 0.25),
+            textColor: AppColors.statusUrgentText(isDark),
             onTap: () => _handleEraseAllData(context, ref, isPro),
           ),
 
           if (!isGuest) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
 
-            // Option 3: Delete Account & Cloud Data
+            // Option 2: Delete Account & Cloud Data
             _StorageOptionTile(
               title: 'Delete Account & Data',
               subtitle: 'Wipes all local & cloud data and permanently deletes your account registration.',
               icon: Icons.no_accounts_rounded,
-              iconColor: AppTheme.urgentRed,
-              iconBgColor: AppTheme.urgentRed.withValues(alpha: 0.2),
-              backgroundColor: AppTheme.urgentRed.withValues(alpha: 0.12),
-              borderColor: AppTheme.urgentRed.withValues(alpha: 0.4),
-              textColor: AppTheme.urgentRed,
+              iconColor: AppColors.urgentRose600,
+              iconBgColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.4 : 0.2),
+              backgroundColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.2 : 0.1),
+              borderColor: AppColors.urgentRose500.withValues(alpha: isDark ? 0.4 : 0.3),
+              textColor: AppColors.statusUrgentText(isDark),
               onTap: () => _handleDeleteAccount(context, ref),
             ),
           ],
@@ -164,12 +174,20 @@ class StorageResetSheet extends ConsumerWidget {
 
     if (!parentContext.mounted) return;
 
+    final isDark = Theme.of(parentContext).brightness == Brightness.dark;
+
     // 3. Show progress indicator dialog
     unawaited(
       showDialog(
         context: parentContext,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isDark ? AppColors.emerald400 : AppColors.emerald600,
+            ),
+          ),
+        ),
       ),
     );
 
@@ -185,7 +203,7 @@ class StorageResetSheet extends ConsumerWidget {
         SnackBar(
           content: Text(successMessage),
           backgroundColor: successMessage.contains('wiped') || successMessage.contains('deleted')
-              ? AppTheme.urgentRed
+              ? AppColors.urgentRose600
               : null,
         ),
       );
@@ -200,7 +218,7 @@ class StorageResetSheet extends ConsumerWidget {
       ScaffoldMessenger.of(parentContext).showSnackBar(
         SnackBar(
           content: Text('$errorMessagePrefix: $e'),
-          backgroundColor: AppTheme.urgentRed,
+          backgroundColor: AppColors.urgentRose600,
         ),
       );
     }
@@ -300,9 +318,9 @@ class _StorageOptionTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final Color iconBgColor;
-  final Color? backgroundColor;
-  final Color? borderColor;
-  final Color? textColor;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
   final VoidCallback onTap;
 
   const _StorageOptionTile({
@@ -311,75 +329,81 @@ class _StorageOptionTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.iconBgColor,
-    this.backgroundColor,
-    this.borderColor,
-    this.textColor,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final defaultBorderColor = Theme.of(context).dividerColor.withValues(alpha: 0.5);
-    final defaultBgColor = Theme.of(context).scaffoldBackgroundColor;
-    final defaultTextColor = Theme.of(context).textTheme.bodyLarge?.color;
-    final defaultSubtitleColor = Theme.of(context).textTheme.bodySmall?.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: backgroundColor ?? defaultBgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor ?? defaultBorderColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.md,
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconBgColor,
-                borderRadius: BorderRadius.circular(10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: textColor,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(isDark),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: textColor.withValues(alpha: 0.6),
                 size: 20,
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: textColor ?? defaultTextColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 12,
-                      color: defaultSubtitleColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: textColor ?? defaultSubtitleColor,
-              size: 20,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

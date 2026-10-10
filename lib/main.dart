@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +21,6 @@ import 'services/background_service.dart';
 import 'screens/add_bill_screen.dart';
 import 'screens/add_document_screen.dart';
 import 'screens/add_shared/attachment_picker_helper.dart';
-import 'screens/paywall_screen.dart';
 import 'widgets/global_components.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
@@ -37,8 +35,6 @@ import 'utils/logger.dart';
 import 'services/firebase_sync_service.dart';
 import 'providers/sync_provider.dart';
 import 'providers/vault_provider.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
-import 'providers/premium_provider.dart';
 import 'widgets/walkthrough_overlay.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -79,12 +75,6 @@ void main() async {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
-
-    // Initialize RevenueCat for in-app purchases
-    await Purchases.configure(
-      PurchasesConfiguration('goog_ZtWozrnvnKsNqsvpoPaZUInbwsw'),
-    );
-    logger.i('RevenueCat SDK configured successfully.');
 
     final appDir = await getApplicationDocumentsDirectory();
 
@@ -222,34 +212,6 @@ class _DueVaultAppState extends ConsumerState<DueVaultApp>
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
-
-    // Sync Firebase Auth state with RevenueCat user sessions
-    ref.listen<AsyncValue<fb.User?>>(authStateProvider, (previous, next) {
-      final user = next.valueOrNull;
-      if (user != null) {
-        logger.i('Syncing RevenueCat User ID: ${user.uid}');
-        Purchases.logIn(user.uid)
-            .then((createdCustomerInfo) {
-              ref
-                  .read(isPremiumProvider.notifier)
-                  .updateFromCustomerInfo(createdCustomerInfo.customerInfo);
-            })
-            .catchError((e) {
-              logger.e('Failed to log in user to RevenueCat: $e');
-            });
-      } else {
-        logger.i('Logging out user from RevenueCat');
-        Purchases.logOut()
-            .then((customerInfo) {
-              ref
-                  .read(isPremiumProvider.notifier)
-                  .updateFromCustomerInfo(customerInfo);
-            })
-            .catchError((e) {
-              logger.e('Failed to log out user from RevenueCat: $e');
-            });
-      }
-    });
 
     return MaterialApp(
       scaffoldMessengerKey: scaffoldMessengerKey,
@@ -508,16 +470,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   }
 
   Future<void> _handleScanBill(BuildContext context) async {
-    final isGuest = ref.read(isGuestProvider);
-    final isPremium = ref.read(isPremiumProvider);
-    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      return;
-    }
-
     // Show scanning progress modal
     unawaited(
       showDialog(

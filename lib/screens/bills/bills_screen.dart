@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/vault_item_tile.dart';
-import '../../widgets/vault_snackbar.dart';
+import '../../widgets/global_components.dart';
+import '../../utils/date_helper.dart';
 import '../item_detail_screen.dart';
+import '../shared/vault_filter_pills.dart';
+import '../shared/vault_section_header.dart';
+import '../shared/vault_search_field.dart';
 
 class BillsScreen extends ConsumerStatefulWidget {
   const BillsScreen({super.key});
@@ -27,50 +31,18 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
     super.dispose();
   }
 
-  void _togglePaidStatus(VaultItem item) {
+  Future<void> _togglePaidStatus(VaultItem item) async {
+    await HapticFeedback.mediumImpact();
     final notifier = ref.read(vaultProvider.notifier);
     final nextState = !item.isPaid;
-    notifier.updatePaidStatus(item.id, nextState);
+    await notifier.updatePaidStatus(item.id, nextState);
 
     VaultSnackBar.show(
       message:
           '${item.title} ${nextState ? "marked as paid" : "marked as unpaid"}',
       actionLabel: 'UNDO',
-      backgroundColor: AppTheme.safeGreen,
+      backgroundColor: AppColors.emerald500,
       onAction: () => notifier.updatePaidStatus(item.id, !nextState),
-    );
-  }
-
-  Widget _buildFilterChip(String label, int index, bool isDark) {
-    final isSelected = _filterIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _filterIndex = index),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryAction
-              : (isDark ? const Color(0xFF161F30) : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryAction
-                : (isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0)),
-            width: 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-          ),
-        ),
-      ),
     );
   }
 
@@ -80,12 +52,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Filter only bills
     final bills = allItems
         .where((i) => i.itemType == 'Bill' && !i.isDeleted)
         .toList();
 
-    // Search filter
     final query = _searchQuery.trim().toLowerCase();
     final filteredBills = query.isEmpty
         ? bills
@@ -98,30 +68,6 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    int compareClosestToFarthest(DateTime? a, DateTime? b) {
-      if (a == null && b == null) return 0;
-      if (a == null) return 1;
-      if (b == null) return -1;
-
-      final aDay = DateTime(a.year, a.month, a.day);
-      final bDay = DateTime(b.year, b.month, b.day);
-
-      final aDiff = aDay.difference(today).inDays;
-      final bDiff = bDay.difference(today).inDays;
-
-      // Both upcoming (>= 0): closest upcoming date first (e.g. +2 before +24)
-      if (aDiff >= 0 && bDiff >= 0) {
-        return aDiff.compareTo(bDiff);
-      }
-      // Both in past (< 0): closest past date to today first (e.g. -1 before -30)
-      if (aDiff < 0 && bDiff < 0) {
-        return bDiff.compareTo(aDiff);
-      }
-      // Upcoming before past
-      return aDiff >= 0 ? -1 : 1;
-    }
-
-    // Split into Active (unpaid/upcoming) and Paid/Settled
     final activeBills =
         filteredBills.where((b) => !b.isPaid && !b.isArchived).toList()
           ..sort((a, b) {
@@ -133,12 +79,14 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
 
     final paidBills =
         filteredBills.where((b) => b.isPaid || b.isArchived).toList()
-          ..sort((a, b) => compareClosestToFarthest(a.dueDate, b.dueDate));
+          ..sort((a, b) => DateHelper.compareClosestToFarthest(a.dueDate, b.dueDate, today));
 
     final totalOutstanding = activeBills.fold<double>(
       0.0,
       (sum, item) => sum + (item.amount ?? 0.0),
     );
+
+    final emeraldAccent = isDark ? AppColors.emerald400 : AppColors.emerald700;
 
     return Scaffold(
       body: SafeArea(
@@ -157,21 +105,28 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
             return false;
           },
           child: CustomScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
-              // Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.base,
+                    AppSpacing.base,
+                    AppSpacing.base,
+                    AppSpacing.sm,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             'Bills',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                            style: AppTypography.headlineLarge(AppColors.textPrimary(isDark)).copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -179,20 +134,18 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryAction.withValues(
-                                alpha: 0.12,
+                              color: AppColors.emerald500.withValues(
+                                alpha: isDark ? 0.12 : 0.1,
                               ),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                               border: Border.all(
-                                color: AppTheme.primaryAction.withValues(
-                                  alpha: 0.25,
-                                ),
+                                color: emeraldAccent.withValues(alpha: 0.3),
+                                width: 1.0,
                               ),
                             ),
                             child: Text(
                               'Due: ${currency.symbol}${totalOutstanding.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: AppTheme.primaryAction,
+                              style: AppTypography.labelMedium(emeraldAccent).copyWith(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -200,72 +153,37 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         '${activeBills.length} active • ${paidBills.length} settled',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: AppTypography.bodySmall(AppColors.textSecondary(isDark)),
                       ),
-                      const SizedBox(height: 14),
-                      // Search Bar
-                      TextField(
+                      const SizedBox(height: AppSpacing.md),
+
+                      VaultSearchField(
                         controller: _searchController,
+                        hintText: 'Search bills...',
+                        query: _searchQuery,
+                        isDark: isDark,
+                        focusColor: AppColors.emerald500,
                         onChanged: (val) => setState(() => _searchQuery = val),
-                        decoration: InputDecoration(
-                          hintText: 'Search bills...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: isDark
-                              ? const Color(0xFF161F30)
-                              : Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF222F48)
-                                  : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF222F48)
-                                  : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                        ),
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
                       ),
-                      const SizedBox(height: 12),
-                      // Filter Pills
-                      Row(
-                        children: [
-                          _buildFilterChip('All', 0, isDark),
-                          const SizedBox(width: 8),
-                          _buildFilterChip(
-                            'Unpaid (${activeBills.length})',
-                            1,
-                            isDark,
-                          ),
-                          const SizedBox(width: 8),
-                          _buildFilterChip(
-                            'Paid (${paidBills.length})',
-                            2,
-                            isDark,
-                          ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      VaultFilterPills(
+                        selectedIndex: _filterIndex,
+                        options: [
+                          'All',
+                          'Unpaid (${activeBills.length})',
+                          'Paid (${paidBills.length})',
                         ],
+                        isDark: isDark,
+                        activeColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
+                        onSelect: (index) => setState(() => _filterIndex = index),
                       ),
                     ],
                   ),
@@ -275,67 +193,31 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
               if (filteredBills.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 56,
-                          color: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'No bills match your search'
-                              : 'No bills added yet',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Try a different keyword'
-                              : 'Tap + to add your first bill',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                  child: EmptyState(
+                    title: _searchQuery.isNotEmpty
+                        ? 'No bills match your search'
+                        : 'No bills added yet',
+                    subtitle: _searchQuery.isNotEmpty
+                        ? 'Try a different keyword or clear filters'
+                        : 'Tap + to add your first bill and stay ahead of deadlines.',
+                    icon: Icons.receipt_long_outlined,
                   ),
                 )
               else ...[
-                // Active Section
                 if (_filterIndex != 2 && activeBills.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.schedule,
-                            size: 16,
-                            color: AppTheme.primaryAction,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'UPCOMING & DUE (${activeBills.length})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: VaultSectionHeader(
+                      title: 'Upcoming & Due',
+                      count: activeBills.length,
+                      color: AppColors.emerald500,
+                      isDark: isDark,
+                      icon: Icons.schedule_rounded,
+                      singularSuffix: 'bill',
+                      pluralSuffix: 'bills',
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final bill = activeBills[index];
@@ -343,6 +225,9 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                           item: bill,
                           currency: currency,
                           isHomeScreen: false,
+                          isFirst: index == 0,
+                          isLast: index == activeBills.length - 1,
+                          showDivider: index < activeBills.length - 1,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -358,36 +243,20 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                   ),
                 ],
 
-                // Paid / Settled Section
                 if (_filterIndex != 1 && paidBills.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 16,
-                            color: AppTheme.safeGreen,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'PAID & SETTLED (${paidBills.length})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark
-                                  ? Colors.grey.shade500
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: VaultSectionHeader(
+                      title: 'Paid & Settled',
+                      count: paidBills.length,
+                      color: AppColors.statusSafeText(isDark),
+                      isDark: isDark,
+                      icon: Icons.check_circle_outline_rounded,
+                      singularSuffix: 'bill',
+                      pluralSuffix: 'bills',
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final bill = paidBills[index];
@@ -397,6 +266,9 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                             item: bill,
                             currency: currency,
                             isHomeScreen: false,
+                            isFirst: index == 0,
+                            isLast: index == paidBills.length - 1,
+                            showDivider: index < paidBills.length - 1,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -412,7 +284,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                     ),
                   ),
                 ],
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: 140)),
               ],
             ],
           ),

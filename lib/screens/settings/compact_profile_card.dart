@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import '../../models/app_config.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
@@ -29,35 +30,20 @@ class CompactProfileCard extends ConsumerWidget {
         });
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final accentColor = AppTheme.getSettingsAccent(context);
+        final accentColor = isDark ? AppColors.emerald400 : AppColors.emerald600;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.base,
+          ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: isDark ? null : Colors.white,
-            gradient: isDark
-                ? const LinearGradient(
-                    colors: [
-                      Color(0xFF1E222B),
-                      Color(0xFF13171F),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: AppColors.surface(isDark),
             border: Border.all(
-              color: isDark
-                  ? accentColor.withValues(alpha: 0.15)
-                  : const Color(0xFFE2E8F0),
+              color: AppColors.border(isDark),
               width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                blurRadius: isDark ? 10 : 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: !isDark ? AppShadows.sm : null,
           ),
           child: Row(
             children: [
@@ -78,7 +64,7 @@ class CompactProfileCard extends ConsumerWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color,
+                    color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
                     shape: BoxShape.circle,
                     image: user?.photoURL != null
                         ? DecorationImage(
@@ -90,17 +76,13 @@ class CompactProfileCard extends ConsumerWidget {
                   child: user?.photoURL == null
                       ? Icon(
                           Icons.person_outline_rounded,
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.color
-                              ?.withValues(alpha: 0.7),
+                          color: AppColors.textSecondary(isDark),
                           size: 22,
                         )
                       : null,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +92,7 @@ class CompactProfileCard extends ConsumerWidget {
                           ? user!.displayName!
                           : (user?.email?.split('@').first ?? 'Guest User'),
                       style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        color: AppColors.textPrimary(isDark),
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.3,
@@ -120,7 +102,7 @@ class CompactProfileCard extends ConsumerWidget {
                     Text(
                       isGuest ? 'Local mode active' : (user.email ?? ''),
                       style: TextStyle(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        color: AppColors.textSecondary(isDark),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -131,6 +113,8 @@ class CompactProfileCard extends ConsumerWidget {
               if (!isGuest)
                 GestureDetector(
                   onTap: () async {
+                    await HapticFeedback.lightImpact();
+                    if (!context.mounted) return;
                     final confirm = await SettingsDialogs.showSignOutDialog(context);
 
                     if (confirm == true) {
@@ -186,33 +170,33 @@ class CompactProfileCard extends ConsumerWidget {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: AppSpacing.md,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.urgentRed.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.urgentRose500.withValues(alpha: isDark ? 0.18 : 0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       border: Border.all(
-                        color: AppTheme.urgentRed.withValues(alpha: 0.2),
+                        color: AppColors.urgentRose500.withValues(alpha: isDark ? 0.35 : 0.25),
                         width: 1,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Sign Out',
                           style: TextStyle(
-                            color: AppTheme.urgentRed,
+                            color: AppColors.statusUrgentText(isDark),
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
                           ),
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.logout_rounded,
-                          color: AppTheme.urgentRed,
+                          color: AppColors.statusUrgentText(isDark),
                           size: 13,
                         ),
                       ],
@@ -223,8 +207,59 @@ class CompactProfileCard extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => const Text('Error loading profile'),
+      loading: () {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.base),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: AppColors.surface(isDark),
+            border: Border.all(
+              color: AppColors.border(isDark),
+              width: 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 80,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }

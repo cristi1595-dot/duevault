@@ -16,9 +16,20 @@ class HomeUpcomingList extends ConsumerWidget {
     required this.scrollController,
   });
 
-  Widget _buildGroupHeader(String title, int count, Color color) {
+  Widget _buildGroupHeader({
+    required BuildContext context,
+    required String title,
+    required int count,
+    required Color color,
+    required bool isDark,
+  }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -33,20 +44,20 @@ class HomeUpcomingList extends ConsumerWidget {
                   boxShadow: [
                     BoxShadow(
                       color: color.withValues(alpha: 0.5),
-                      blurRadius: 4,
+                      blurRadius: 6,
                       spreadRadius: 1,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 title.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.9,
-                  color: Color(0xFF94A3B8),
+                  letterSpacing: 0.8,
+                  color: AppColors.textSecondary(isDark),
                 ),
               ),
             ],
@@ -54,8 +65,12 @@ class HomeUpcomingList extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: color.withValues(alpha: 0.25),
+                width: 0.75,
+              ),
             ),
             child: Text(
               '$count ${count == 1 ? "item" : "items"}',
@@ -78,40 +93,56 @@ class HomeUpcomingList extends ConsumerWidget {
     required List<VaultItem> items,
     required Color color,
     required Currency currency,
+    required bool isDark,
   }) {
     if (items.isEmpty) return const [];
     return [
-      _buildGroupHeader(title, items.length, color),
-      ...items.map(
-        (item) => VaultItemTile(
-          item: item,
-          currency: currency,
-          isHomeScreen: true,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-            );
-          },
-          onCheckPressed: () {
-            HapticFeedback.mediumImpact();
-            final notifier = ref.read(vaultProvider.notifier);
-            final nextPaidState = !item.isPaid;
-            notifier.updatePaidStatus(item.id, nextPaidState);
-            final name = item.title.isEmpty ? (item.itemType == 'Bill' ? 'Bill' : 'Document') : item.title;
-            final actionText = nextPaidState
-                ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
-                : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
-            VaultSnackBar.show(
-              message: '$name $actionText',
-              actionLabel: 'UNDO',
-              backgroundColor: AppTheme.safeGreen,
-              onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
-            );
-          },
-        ),
+      _buildGroupHeader(
+        context: context,
+        title: title,
+        count: items.length,
+        color: color,
+        isDark: isDark,
       ),
-      const SizedBox(height: 6),
+      ...items.asMap().entries.map(
+        (entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return VaultItemTile(
+            item: item,
+            currency: currency,
+            isHomeScreen: true,
+            isFirst: index == 0,
+            isLast: index == items.length - 1,
+            showDivider: index < items.length - 1,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
+              );
+            },
+            onCheckPressed: () {
+              HapticFeedback.mediumImpact();
+              final notifier = ref.read(vaultProvider.notifier);
+              final nextPaidState = !item.isPaid;
+              notifier.updatePaidStatus(item.id, nextPaidState);
+              final name = item.title.isEmpty
+                  ? (item.itemType == 'Bill' ? 'Bill' : 'Document')
+                  : item.title;
+              final actionText = nextPaidState
+                  ? (item.itemType == 'Bill' ? 'marked as paid' : 'marked as renewed')
+                  : (item.itemType == 'Bill' ? 'marked as unpaid' : 'marked as not renewed');
+              VaultSnackBar.show(
+                message: '$name $actionText',
+                actionLabel: 'UNDO',
+                backgroundColor: AppColors.emerald500,
+                onAction: () => notifier.updatePaidStatus(item.id, !nextPaidState),
+              );
+            },
+          );
+        },
+      ),
+      const SizedBox(height: AppSpacing.xs),
     ];
   }
 
@@ -172,30 +203,61 @@ class HomeUpcomingList extends ConsumerWidget {
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(10, 2, 10, 140),
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.xxs,
+        AppSpacing.base,
+        140,
+      ),
       children: [
         if (allUpcoming.isEmpty)
           BentoCard(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xxl,
+              horizontal: AppSpacing.base,
+            ),
             child: SizedBox(
               width: double.infinity,
               child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 28.0, horizontal: 16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.emerald500.withValues(alpha: isDark ? 0.08 : 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.emerald500.withValues(alpha: 0.25),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
                         Icons.check_circle_outline_rounded,
-                        size: 38,
-                        color: AppTheme.safeGreen.withValues(alpha: 0.8),
+                        size: 36,
+                        color: isDark ? AppColors.emerald400 : AppColors.emerald600,
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'All caught up! No items due.',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'All caught up! No items due.',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: -0.2,
+                        color: AppColors.textPrimary(isDark),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'You have no urgent bills or expiring documents.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary(isDark),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -207,8 +269,9 @@ class HomeUpcomingList extends ConsumerWidget {
               ref: ref,
               title: 'Overdue',
               items: overdueItems,
-              color: AppTheme.urgentRed,
+              color: AppColors.statusUrgentText(isDark),
               currency: currency,
+              isDark: isDark,
             ),
           if (thisWeekItems.isNotEmpty)
             ..._buildSection(
@@ -216,8 +279,9 @@ class HomeUpcomingList extends ConsumerWidget {
               ref: ref,
               title: 'This Week',
               items: thisWeekItems,
-              color: const Color(0xFFF59E0B),
+              color: AppColors.statusWarningText(isDark),
               currency: currency,
+              isDark: isDark,
             ),
           if (upcomingItems.isNotEmpty)
             ..._buildSection(
@@ -225,8 +289,9 @@ class HomeUpcomingList extends ConsumerWidget {
               ref: ref,
               title: 'Upcoming',
               items: upcomingItems,
-              color: isDark ? Colors.white : const Color(0xFF475569),
+              color: isDark ? AppColors.slate300 : AppColors.slate700,
               currency: currency,
+              isDark: isDark,
             ),
         ],
       ],

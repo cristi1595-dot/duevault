@@ -52,7 +52,7 @@ App stores put the highest algorithmic weight on the **App Title** and **Short D
 *   **Clear Hierarchy:** Use clear headings, bullet points, and capitalization to make the description scannable for both users and algorithms.
 *   **The Hook:** Start with a powerful 2-3 sentence statement explaining *exactly* what the app does and why the user needs it.
 *   **Feature List:** Detail specific use cases (e.g., auto-filling with OCR, biometric secure folders, Google Drive sync).
-*   **PRO Features Callout:** List what benefits the one-time PRO purchase unlocks (e.g., unlimited uploads, OCR scanner, encrypted database).
+*   **100% Free Callout:** Highlight the complete absence of paywalls, ads, or subscriptions (OCR scanner, encrypted vault, and cloud sync are completely free).
 
 ---
 

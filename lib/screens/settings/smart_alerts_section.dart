@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/vault_provider.dart';
 import '../../services/analytics_service.dart';
+import 'settings_divider.dart';
 
 /// A self-contained widget representing the "SMART ALERTS" section in the settings.
 ///
@@ -22,17 +24,17 @@ class SmartAlertsSection extends ConsumerWidget {
     final globalEnabled = ref.watch(globalNotificationsProvider);
     final alertDays = ref.watch(alertDaysProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = AppTheme.getSettingsAccent(context);
+    final accentColor = isDark ? AppColors.emerald400 : AppColors.emerald600;
 
     return Column(
       children: [
         // 1. Smart Reminder Service Toggle Row
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -41,13 +43,16 @@ class SmartAlertsSection extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary(isDark),
+                        letterSpacing: -0.2,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'Receive reminders for due bills',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey,
+                        color: AppColors.textSecondary(isDark),
                       ),
                     ),
                   ],
@@ -58,6 +63,8 @@ class SmartAlertsSection extends ConsumerWidget {
                   if (globalEnabled)
                     TextButton.icon(
                       onPressed: () async {
+                        await HapticFeedback.lightImpact();
+                        if (!context.mounted) return;
                         final initialTime = ref.read(notificationTimeProvider);
                         final pickedTime = await showTimePicker(
                           context: context,
@@ -66,24 +73,24 @@ class SmartAlertsSection extends ConsumerWidget {
                             return Theme(
                               data: Theme.of(context).copyWith(
                                 timePickerTheme: TimePickerThemeData(
-                                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                                  hourMinuteTextColor: Theme.of(context).textTheme.bodyLarge?.color,
-                                  dialBackgroundColor: Theme.of(context).cardTheme.color,
-                                  dialTextColor: Theme.of(context).textTheme.bodyLarge?.color,
-                                  dayPeriodTextColor: Theme.of(context).textTheme.bodyLarge?.color,
+                                  backgroundColor: AppColors.surface(isDark),
+                                  hourMinuteTextColor: AppColors.textPrimary(isDark),
+                                  dialBackgroundColor: AppColors.surfaceElevated(isDark),
+                                  dialTextColor: AppColors.textPrimary(isDark),
+                                  dayPeriodTextColor: AppColors.textPrimary(isDark),
                                 ),
                                 colorScheme: isDark
-                                    ? const ColorScheme.dark(
-                                        primary: Colors.greenAccent,
+                                    ? ColorScheme.dark(
+                                        primary: AppColors.emerald400,
                                         onPrimary: Colors.black,
-                                        surface: AppTheme.background,
-                                        onSurface: Colors.white,
+                                        surface: AppColors.surface(isDark),
+                                        onSurface: AppColors.slate50,
                                       )
                                     : ColorScheme.light(
                                         primary: accentColor,
                                         onPrimary: Colors.white,
                                         surface: Colors.white,
-                                        onSurface: const Color(0xFF0F172A),
+                                        onSurface: AppColors.slate900,
                                       ),
                               ),
                               child: child!,
@@ -110,12 +117,12 @@ class SmartAlertsSection extends ConsumerWidget {
                         },
                       ),
                       style: TextButton.styleFrom(
-                        backgroundColor: accentColor.withValues(alpha: 0.1),
+                        backgroundColor: accentColor.withValues(alpha: 0.12),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                       ),
                     ),
@@ -125,6 +132,7 @@ class SmartAlertsSection extends ConsumerWidget {
                     child: Switch(
                       value: globalEnabled,
                       onChanged: (bool v) async {
+                        await HapticFeedback.lightImpact();
                         await onAttemptActivation(targetState: v);
                         await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                       },
@@ -139,6 +147,7 @@ class SmartAlertsSection extends ConsumerWidget {
         ),
 
         if (globalEnabled) ...[
+          const SettingsDivider(),
           // 2. Early Alert Row
           Consumer(
             builder: (BuildContext context, WidgetRef ref, Widget? child) {
@@ -147,7 +156,7 @@ class SmartAlertsSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -155,17 +164,23 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                    'Early Alert',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              Text(
+                                'Early Alert',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary(isDark),
+                                  letterSpacing: -0.2,
+                                ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 firstReminderEnabled
                                     ? 'Early warning • $alertDays ${alertDays == 1 ? "day" : "days"} before'
                                     : 'Early warning for upcoming bills',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: firstReminderEnabled ? accentColor : Colors.grey,
+                                  color: firstReminderEnabled ? accentColor : AppColors.textSecondary(isDark),
                                   fontWeight: firstReminderEnabled ? FontWeight.w500 : FontWeight.normal,
                                 ),
                               ),
@@ -177,6 +192,7 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Switch(
                             value: firstReminderEnabled,
                             onChanged: (bool val) async {
+                              await HapticFeedback.lightImpact();
                               await ref.read(threeDayAlertEnabledProvider.notifier).toggle(val);
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_enabled', val);
@@ -190,7 +206,7 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (firstReminderEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                      padding: const EdgeInsets.only(left: AppSpacing.base, right: AppSpacing.base, bottom: 6),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
@@ -201,7 +217,7 @@ class SmartAlertsSection extends ConsumerWidget {
                             valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                             valueIndicatorColor: accentColor,
                             activeTrackColor: accentColor,
-                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            inactiveTrackColor: accentColor.withValues(alpha: 0.15),
                             thumbColor: accentColor,
                           ),
                           child: Slider(
@@ -214,6 +230,7 @@ class SmartAlertsSection extends ConsumerWidget {
                               ref.read(alertDaysProvider.notifier).setAlertDays(val.toInt());
                             },
                             onChangeEnd: (double val) async {
+                              await HapticFeedback.lightImpact();
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('early_alert_days', val.toInt());
                             },
@@ -225,6 +242,7 @@ class SmartAlertsSection extends ConsumerWidget {
               );
             },
           ),
+          const SettingsDivider(),
           // 3. SOS Urgent Alert Row
           Consumer(
             builder: (BuildContext context, WidgetRef ref, Widget? child) {
@@ -236,7 +254,7 @@ class SmartAlertsSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -244,17 +262,23 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                    'SOS Urgent Alert',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              Text(
+                                'SOS Urgent Alert',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary(isDark),
+                                  letterSpacing: -0.2,
+                                ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 finalEnabled
                                     ? 'Urgent alert • $finalDaysText'
                                     : 'Urgent alert right before due date',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: finalEnabled ? accentColor : Colors.grey,
+                                  color: finalEnabled ? accentColor : AppColors.textSecondary(isDark),
                                   fontWeight: finalEnabled ? FontWeight.w500 : FontWeight.normal,
                                 ),
                               ),
@@ -266,6 +290,7 @@ class SmartAlertsSection extends ConsumerWidget {
                           child: Switch(
                             value: finalEnabled,
                             onChanged: (bool val) async {
+                              await HapticFeedback.lightImpact();
                               await ref.read(finalReminderEnabledProvider.notifier).toggle(val);
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_enabled', val);
@@ -279,7 +304,7 @@ class SmartAlertsSection extends ConsumerWidget {
                   ),
                   if (finalEnabled)
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                      padding: const EdgeInsets.only(left: AppSpacing.base, right: AppSpacing.base, bottom: 6),
                       child: SizedBox(
                         height: 28,
                         child: SliderTheme(
@@ -290,7 +315,7 @@ class SmartAlertsSection extends ConsumerWidget {
                             valueIndicatorTextStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                             valueIndicatorColor: accentColor,
                             activeTrackColor: accentColor,
-                            inactiveTrackColor: accentColor.withValues(alpha: 0.1),
+                            inactiveTrackColor: accentColor.withValues(alpha: 0.15),
                             thumbColor: accentColor,
                           ),
                           child: Slider(
@@ -303,6 +328,7 @@ class SmartAlertsSection extends ConsumerWidget {
                               ref.read(finalReminderDaysProvider.notifier).setFinalReminderDays(val.toInt());
                             },
                             onChangeEnd: (double val) async {
+                              await HapticFeedback.lightImpact();
                               await ref.read(vaultProvider.notifier).rescheduleAllNotifications();
                               await ref.read(analyticsServiceProvider).logSettingsChanged('sos_urgent_alert_days', val.toInt());
                             },

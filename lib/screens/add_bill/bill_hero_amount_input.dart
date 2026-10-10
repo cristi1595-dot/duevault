@@ -18,50 +18,57 @@ class BillHeroAmountInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF161F30),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surface(isDark),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
-          color: const Color(0xFF222F48),
-          width: 1,
+          color: AppColors.border(isDark),
+          width: 1.0,
         ),
+        boxShadow: !isDark ? AppShadows.sm : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header pill: BILL AMOUNT + Currency Code
+          // Header pill: AMOUNT • Currency Code
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm + 2,
+              vertical: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E2838),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF222F48)),
+              color: AppColors.surfaceElevated(isDark),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: AppColors.border(isDark),
+                width: 0.8,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.payments_rounded,
                   size: 13,
-                  color: AppTheme.primaryAction,
+                  color: isDark ? AppColors.emerald400 : AppColors.emerald600,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs + 2),
                 Text(
                   'AMOUNT • $currencyCode',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.9,
-                    color: Color(0xFF94A3B8),
-                  ),
+                  style: AppTypography.labelCaps(AppColors.textSecondary(isDark)),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Centered Revolut-style Hero input
           Row(
@@ -70,13 +77,13 @@ class BillHeroAmountInput extends StatelessWidget {
             children: [
               Text(
                 currencySymbol,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textSecondary(isDark),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.xs + 2),
               IntrinsicWidth(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minWidth: 70, maxWidth: 260),
@@ -88,23 +95,23 @@ class BillHeroAmountInput extends StatelessWidget {
                       signed: false,
                     ),
                     textAlign: TextAlign.left,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: AppColors.textPrimary(isDark),
                       letterSpacing: -0.5,
                     ),
-                    cursorColor: AppTheme.primaryAction,
+                    cursorColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
                     inputFormatters: [AmountInputFormatter()],
                     validator: (value) =>
                         ValidationHelper.validateAmount(value, isRequired: true),
                     onChanged: onAmountChanged,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '0.00',
                       hintStyle: TextStyle(
                         fontSize: 38,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF475569),
+                        color: AppColors.textMuted(isDark),
                         letterSpacing: -0.5,
                       ),
                       border: InputBorder.none,

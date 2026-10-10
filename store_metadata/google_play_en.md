@@ -12,34 +12,38 @@ DueVault: Bill & Doc Scanner
 
 ## 2. Short Description (Max 80 Characters)
 ```text
-Scan receipts, track expenses & organize bills. Never miss a due date again!
+Track bills, scan receipts & organize docs. 100% free, private & offline-ready!
 ```
-*Length: 77 characters*
+*Length: 79 characters*
 
 ---
 
 ## 3. Full Description (Max 4,000 Characters)
 ```text
-Take control of your financial life and important paperwork with DueVault, the ultimate secure expense tracker and document vault. Whether you need to track utility bills, manage subscriptions, scan receipts, or remember when your passport or vehicle insurance expires, DueVault keeps everything organized, secure, and right at your fingertips.
+Take control of your financial life and important paperwork with DueVault, the ultimate all-in-one expense tracker, bill organizer, and secure document vault—100% free with no ads, no subscriptions, and zero paywalls.
 
-Stop juggling multiple apps for your money and documents. DueVault combines expense tracking with document expiration management in a beautiful, modern Bento Grid dashboard.
+Whether you need to track utility bills, manage recurring subscriptions, scan receipts with on-device OCR, or remember when your passport, ID, or vehicle insurance expires, DueVault keeps everything organized, secure, and right at your fingertips.
 
-🔒 PRIVACY FIRST & OFFLINE READY
-Your data belongs to you. DueVault is built with a local-first architecture. All your entries, attachments, and financial amounts are stored in a secure, encrypted database directly on your device. It works perfectly offline—no internet required for core features, making it the perfect offline bill organizer and private finance manager.
+Stop juggling multiple apps for your finances and paperwork. DueVault seamlessly combines smart expense tracking with document expiration management in an intuitive, modern Bento Grid dashboard.
 
-⚡ KEY FEATURES (FREE)
-• Universal Expense Tracker & Bill Organizer: Add anything—electricity bills, gym subscriptions, car MOTs, IDs, or warranties.
-• Traffic Light System: Instantly see what needs your attention with Red (≤ 3 days), Yellow (4-7 days), and Green (Safe) indicators.
-• Smart Dashboard: A stunning Bento Grid layout that balances your upcoming expenses with expiring documents.
-• Local Encryption: Your attachments, photos, and scanned receipts are encrypted in-place on your storage.
-• Custom Reminders & Bill Alerts: Never miss a payment or a document renewal date again.
+🔒 100% PRIVATE, ENCRYPTED & OFFLINE-READY
+Your data belongs strictly to you:
+• Local-First Architecture: All records and attachments are stored in an encrypted database directly on your device.
+• True Offline Capability: Works completely offline without requiring an active internet connection or account creation.
+• No Ads & Zero Tracking: We do not display ads, collect personal metrics, or sell your data.
 
-🚀 UNLOCK DUEVAULT PRO
-Upgrade your secure vault with powerful premium features designed for ultimate peace of mind:
-• Smart Scan (OCR Receipt Scanner): Stop typing! Snap a picture of a receipt or invoice, and our on-device technology will automatically read and extract the text.
-• Automated Cloud Sync: Seamlessly and silently back up your encrypted vault to your Google Drive.
-• Cross-Device Restore: Log in securely with your Google Account to restore your database on a new device instantly.
+⚡ POWERFUL FEATURES — ALL UNLOCKED & 100% FREE
+• Universal Bill & Expense Tracker: Track utility bills, subscriptions, vehicle taxes, maintenance costs, and personal expenses with ease.
+• Document Expiration Vault: Store IDs, passports, warranties, insurance policies, and certificates so you're never caught off guard.
+• Smart OCR Receipt Scanner: Snap a photo of receipts or invoices—on-device OCR extracts details automatically without manual typing.
+• Traffic Light Urgency System: Instantly spot what needs immediate attention with Red (≤ 3 days), Yellow (4–7 days), and Green (Safe) indicators.
+• Custom Reminders & Due Date Alerts: Schedule timely notifications to ensure you never miss a payment or renewal deadline.
+• Modern Bento Grid Dashboard: Clean, responsive layout offering quick visual insights into your upcoming expenses and active documents.
+• Secure Google Drive Backup: Back up your encrypted vault directly to your personal Google Drive and restore across devices with total privacy.
 
-Get organized today. Download DueVault - the ultimate secure bill tracker and receipt organizer - and never miss a due date again!
+✨ WHY CHOOSE DUEVAULT?
+Most finance and scanner apps lock essential tools behind expensive monthly subscriptions. DueVault provides professional-grade tools—OCR scanning, cloud backups, and local encryption—completely free for everyone.
+
+Get organized today. Download DueVault—the all-in-one private bill organizer, receipt scanner, and document vault—and take charge of your deadlines!
 ```
-*Length: ~2,300 characters*
+*Length: ~2,250 characters*

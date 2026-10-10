@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import 'package:flutter/services.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_typography.dart';
 
 class SettingsListTile extends StatelessWidget {
   final IconData icon;
@@ -23,46 +27,84 @@ class SettingsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedIconColor =
+        iconColor ?? (isDark ? AppColors.emerald400 : AppColors.emerald600);
+
     return Material(
       color: Colors.transparent,
-      child: ListTile(
-        onTap: onTap,
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        leading: Container(
-          width: 36,
-          height: 36,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: titleColor ?? Theme.of(context).textTheme.bodyLarge?.color,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle!,
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                  fontSize: 12,
-                ),
-              )
+      child: InkWell(
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              }
             : null,
-        trailing: trailing ??
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-              size: 14,
-            ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E2838) : AppColors.slate100,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: AppColors.border(isDark).withValues(alpha: 0.6),
+                    width: 0.8,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: resolvedIconColor,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.titleMedium(
+                        titleColor ?? AppColors.textPrimary(isDark),
+                      ).copyWith(
+                        fontSize: 15,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: AppTypography.bodySmall(
+                          AppColors.textSecondary(isDark),
+                        ).copyWith(
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted(isDark),
+                    size: 18,
+                  ),
+            ],
+          ),
+        ),
       ),
     );
   }

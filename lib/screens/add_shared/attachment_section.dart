@@ -116,15 +116,17 @@ class AttachmentSection extends ConsumerWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 110,
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Theme.of(context).dividerColor),
+          color: AppColors.surfaceElevated(isDark),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border(isDark)),
         ),
         child: Center(
           child: FittedBox(
@@ -132,12 +134,16 @@ class AttachmentSection extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: AppTheme.primaryAction, size: 32),
+                Icon(
+                  icon,
+                  color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                  size: 32,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   title,
                   style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    color: AppColors.textPrimary(isDark),
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -146,8 +152,7 @@ class AttachmentSection extends ConsumerWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Theme.of(context).textTheme.bodySmall?.color ??
-                        AppTheme.lightTextSecondary,
+                    color: AppColors.textSecondary(isDark),
                     fontSize: 11,
                   ),
                   textAlign: TextAlign.center,
@@ -161,6 +166,7 @@ class AttachmentSection extends ConsumerWidget {
   }
 
   Widget _buildCameraCardWithOcrToggle(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isGuest = ref.watch(isGuestProvider);
     final isPremium = ref.watch(isPremiumProvider);
     final isPro = kAllFeaturesFree || (!isGuest && isPremium);
@@ -171,18 +177,18 @@ class AttachmentSection extends ConsumerWidget {
         height: 110,
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surfaceElevated(isDark),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: useOcr
-                ? AppTheme.primaryAction.withValues(alpha: 0.5)
-                : Theme.of(context).dividerColor,
+                ? (isDark ? AppColors.emerald400 : AppColors.emerald600).withValues(alpha: 0.5)
+                : AppColors.border(isDark),
             width: useOcr ? 1.5 : 1.0,
           ),
           boxShadow: useOcr
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryAction.withValues(alpha: 0.1),
+                    color: AppColors.emerald500.withValues(alpha: isDark ? 0.12 : 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -196,20 +202,23 @@ class AttachmentSection extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isProcessingOcr)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: SizedBox(
                       height: 24,
                       width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                      ),
                     ),
                   )
                 else
                   Icon(
                     isPro ? Icons.auto_awesome : Icons.photo_camera_outlined,
                     color: useOcr
-                        ? AppTheme.primaryAction
-                        : AppTheme.lightTextSecondary,
+                        ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                        : AppColors.textSecondary(isDark),
                     size: 32,
                   ),
                 const SizedBox(height: 6),
@@ -219,7 +228,7 @@ class AttachmentSection extends ConsumerWidget {
                     Text(
                       isProcessingOcr ? 'Scanning...' : (isPro ? 'Smart Scan' : 'Take a picture'),
                       style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        color: AppColors.textPrimary(isDark),
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -229,19 +238,19 @@ class AttachmentSection extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryAction.withValues(alpha: 0.15),
+                          color: AppColors.emerald500.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: AppTheme.primaryAction.withValues(alpha: 0.4),
+                            color: AppColors.emerald500.withValues(alpha: 0.4),
                             width: 0.8,
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'PRO',
                           style: TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryAction,
+                            color: isDark ? AppColors.emerald400 : AppColors.emerald700,
                           ),
                         ),
                       ),
@@ -258,8 +267,8 @@ class AttachmentSection extends ConsumerWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: useOcr
-                            ? AppTheme.primaryAction
-                            : Theme.of(context).textTheme.bodySmall?.color,
+                            ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                            : AppColors.textMuted(isDark),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -271,7 +280,7 @@ class AttachmentSection extends ConsumerWidget {
                         child: Switch(
                           value: useOcr,
                           onChanged: onOcrToggleChanged,
-                          activeThumbColor: AppTheme.primaryAction,
+                          activeThumbColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),

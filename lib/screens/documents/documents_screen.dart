@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/vault_item.dart';
 import '../../providers/vault_provider.dart';
 import '../../providers/currency_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/vault_item_tile.dart';
-import '../../widgets/vault_snackbar.dart';
+import '../../widgets/global_components.dart';
+import '../../utils/date_helper.dart';
 import '../item_detail_screen.dart';
+import '../shared/vault_filter_pills.dart';
+import '../shared/vault_section_header.dart';
+import '../shared/vault_search_field.dart';
 
 class DocumentsScreen extends ConsumerStatefulWidget {
   const DocumentsScreen({super.key});
@@ -27,50 +31,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     super.dispose();
   }
 
-  void _toggleRenewedStatus(VaultItem item) {
+  Future<void> _toggleRenewedStatus(VaultItem item) async {
+    await HapticFeedback.mediumImpact();
     final notifier = ref.read(vaultProvider.notifier);
     final nextState = !item.isPaid;
-    notifier.updatePaidStatus(item.id, nextState);
+    await notifier.updatePaidStatus(item.id, nextState);
 
     VaultSnackBar.show(
       message:
           '${item.title} ${nextState ? "marked as renewed" : "marked as not renewed"}',
       actionLabel: 'UNDO',
-      backgroundColor: AppTheme.safeGreen,
+      backgroundColor: AppColors.emerald500,
       onAction: () => notifier.updatePaidStatus(item.id, !nextState),
-    );
-  }
-
-  Widget _buildFilterChip(String label, int index, bool isDark) {
-    final isSelected = _filterIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _filterIndex = index),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryAction
-              : (isDark ? const Color(0xFF161F30) : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryAction
-                : (isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0)),
-            width: 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-          ),
-        ),
-      ),
     );
   }
 
@@ -79,65 +51,47 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     final allItems = ref.watch(vaultProvider);
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
 
-    // Filter only documents
     final docs = allItems
         .where((i) => i.itemType == 'Document' && !i.isDeleted)
         .toList();
 
-    // Search filter
     final query = _searchQuery.trim().toLowerCase();
     final filteredDocs = query.isEmpty
         ? docs
         : docs.where((d) {
             return d.title.toLowerCase().contains(query) ||
-                (d.notes?.toLowerCase().contains(query) ?? false);
+                (d.notes?.toLowerCase().contains(query) ?? false) ||
+                d.category.toLowerCase().contains(query);
           }).toList();
 
-    // Split into Active and Expired/Renewed
-    final activeDocs =
-        filteredDocs.where((d) {
-          if (d.isArchived || d.isPaid) return false;
-          if (d.dueDate != null && d.dueDate!.isBefore(today)) return false;
-          return true;
-        }).toList()..sort((a, b) {
-          if (a.dueDate == null && b.dueDate == null) return 0;
-          if (a.dueDate == null) return 1;
-          if (b.dueDate == null) return -1;
-          return a.dueDate!.compareTo(b.dueDate!);
-        });
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    int compareClosestToFarthest(DateTime? a, DateTime? b) {
-      if (a == null && b == null) return 0;
-      if (a == null) return 1;
-      if (b == null) return -1;
+    final activeDocs = filteredDocs.where((d) {
+      if (d.isArchived) return false;
+      if (d.isPaid) return false;
+      if (d.dueDate == null) return true;
+      final dueDay = DateTime(d.dueDate!.year, d.dueDate!.month, d.dueDate!.day);
+      return !dueDay.isBefore(today);
+    }).toList()
+      ..sort((a, b) {
+        if (a.dueDate == null && b.dueDate == null) return 0;
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
 
-      final aDay = DateTime(a.year, a.month, a.day);
-      final bDay = DateTime(b.year, b.month, b.day);
+    final expiredOrRenewedDocs = filteredDocs.where((d) {
+      if (d.isArchived) return true;
+      if (d.isPaid) return true;
+      if (d.dueDate == null) return false;
+      final dueDay = DateTime(d.dueDate!.year, d.dueDate!.month, d.dueDate!.day);
+      return dueDay.isBefore(today);
+    }).toList()
+      ..sort((a, b) => DateHelper.compareClosestToFarthest(a.dueDate, b.dueDate, today));
 
-      final aDiff = aDay.difference(today).inDays;
-      final bDiff = bDay.difference(today).inDays;
-
-      // Both upcoming (>= 0): closest upcoming date first
-      if (aDiff >= 0 && bDiff >= 0) {
-        return aDiff.compareTo(bDiff);
-      }
-      // Both in past (< 0): closest past date to today first (-1 before -30)
-      if (aDiff < 0 && bDiff < 0) {
-        return bDiff.compareTo(aDiff);
-      }
-      // Upcoming before past
-      return aDiff >= 0 ? -1 : 1;
-    }
-
-    final expiredDocs =
-        filteredDocs.where((d) {
-          if (d.isArchived || d.isPaid) return true;
-          if (d.dueDate != null && d.dueDate!.isBefore(today)) return true;
-          return false;
-        }).toList()..sort((a, b) => compareClosestToFarthest(a.dueDate, b.dueDate));
+    final infoAccent = isDark ? AppColors.infoBlue400 : AppColors.infoBlue700;
 
     return Scaffold(
       body: SafeArea(
@@ -156,21 +110,28 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             return false;
           },
           child: CustomScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
-              // Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.base,
+                    AppSpacing.base,
+                    AppSpacing.base,
+                    AppSpacing.sm,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
                             'Documents',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                            style: AppTypography.headlineLarge(AppColors.textPrimary(isDark)).copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -178,20 +139,18 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryAction.withValues(
-                                alpha: 0.12,
+                              color: AppColors.infoBlue500.withValues(
+                                alpha: isDark ? 0.12 : 0.1,
                               ),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                               border: Border.all(
-                                color: AppTheme.primaryAction.withValues(
-                                  alpha: 0.25,
-                                ),
+                                color: infoAccent.withValues(alpha: 0.3),
+                                width: 1.0,
                               ),
                             ),
                             child: Text(
                               '${activeDocs.length} Active',
-                              style: const TextStyle(
-                                color: AppTheme.primaryAction,
+                              style: AppTypography.labelMedium(infoAccent).copyWith(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -199,72 +158,37 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
-                        'IDs, warranties, policies and contracts',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        '${activeDocs.length} valid • ${expiredOrRenewedDocs.length} renewed/expired',
+                        style: AppTypography.bodySmall(AppColors.textSecondary(isDark)),
                       ),
-                      const SizedBox(height: 14),
-                      // Search Bar
-                      TextField(
+                      const SizedBox(height: AppSpacing.md),
+
+                      VaultSearchField(
                         controller: _searchController,
+                        hintText: 'Search documents...',
+                        query: _searchQuery,
+                        isDark: isDark,
+                        focusColor: AppColors.infoBlue500,
                         onChanged: (val) => setState(() => _searchQuery = val),
-                        decoration: InputDecoration(
-                          hintText: 'Search documents...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: isDark
-                              ? const Color(0xFF161F30)
-                              : Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF222F48)
-                                  : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF222F48)
-                                  : const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                        ),
+                        onClear: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
                       ),
-                      const SizedBox(height: 12),
-                      // Filter Pills
-                      Row(
-                        children: [
-                          _buildFilterChip('All', 0, isDark),
-                          const SizedBox(width: 8),
-                          _buildFilterChip(
-                            'Active (${activeDocs.length})',
-                            1,
-                            isDark,
-                          ),
-                          const SizedBox(width: 8),
-                          _buildFilterChip(
-                            'Expired (${expiredDocs.length})',
-                            2,
-                            isDark,
-                          ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      VaultFilterPills(
+                        selectedIndex: _filterIndex,
+                        options: [
+                          'All',
+                          'Active (${activeDocs.length})',
+                          'Renewed/Past (${expiredOrRenewedDocs.length})',
                         ],
+                        isDark: isDark,
+                        activeColor: isDark ? AppColors.infoBlue500 : AppColors.infoBlue700,
+                        onSelect: (index) => setState(() => _filterIndex = index),
                       ),
                     ],
                   ),
@@ -274,67 +198,31 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
               if (filteredDocs.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.description_outlined,
-                          size: 56,
-                          color: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'No documents match your search'
-                              : 'No documents added yet',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Try a different keyword'
-                              : 'Tap + to add your first document',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                  child: EmptyState(
+                    title: _searchQuery.isNotEmpty
+                        ? 'No documents match your search'
+                        : 'No documents added yet',
+                    subtitle: _searchQuery.isNotEmpty
+                        ? 'Try a different keyword or clear filters'
+                        : 'Tap + to add your passport, ID, contracts, and more.',
+                    icon: Icons.description_outlined,
                   ),
                 )
               else ...[
-                // Active Section
                 if (_filterIndex != 2 && activeDocs.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.verified_user_outlined,
-                            size: 16,
-                            color: AppTheme.primaryAction,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'ACTIVE DOCUMENTS (${activeDocs.length})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: VaultSectionHeader(
+                      title: 'Active Documents',
+                      count: activeDocs.length,
+                      color: AppColors.infoBlue500,
+                      isDark: isDark,
+                      icon: Icons.verified_user_outlined,
+                      singularSuffix: 'doc',
+                      pluralSuffix: 'docs',
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final doc = activeDocs[index];
@@ -342,6 +230,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                           item: doc,
                           currency: currency,
                           isHomeScreen: false,
+                          isFirst: index == 0,
+                          isLast: index == activeDocs.length - 1,
+                          showDivider: index < activeDocs.length - 1,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -357,45 +248,32 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   ),
                 ],
 
-                // Expired / Renewed Section
-                if (_filterIndex != 1 && expiredDocs.isNotEmpty) ...[
+                if (_filterIndex != 1 && expiredOrRenewedDocs.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.history,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'EXPIRED & RENEWED (${expiredDocs.length})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark
-                                  ? Colors.grey.shade500
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: VaultSectionHeader(
+                      title: 'Expired & Renewed',
+                      count: expiredOrRenewedDocs.length,
+                      color: AppColors.textSecondary(isDark),
+                      isDark: isDark,
+                      icon: Icons.history_rounded,
+                      singularSuffix: 'doc',
+                      pluralSuffix: 'docs',
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate((context, index) {
-                        final doc = expiredDocs[index];
+                        final doc = expiredOrRenewedDocs[index];
                         return Opacity(
                           opacity: 0.85,
                           child: VaultItemTile(
                             item: doc,
                             currency: currency,
                             isHomeScreen: false,
+                            isFirst: index == 0,
+                            isLast: index == expiredOrRenewedDocs.length - 1,
+                            showDivider: index < expiredOrRenewedDocs.length - 1,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -407,11 +285,11 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                             onCheckPressed: () => _toggleRenewedStatus(doc),
                           ),
                         );
-                      }, childCount: expiredDocs.length),
+                      }, childCount: expiredOrRenewedDocs.length),
                     ),
                   ),
                 ],
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: 140)),
               ],
             ],
           ),

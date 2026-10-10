@@ -1,41 +1,55 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
 
 class BentoInputWrapper extends StatelessWidget {
   final String label;
   final Widget child;
+  final IconData? icon;
 
   const BentoInputWrapper({
     super.key,
     required this.label,
     required this.child,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).textTheme.bodyMedium?.color,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
+          padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.sm),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                ),
+                const SizedBox(width: AppSpacing.xs + 2),
+              ],
+              Text(
+                label.toUpperCase(),
+                style: AppTypography.labelCaps(AppColors.textSecondary(isDark)),
+              ),
+            ],
           ),
         ),
         Container(
           width: double.infinity,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface(isDark),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              color: AppColors.border(isDark),
+              width: 1.0,
             ),
+            boxShadow: !isDark ? AppShadows.sm : null,
           ),
           child: child,
         ),

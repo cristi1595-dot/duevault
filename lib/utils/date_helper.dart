@@ -64,4 +64,29 @@ class DateHelper {
     if (date == null) return 'N/A';
     return '${date.day}/${date.month}/${date.year}';
   }
+
+  /// Compares dates prioritizing upcoming (0..+inf) closest first, then past (negative) most recent first.
+  static int compareClosestToFarthest(
+    DateTime? a,
+    DateTime? b,
+    DateTime today,
+  ) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+
+    final aDay = DateTime(a.year, a.month, a.day);
+    final bDay = DateTime(b.year, b.month, b.day);
+
+    final aDiff = aDay.difference(today).inDays;
+    final bDiff = bDay.difference(today).inDays;
+
+    if (aDiff >= 0 && bDiff >= 0) {
+      return aDiff.compareTo(bDiff);
+    }
+    if (aDiff < 0 && bDiff < 0) {
+      return bDiff.compareTo(aDiff);
+    }
+    return aDiff >= 0 ? -1 : 1;
+  }
 }

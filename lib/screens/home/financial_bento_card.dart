@@ -92,28 +92,33 @@ class FinancialBentoCard extends ConsumerWidget {
 
     final totalDocs30Days = expiredDocs.length + upcomingDocs30Days.length;
 
-    // Card Colors & Styling
-    final cardBg = isDark ? const Color(0xFF161F30) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0);
-    const billAccent = Color(0xFF10B981); // Emerald
-    const docAccent = Color(0xFF6366F1);  // Slate Indigo
+    // Design Tokens & Styling
+    final cardBg = AppColors.surface(isDark);
+    final borderColor = AppColors.border(isDark);
+    final billAccent = isDark ? AppColors.emerald400 : AppColors.emerald600;
+    final docAccent = isDark ? AppColors.infoBlue400 : AppColors.infoBlue700;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: borderColor, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : AppShadows.md,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,27 +130,51 @@ class FinancialBentoCard extends ConsumerWidget {
                   child: InkWell(
                     key: const Key('bento_bills_column'),
                     borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(20),
+                      left: Radius.circular(AppRadius.xl),
                     ),
+                    splashColor: AppColors.emerald500.withValues(alpha: 0.08),
                     onTap: () {
                       ref.read(bottomNavIndexProvider.notifier).state = 1;
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.emerald500.withValues(alpha: isDark ? 0.04 : 0.02),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.base,
+                        vertical: AppSpacing.md,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 30 Days VEDETA Metric (Big & Bold on top)
-                          const Text(
-                            'NEXT 30 DAYS',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: billAccent,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'NEXT 30 DAYS',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                  color: billAccent,
+                                ),
+                              ),
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                size: 14,
+                                color: billAccent.withValues(alpha: 0.7),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppSpacing.xxs),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -155,35 +184,43 @@ class FinancialBentoCard extends ConsumerWidget {
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: -0.5,
                                     fontSize: 23,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    color: AppColors.textPrimary(isDark),
                                   ),
                             ),
                           ),
 
                           // Overdue indicator if any
                           if (overdueBills.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppTheme.urgentRed.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppColors.statusUrgentText(isDark).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.xs),
+                                border: Border.all(
+                                  color: AppColors.statusUrgentText(isDark).withValues(alpha: 0.25),
+                                  width: 0.75,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.error_outline_rounded,
                                     size: 11,
-                                    color: AppTheme.urgentRed,
+                                    color: AppColors.statusUrgentText(isDark),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${overdueBills.length} overdue',
-                                    style: const TextStyle(
-                                      color: AppTheme.urgentRed,
+                                    style: TextStyle(
+                                      color: AppColors.statusUrgentText(isDark),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
                                 ],
@@ -191,24 +228,31 @@ class FinancialBentoCard extends ConsumerWidget {
                             ),
                           ],
 
-                          const SizedBox(height: 10),
+                          const SizedBox(height: AppSpacing.md),
 
-                          // 7 Days Secondary Metric (Pill container below)
+                          // 7 Days Secondary Metric
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm + 1,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF1E2638)
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(10),
+                              color: AppColors.surfaceElevated(isDark),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.border(isDark)
+                                    : AppColors.slate200,
+                                width: 0.8,
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.calendar_today_outlined,
-                                  size: 11,
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  size: 12,
+                                  color: AppColors.textSecondary(isDark),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -218,9 +262,9 @@ class FinancialBentoCard extends ConsumerWidget {
                                       Text(
                                         '7 Days',
                                         style: TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 9.5,
                                           fontWeight: FontWeight.w600,
-                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                          color: AppColors.textSecondary(isDark),
                                         ),
                                       ),
                                       FittedBox(
@@ -229,9 +273,9 @@ class FinancialBentoCard extends ConsumerWidget {
                                         child: Text(
                                           '${currency.symbol}${totalBills7Days.toStringAsFixed(2)}',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 12.5,
                                             fontWeight: FontWeight.w700,
-                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            color: AppColors.textPrimary(isDark),
                                           ),
                                         ),
                                       ),
@@ -262,27 +306,51 @@ class FinancialBentoCard extends ConsumerWidget {
                   child: InkWell(
                     key: const Key('bento_docs_column'),
                     borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(20),
+                      right: Radius.circular(AppRadius.xl),
                     ),
+                    splashColor: AppColors.infoBlue500.withValues(alpha: 0.08),
                     onTap: () {
                       ref.read(bottomNavIndexProvider.notifier).state = 2;
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.infoBlue500.withValues(alpha: isDark ? 0.04 : 0.02),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.base,
+                        vertical: AppSpacing.md,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 30 Days VEDETA Metric (Big & Bold on top)
-                          const Text(
-                            'NEXT 30 DAYS',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                              color: docAccent,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'NEXT 30 DAYS',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                  color: docAccent,
+                                ),
+                              ),
+                              Icon(
+                                Icons.folder_open_rounded,
+                                size: 14,
+                                color: docAccent.withValues(alpha: 0.7),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppSpacing.xxs),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -296,7 +364,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: -0.5,
                                         fontSize: 23,
-                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                        color: AppColors.textPrimary(isDark),
                                       ),
                                 ),
                                 const SizedBox(width: 5),
@@ -305,7 +373,7 @@ class FinancialBentoCard extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                    color: AppColors.textSecondary(isDark),
                                   ),
                                 ),
                               ],
@@ -314,28 +382,36 @@ class FinancialBentoCard extends ConsumerWidget {
 
                           // Expired indicator if any
                           if (expiredDocs.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppTheme.urgentRed.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppColors.statusUrgentText(isDark).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.xs),
+                                border: Border.all(
+                                  color: AppColors.statusUrgentText(isDark).withValues(alpha: 0.25),
+                                  width: 0.75,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.error_outline_rounded,
                                     size: 11,
-                                    color: AppTheme.urgentRed,
+                                    color: AppColors.statusUrgentText(isDark),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${expiredDocs.length} expired',
-                                    style: const TextStyle(
-                                      color: AppTheme.urgentRed,
+                                    style: TextStyle(
+                                      color: AppColors.statusUrgentText(isDark),
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
                                 ],
@@ -343,24 +419,31 @@ class FinancialBentoCard extends ConsumerWidget {
                             ),
                           ],
 
-                          const SizedBox(height: 10),
+                          const SizedBox(height: AppSpacing.md),
 
-                          // 7 Days Secondary Metric (Pill container below)
+                          // 7 Days Secondary Metric
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm + 1,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF1E2638)
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(10),
+                              color: AppColors.surfaceElevated(isDark),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.border(isDark)
+                                    : AppColors.slate200,
+                                width: 0.8,
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.calendar_today_outlined,
-                                  size: 11,
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  size: 12,
+                                  color: AppColors.textSecondary(isDark),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -370,9 +453,9 @@ class FinancialBentoCard extends ConsumerWidget {
                                       Text(
                                         '7 Days',
                                         style: TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 9.5,
                                           fontWeight: FontWeight.w600,
-                                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                          color: AppColors.textSecondary(isDark),
                                         ),
                                       ),
                                       FittedBox(
@@ -381,9 +464,9 @@ class FinancialBentoCard extends ConsumerWidget {
                                         child: Text(
                                           '$totalDocs7Days expiring',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: 12.5,
                                             fontWeight: FontWeight.w700,
-                                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                            color: AppColors.textPrimary(isDark),
                                           ),
                                         ),
                                       ),

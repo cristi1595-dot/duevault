@@ -109,7 +109,7 @@ void main() {
       );
 
       // Select date
-      await tester.tap(find.text('Select'));
+      await tester.tap(find.text('Select Date'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('OK'));

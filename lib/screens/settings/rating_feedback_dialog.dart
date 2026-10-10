@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import 'package:flutter/services.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_typography.dart';
 
 class RatingFeedbackDialog extends StatefulWidget {
   final ValueChanged<int> onRated;
@@ -29,23 +33,24 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryEmerald = isDark ? AppColors.emerald500 : AppColors.emerald600;
 
     return Dialog(
-      backgroundColor: theme.cardTheme.color,
+      backgroundColor: AppColors.surface(isDark),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         side: BorderSide(
-          color: theme.dividerColor.withValues(alpha: 0.3),
+          color: AppColors.border(isDark),
           width: 1.0,
         ),
       ),
-      elevation: 8,
+      elevation: 0,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         width: MediaQuery.of(context).size.width * 0.88,
         constraints: const BoxConstraints(maxHeight: 520),
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -53,22 +58,24 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
               // Dynamic Icon Header
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(16),
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  color: (_selectedRating >= 4 ? AppTheme.primaryAction : AppTheme.warningYellow).withValues(alpha: 0.1),
+                  color: (_selectedRating >= 4 ? primaryEmerald : AppColors.warningAmber500).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
+                alignment: Alignment.center,
                 child: Icon(
                   _selectedRating == 0
                       ? Icons.star_border_rounded
                       : _selectedRating >= 4
                           ? Icons.favorite_rounded
                           : Icons.rate_review_rounded,
-                  color: _selectedRating >= 4 ? AppTheme.primaryAction : AppTheme.warningYellow,
-                  size: 36,
+                  color: _selectedRating >= 4 ? primaryEmerald : AppColors.warningAmber500,
+                  size: 32,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.md),
 
               // Title
               Text(
@@ -78,12 +85,12 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                         ? 'We love you back!'
                         : 'Help us improve',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)).copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 19,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
 
               // Description
               Text(
@@ -93,12 +100,11 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                         ? 'Would you mind sharing a quick rating on the Google Play Store to support our development?'
                         : 'Please tell us what we can do better so we can make it right for you.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
+                style: AppTypography.bodySmall(AppColors.textSecondary(isDark)).copyWith(
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
 
               // Interactive Stars Selection
               Row(
@@ -110,20 +116,21 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                     onTap: _submittedFeedback || _isSubmitting
                         ? null
                         : () {
+                            HapticFeedback.lightImpact();
                             setState(() {
                               _selectedRating = starValue;
                             });
                             widget.onRated(starValue);
                           },
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: AnimatedScale(
                         scale: isLit ? 1.15 : 1.0,
                         duration: const Duration(milliseconds: 150),
                         child: Icon(
                           isLit ? Icons.star_rounded : Icons.star_outline_rounded,
-                          color: isLit ? Colors.amber : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.4),
-                          size: 42,
+                          color: isLit ? AppColors.warningAmber500 : AppColors.textMuted(isDark),
+                          size: 38,
                         ),
                       ),
                     ),
@@ -133,69 +140,78 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
 
               // Feedback Form (1-3 stars)
               if (_selectedRating > 0 && _selectedRating <= 3 && !_submittedFeedback) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: _feedbackController,
                   maxLines: 3,
                   maxLength: 500,
-                  style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
+                  style: TextStyle(
+                    color: AppColors.textPrimary(isDark),
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Share your thoughts, suggestions, or issues...',
                     hintStyle: TextStyle(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: AppColors.textMuted(isDark),
                       fontSize: 13,
                     ),
                     filled: true,
-                    fillColor: theme.scaffoldBackgroundColor,
+                    fillColor: AppColors.surfaceElevated(isDark),
                     counterText: '',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: BorderSide(
-                        color: theme.dividerColor.withValues(alpha: 0.3),
+                        color: AppColors.border(isDark),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: BorderSide(
-                        color: theme.dividerColor.withValues(alpha: 0.3),
+                        color: AppColors.border(isDark),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryAction,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: BorderSide(
+                        color: primaryEmerald,
                         width: 1.5,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                Navigator.pop(context);
+                              },
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: Text(
                           'Cancel',
                           style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color,
+                            color: AppColors.textSecondary(isDark),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _isSubmitting
                             ? null
                             : () async {
+                                await HapticFeedback.mediumImpact();
                                 setState(() {
                                   _isSubmitting = true;
                                 });
@@ -204,17 +220,16 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                                   _isSubmitting = false;
                                   _submittedFeedback = true;
                                 });
-                                // Keep it briefly open to show completion animation
                                 await Future.delayed(const Duration(milliseconds: 1500));
                                 if (context.mounted) {
                                   Navigator.of(context).pop();
                                 }
                               },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: AppTheme.primaryAction,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: primaryEmerald,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: _isSubmitting
@@ -231,6 +246,7 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
                       ),
@@ -241,39 +257,43 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
 
               // Promotion Row for Play Store (4-5 stars)
               if (_selectedRating >= 4) ...[
-                const SizedBox(height: 28),
+                const SizedBox(height: AppSpacing.xl),
                 Row(
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                        },
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: Text(
                           'Not now',
                           style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color,
+                            color: AppColors.textSecondary(isDark),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
+                          HapticFeedback.mediumImpact();
                           Navigator.pop(context);
                           widget.onFeedbackSubmitted('STORES_REVIEW');
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: AppTheme.primaryAction,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: primaryEmerald,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text(
@@ -281,6 +301,7 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -291,19 +312,19 @@ class _RatingFeedbackDialogState extends State<RatingFeedbackDialog> {
 
               // Success Message
               if (_submittedFeedback) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.md),
                 AnimatedOpacity(
                   opacity: _submittedFeedback ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_rounded, color: AppTheme.safeGreen, size: 20),
+                      Icon(Icons.check_circle_rounded, color: primaryEmerald, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         'Thank you for your response!',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.safeGreen,
+                        style: TextStyle(
+                          color: primaryEmerald,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

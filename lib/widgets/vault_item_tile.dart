@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/vault_item.dart';
@@ -14,6 +15,9 @@ class VaultItemTile extends ConsumerWidget {
   final VoidCallback? onCheckPressed;
   final Currency currency;
   final bool isHomeScreen;
+  final bool isFirst;
+  final bool isLast;
+  final bool showDivider;
 
   const VaultItemTile({
     super.key,
@@ -22,6 +26,9 @@ class VaultItemTile extends ConsumerWidget {
     this.onCheckPressed,
     required this.currency,
     this.isHomeScreen = false,
+    this.isFirst = true,
+    this.isLast = true,
+    this.showDivider = false,
   });
 
   int _calculateDaysLeft(DateTime? dueDate) {
@@ -76,26 +83,31 @@ class VaultItemTile extends ConsumerWidget {
     final Color dotColor;
 
     if (item.isPaid) {
-      dotColor = AppTheme.primaryAction;
+      dotColor = AppColors.statusSafeText(isDark);
     } else if (item.dueDate == null) {
-      dotColor = isDark ? Colors.grey.shade500 : Colors.grey.shade400;
+      dotColor = isDark ? AppColors.slate500 : AppColors.slate400;
     } else if (isOverdue) {
-      dotColor = AppTheme.urgentRed;
+      dotColor = AppColors.statusUrgentText(isDark);
     } else if (daysLeft <= 3) {
-      dotColor = AppTheme.warningYellow;
+      dotColor = AppColors.statusUrgentText(isDark);
+    } else if (daysLeft <= 7) {
+      dotColor = AppColors.statusWarningText(isDark);
     } else {
-      dotColor = AppTheme.primaryAction;
+      dotColor = AppColors.statusSafeText(isDark);
     }
 
-    final Color pillBg = isDark ? const Color(0xFF1E2838) : const Color(0xFFF1F5F9);
-    final Color textColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final Color pillBg = AppColors.surfaceElevated(isDark);
+    final Color textColor = AppColors.textSecondary(isDark);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
       decoration: BoxDecoration(
         color: pillBg,
-        borderRadius: BorderRadius.circular(20),
-        border: isDark ? Border.all(color: const Color(0xFF27354A), width: 0.8) : null,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(
+          color: isDark ? AppColors.border(isDark) : AppColors.slate200,
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -112,7 +124,7 @@ class VaultItemTile extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -128,39 +140,71 @@ class VaultItemTile extends ConsumerWidget {
     final isInHistory = item.isArchived || (item.isPaid && item.isExpired);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardBg = isDark ? const Color(0xFF161F30) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF222F48) : const Color(0xFFE2E8F0);
+    final cardBg = AppColors.surface(isDark);
+    final borderColor = AppColors.border(isDark);
 
     final rawTitle = item.title.isEmpty ? (isBill ? item.category : 'Document') : item.title;
     final displayTitle = rawTitle.length > 40 ? '${rawTitle.substring(0, 37)}...' : rawTitle;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Dismissible(
-          key: ValueKey(item.id),
+    final borderRadius = BorderRadius.only(
+      topLeft: Radius.circular(isFirst ? AppRadius.xl : 0),
+      topRight: Radius.circular(isFirst ? AppRadius.xl : 0),
+      bottomLeft: Radius.circular(isLast ? AppRadius.xl : 0),
+      bottomRight: Radius.circular(isLast ? AppRadius.xl : 0),
+    );
+
+    final border = Border(
+      top: isFirst ? BorderSide(color: borderColor, width: 1.0) : BorderSide.none,
+      bottom: isLast ? BorderSide(color: borderColor, width: 1.0) : BorderSide.none,
+      left: BorderSide(color: borderColor, width: 1.0),
+      right: BorderSide(color: borderColor, width: 1.0),
+    );
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Dismissible(
+        key: ValueKey(item.id),
           direction: DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             if (direction == DismissDirection.endToStart) {
+              await HapticFeedback.mediumImpact();
+              if (!context.mounted) return false;
               return showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Delete Item?'),
+                  backgroundColor: AppColors.surface(isDark),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                    side: BorderSide(color: AppColors.border(isDark)),
+                  ),
+                  title: Text(
+                    'Delete Item?',
+                    style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+                  ),
                   content: Text(
                     'Are you sure you want to permanently delete "${item.title}"? This cannot be undone.',
+                    style: AppTypography.bodyMedium(AppColors.textSecondary(isDark)),
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('CANCEL'),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(context, false);
+                      },
+                      child: Text(
+                        'CANCEL',
+                        style: TextStyle(color: AppColors.textSecondary(isDark), fontWeight: FontWeight.w600),
+                      ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pop(context, true),
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.pop(context, true);
+                      },
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.urgentRed,
+                        foregroundColor: AppColors.urgentRose600,
                       ),
-                      child: const Text('DELETE'),
+                      child: const Text('DELETE', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -168,15 +212,16 @@ class VaultItemTile extends ConsumerWidget {
             }
             return true;
           },
-          onDismissed: (direction) {
+          onDismissed: (direction) async {
+            await HapticFeedback.mediumImpact();
             final notifier = ref.read(vaultProvider.notifier);
             if (direction == DismissDirection.startToEnd) {
               if (isInHistory) {
-                notifier.toggleArchiveStatus(item.id, false);
+                await notifier.toggleArchiveStatus(item.id, false);
                 VaultSnackBar.show(
                   message: 'Restored to Vault',
                   actionLabel: 'UNDO',
-                  backgroundColor: const Color(0xFF6366F1),
+                  backgroundColor: AppColors.infoBlue500,
                   onAction: () async {
                     if (item.isArchived) {
                       await notifier.toggleArchiveStatus(item.id, true);
@@ -188,11 +233,11 @@ class VaultItemTile extends ConsumerWidget {
                 );
               } else {
                 final wasPaid = item.isPaid;
-                notifier.toggleArchiveStatus(item.id, true);
+                await notifier.toggleArchiveStatus(item.id, true);
                 VaultSnackBar.show(
                   message: 'Moved to History',
                   actionLabel: 'UNDO',
-                  backgroundColor: AppTheme.primaryAction,
+                  backgroundColor: AppColors.emerald500,
                   onAction: () async {
                     await notifier.toggleArchiveStatus(item.id, false);
                     if (wasPaid) {
@@ -203,17 +248,17 @@ class VaultItemTile extends ConsumerWidget {
               }
             } else {
               final deletedItem = item;
-              notifier.deleteItem(item.id);
+              await notifier.deleteItem(item.id);
               VaultSnackBar.show(
                 message: 'Item deleted',
                 actionLabel: 'UNDO',
-                backgroundColor: AppTheme.urgentRed,
+                backgroundColor: AppColors.urgentRose600,
                 onAction: () => notifier.addItem(deletedItem),
               );
             }
           },
           background: Container(
-            color: isInHistory ? const Color(0xFF6366F1) : AppTheme.primaryAction,
+            color: isInHistory ? AppColors.infoBlue500 : AppColors.emerald500,
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -236,7 +281,7 @@ class VaultItemTile extends ConsumerWidget {
             ),
           ),
           secondaryBackground: Container(
-            color: AppTheme.urgentRed,
+            color: AppColors.urgentRose600,
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: const Row(
@@ -259,41 +304,41 @@ class VaultItemTile extends ConsumerWidget {
               ],
             ),
           ),
-          child: InkWell(
-            onTap: onTap ??
-                () {
+          child: Material(
+            color: cardBg,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                if (onTap != null) {
+                  onTap!();
+                } else {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ItemDetailScreen(item: item),
                     ),
                   );
-                },
-            borderRadius: BorderRadius.circular(16),
-            child: Opacity(
-              opacity: item.isPaid ? 0.65 : 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: borderColor,
-                    width: 1.0,
+                }
+              },
+              borderRadius: borderRadius,
+              child: Opacity(
+                opacity: item.isPaid ? 0.65 : 1.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: borderRadius,
+                    border: border,
+                    boxShadow: (!isDark && isLast) ? AppShadows.sm : null,
                   ),
-                  boxShadow: !isDark
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: 59.2,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
                     // 1. Icon Container
                     _VaultItemThumbnail(item: item, isBill: isBill),
                     const SizedBox(width: 12),
@@ -309,13 +354,16 @@ class VaultItemTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: isBill ? 14 : 18,
+                              fontSize: isBill ? 14.5 : 16,
                               fontWeight: isBill ? FontWeight.w500 : FontWeight.w600,
                               letterSpacing: -0.2,
+                              height: 1.15,
                               decoration: item.isPaid ? TextDecoration.lineThrough : null,
                               color: item.isPaid
-                                  ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
-                                  : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                  ? AppColors.textMuted(isDark)
+                                  : (isBill
+                                      ? AppColors.textSecondary(isDark)
+                                      : AppColors.textPrimary(isDark)),
                             ),
                           ),
                           if (isBill) ...[
@@ -328,12 +376,13 @@ class VaultItemTile extends ConsumerWidget {
                                 Text(
                                   currency.formatAmount(item.amount ?? 0.0),
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 16.5,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: -0.3,
+                                    height: 1.15,
                                     color: item.isPaid
-                                        ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
-                                        : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                        ? AppColors.textMuted(isDark)
+                                        : AppColors.textPrimary(isDark),
                                   ),
                                 ),
                                 if (item.recurrence.isNotEmpty && item.recurrence != 'None') ...[
@@ -341,11 +390,10 @@ class VaultItemTile extends ConsumerWidget {
                                   Text(
                                     '• ${item.recurrence}',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w500,
-                                      color: isDark
-                                          ? const Color(0xFF94A3B8)
-                                          : const Color(0xFF64748B),
+                                      height: 1.15,
+                                      color: AppColors.textMuted(isDark),
                                     ),
                                   ),
                                 ],
@@ -364,8 +412,11 @@ class VaultItemTile extends ConsumerWidget {
                     if (onCheckPressed != null) ...[
                       const SizedBox(width: 8),
                       InkWell(
-                        onTap: onCheckPressed,
-                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          onCheckPressed?.call();
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         child: Padding(
                           padding: const EdgeInsets.all(2),
                           child: Container(
@@ -374,16 +425,16 @@ class VaultItemTile extends ConsumerWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: item.isPaid
-                                  ? AppTheme.primaryAction
+                                  ? AppColors.emerald500
                                   : (isDark
                                       ? const Color(0xFF1E2638)
                                       : const Color(0xFFF1F5F9)),
                               border: Border.all(
                                 color: item.isPaid
-                                    ? AppTheme.primaryAction
+                                    ? AppColors.emerald500
                                     : (isDark
-                                        ? const Color(0xFF334155)
-                                        : const Color(0xFFCBD5E1)),
+                                        ? AppColors.border(isDark)
+                                        : AppColors.slate300),
                                 width: 1.4,
                               ),
                             ),
@@ -393,21 +444,31 @@ class VaultItemTile extends ConsumerWidget {
                               color: item.isPaid
                                   ? Colors.white
                                   : (isDark
-                                      ? Colors.grey.shade500
-                                      : Colors.grey.shade400),
+                                      ? AppColors.slate500
+                                      : AppColors.slate400),
                             ),
                           ),
                         ),
                       ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
+              if (showDivider)
+                Container(
+                  margin: const EdgeInsets.only(left: 64, right: 14),
+                  height: 0.8,
+                  color: isDark ? const Color(0xFF1E2838) : AppColors.slate200,
+                ),
+            ],
           ),
         ),
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }
 
@@ -462,41 +523,42 @@ class _VaultItemThumbnail extends StatelessWidget {
 
     final Color containerBg = item.isPaid
         ? (isBill
-            ? AppTheme.primaryAction.withValues(alpha: 0.15)
-            : const Color(0xFF6366F1).withValues(alpha: 0.15))
+            ? AppColors.emerald500.withValues(alpha: 0.15)
+            : AppColors.infoBlue500.withValues(alpha: 0.15))
         : (isDark ? const Color(0xFF1E2838) : const Color(0xFFF1F5F9));
 
     final Color iconColor;
     if (item.isPaid) {
-      iconColor = isBill ? AppTheme.primaryAction : const Color(0xFF6366F1);
+      iconColor = isBill
+          ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+          : (isDark ? AppColors.infoBlue400 : AppColors.infoBlue700);
     } else {
       if (isDark) {
-        // Verdele de la next 30 days bills (#10B981) si indigo-ul de la docs (#6366F1), ceva mai sters
         iconColor = isBill
-            ? const Color(0xFF10B981).withValues(alpha: 0.72)
-            : const Color(0xFF6366F1).withValues(alpha: 0.72);
+            ? AppColors.emerald400.withValues(alpha: 0.85)
+            : AppColors.infoBlue400.withValues(alpha: 0.85);
       } else {
         iconColor = isBill
-            ? const Color(0xFF059669).withValues(alpha: 0.80)
-            : const Color(0xFF4F46E5).withValues(alpha: 0.80);
+            ? AppColors.emerald600.withValues(alpha: 0.9)
+            : AppColors.infoBlue700.withValues(alpha: 0.9);
       }
     }
 
     return Container(
-      width: 42,
-      height: 42,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
         color: containerBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: isDark && !item.isPaid
-            ? Border.all(color: const Color(0xFF27354A), width: 1.0)
+            ? Border.all(color: AppColors.border(isDark), width: 1.0)
             : null,
       ),
       child: Center(
         child: Icon(
           iconData,
           color: iconColor,
-          size: 20,
+          size: 19,
         ),
       ),
     );

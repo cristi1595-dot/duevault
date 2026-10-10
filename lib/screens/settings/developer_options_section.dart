@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/vault_provider.dart';
@@ -17,12 +18,15 @@ import '../../services/firebase_sync_service.dart';
 import '../../utils/logger.dart';
 import '../../models/app_config.dart';
 import 'settings_dialogs.dart';
+import 'settings_list_tile.dart';
+import 'settings_divider.dart';
 
 class DeveloperOptionsSection extends ConsumerWidget {
   const DeveloperOptionsSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final syncTimestamp = ref.watch(lastSyncTimestampProvider);
     final syncState = ref.watch(syncProvider);
 
@@ -35,173 +39,89 @@ class DeveloperOptionsSection extends ConsumerWidget {
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'DEVELOPER OPTIONS'),
-        const SizedBox(height: 2),
-        BentoCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _buildSettingItem(
-                context: context,
-                icon: Icons.cloud_done_rounded,
-                iconColor: AppTheme.getSettingsAccent(context),
-                title: 'Automated Cloud Sync',
-                subtitle: syncSubtitle,
-                trailing: (syncState.status == SyncStatus.syncing)
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(
-                        Icons.refresh_rounded,
-                        size: 16,
-                        color: AppTheme.primaryAction,
-                      ),
-                onTap: () async {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Triggering cloud sync...'),
-                      duration: Duration(seconds: 1),
+        SettingsListTile(
+          icon: Icons.cloud_done_rounded,
+          iconColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
+          title: 'Automated Cloud Sync',
+          subtitle: syncSubtitle,
+          trailing: (syncState.status == SyncStatus.syncing)
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? AppColors.emerald400 : AppColors.emerald600,
                     ),
-                  );
-                  await ref.read(firebaseSyncServiceProvider).sync(force: true);
-                },
-              ),
-              const Divider(height: 1, indent: 56),
-              _buildSettingItem(
-                context: context,
-                icon: Icons.cloud_sync_outlined,
-                iconColor: AppTheme.primaryAction,
-                title: 'Cloud Backup Diagnostics',
-                subtitle: 'Inspect files in Google Drive & Firestore',
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 14,
-                  color: AppTheme.primaryAction,
+                  ),
+                )
+              : Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.emerald400 : AppColors.emerald600,
                 ),
-                onTap: () => _runCloudDiagnostics(context, ref),
+          onTap: () async {
+            await HapticFeedback.lightImpact();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Triggering cloud sync...'),
+                duration: Duration(seconds: 1),
               ),
-              const Divider(height: 1, indent: 56),
-              _buildSettingItem(
-                context: context,
-                icon: Icons.settings_backup_restore_rounded,
-                iconColor: AppTheme.safeGreen,
-                title: 'Force Restore Cloud Backup',
-                subtitle: 'Import keys and force sync database',
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 14,
-                  color: AppTheme.safeGreen,
-                ),
-                onTap: () => _forceRestoreKeysAndData(context, ref),
-              ),
-              const Divider(height: 1, indent: 56),
-              _buildSettingItem(
-                context: context,
-                icon: Icons.bug_report_outlined,
-                iconColor: AppTheme.urgentRed,
-                title: 'Simulate Test Crash',
-                subtitle: 'Forces an immediate crash for Crashlytics test',
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 14,
-                  color: AppTheme.urgentRed,
-                ),
-                onTap: () async {
-                  final confirm = await SettingsDialogs.showCrashTestDialog(context);
-
-                  if (confirm == true) {
-                    logger.i('Simulating app crash via Firebase Crashlytics...');
-                    await Future.delayed(const Duration(milliseconds: 500));
-                    FirebaseCrashlytics.instance.crash();
-                  }
-                },
-              ),
-            ],
+            );
+            await ref.read(firebaseSyncServiceProvider).sync(force: true);
+          },
+        ),
+        const SettingsDivider(),
+        SettingsListTile(
+          icon: Icons.cloud_sync_outlined,
+          iconColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
+          title: 'Cloud Backup Diagnostics',
+          subtitle: 'Inspect files in Google Drive & Firestore',
+          onTap: () => _runCloudDiagnostics(context, ref),
+        ),
+        const SettingsDivider(),
+        SettingsListTile(
+          icon: Icons.settings_backup_restore_rounded,
+          iconColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
+          title: 'Force Restore Cloud Backup',
+          subtitle: 'Import keys and force sync database',
+          onTap: () => _forceRestoreKeysAndData(context, ref),
+        ),
+        const SettingsDivider(),
+        SettingsListTile(
+          icon: Icons.bug_report_outlined,
+          iconColor: AppColors.urgentRose600,
+          title: 'Simulate Test Crash',
+          subtitle: 'Forces an immediate crash for Crashlytics test',
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: AppColors.urgentRose600,
           ),
+          onTap: () async {
+            final confirm = await SettingsDialogs.showCrashTestDialog(context);
+
+            if (confirm == true) {
+              logger.i('Simulating app crash via Firebase Crashlytics...');
+              await Future.delayed(const Duration(milliseconds: 500));
+              FirebaseCrashlytics.instance.crash();
+            }
+          },
         ),
       ],
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 2, top: 2),
-      child: Text(
-        title,
-        style: AppTheme.labelCapsStyle(context).copyWith(
-          color: Theme.of(context).textTheme.bodySmall?.color,
-          fontSize: 12,
-          letterSpacing: 1.1,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    VoidCallback? onTap,
-    Color? iconColor,
-    Color? titleColor,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        onTap: onTap,
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        leading: Container(
-          width: 36,
-          height: 36,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: iconColor ?? AppTheme.primaryAction, size: 18),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: titleColor ?? Theme.of(context).textTheme.bodyLarge?.color,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: subtitle != null
-            ? Text(
-                subtitle,
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                  fontSize: 12,
-                ),
-              )
-            : null,
-        trailing: trailing ??
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-              size: 14,
-            ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      ),
-    );
-  }
-
   Future<void> _runCloudDiagnostics(BuildContext context, WidgetRef ref) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Not signed in to Google/Firebase.'),
-          backgroundColor: AppTheme.urgentRed,
+          backgroundColor: AppColors.urgentRose600,
         ),
       );
       return;
@@ -212,7 +132,13 @@ class DeveloperOptionsSection extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isDark ? AppColors.emerald400 : AppColors.emerald600,
+            ),
+          ),
+        ),
       ),
     );
 
@@ -284,42 +210,71 @@ class DeveloperOptionsSection extends ConsumerWidget {
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: Theme.of(ctx).cardTheme.color,
+            backgroundColor: AppColors.surface(isDark),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              side: BorderSide(color: AppColors.border(isDark)),
             ),
-            title: const Text('Cloud Backup Diagnostics'),
+            title: Text(
+              'Cloud Backup Diagnostics',
+              style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                     '🔥 FIRESTORE METADATA:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+                  Text(
+                    '🔥 FIRESTORE METADATA:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Total Items in Firestore: $firestoreCount'),
+                  Text(
+                    'Total Items in Firestore: $firestoreCount',
+                    style: TextStyle(color: AppColors.textPrimary(isDark)),
+                  ),
                   const SizedBox(height: 4),
                   if (firestoreItems.isNotEmpty)
                     Text(
                       firestoreItems.join('\n'),
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(isDark),
+                      ),
                     )
                   else
-                    const Text('No records found in Firestore.'),
-                  const Divider(height: 24),
-                  const Text(
+                    Text(
+                      'No records found in Firestore.',
+                      style: TextStyle(color: AppColors.textSecondary(isDark)),
+                    ),
+                  Divider(height: 24, color: AppColors.border(isDark)),
+                  Text(
                     '📁 GOOGLE DRIVE BACKUPS:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryAction),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Keys Backup: ${keyBackupExists ? "✅ FOUND" : "❌ MISSING"}'),
-                  Text('Database Backup: ${dbBackupExists ? "✅ FOUND" : "❌ MISSING"}'),
+                  Text(
+                    'Keys Backup: ${keyBackupExists ? "✅ FOUND" : "❌ MISSING"}',
+                    style: TextStyle(color: AppColors.textPrimary(isDark)),
+                  ),
+                  Text(
+                    'Database Backup: ${dbBackupExists ? "✅ FOUND" : "❌ MISSING"}',
+                    style: TextStyle(color: AppColors.textPrimary(isDark)),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     driveFilesInfo,
-                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: AppColors.textSecondary(isDark),
+                    ),
                   ),
                 ],
               ),
@@ -327,7 +282,12 @@ class DeveloperOptionsSection extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
+                child: Text(
+                  'Close',
+                  style: TextStyle(
+                    color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -341,12 +301,28 @@ class DeveloperOptionsSection extends ConsumerWidget {
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Diagnostics Error'),
-            content: Text(e.toString()),
+            backgroundColor: AppColors.surface(isDark),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              side: BorderSide(color: AppColors.border(isDark)),
+            ),
+            title: Text(
+              'Diagnostics Error',
+              style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+            ),
+            content: Text(
+              e.toString(),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -356,7 +332,8 @@ class DeveloperOptionsSection extends ConsumerWidget {
   }
 
   Future<void> _forceRestoreKeysAndData(BuildContext context, WidgetRef ref) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not signed in.')),
@@ -367,27 +344,37 @@ class DeveloperOptionsSection extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(ctx).cardTheme.color,
+        backgroundColor: AppColors.surface(isDark),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          side: BorderSide(color: AppColors.border(isDark)),
         ),
-        title: const Text('Force Restore Backup'),
-        content: const Text(
+        title: Text(
+          'Force Restore Backup',
+          style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+        ),
+        content: Text(
           'This will download your original encryption keys and database from Google Drive, '
           'and pull all data from Firestore. Your current local data will be replaced. Proceed?',
+          style: TextStyle(color: AppColors.textSecondary(isDark)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: Theme.of(ctx).textTheme.bodyMedium?.color),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.safeGreen),
-            child: const Text('RESTORE', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppColors.emerald500 : AppColors.emerald600,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            child: const Text('RESTORE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -400,7 +387,13 @@ class DeveloperOptionsSection extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+        builder: (ctx) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isDark ? AppColors.emerald400 : AppColors.emerald600,
+            ),
+          ),
+        ),
       ),
     );
 
@@ -439,12 +432,28 @@ class DeveloperOptionsSection extends ConsumerWidget {
           await showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Restore Complete'),
-              content: const Text('Encryption keys, database, and all cloud records have been successfully restored!'),
+              backgroundColor: AppColors.surface(isDark),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                side: BorderSide(color: AppColors.border(isDark)),
+              ),
+              title: Text(
+                'Restore Complete',
+                style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+              ),
+              content: Text(
+                'Encryption keys, database, and all cloud records have been successfully restored!',
+                style: TextStyle(color: AppColors.textSecondary(isDark)),
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK'),
+                  child: Text(
+                    'OK',
+                    style: TextStyle(
+                      color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -459,12 +468,28 @@ class DeveloperOptionsSection extends ConsumerWidget {
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Restore Failed'),
-            content: Text(e.toString()),
+            backgroundColor: AppColors.surface(isDark),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              side: BorderSide(color: AppColors.border(isDark)),
+            ),
+            title: Text(
+              'Restore Failed',
+              style: AppTypography.headlineMedium(AppColors.textPrimary(isDark)),
+            ),
+            content: Text(
+              e.toString(),
+              style: TextStyle(color: AppColors.textSecondary(isDark)),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: isDark ? AppColors.emerald400 : AppColors.emerald600,
+                  ),
+                ),
               ),
             ],
           ),

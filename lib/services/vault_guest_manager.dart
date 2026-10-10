@@ -214,7 +214,18 @@ class VaultGuestManager {
         ..isSample = true
         ..ownerId = ownerId,
 
-      // DOCUMENT 1: Expiring in 15 days (Warning)
+      // DOCUMENT 1: Warning (Expiring in 4 days)
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Residential Parking Permit'
+        ..itemType = 'Document'
+        ..category = 'Housing'
+        ..dueDate = now.add(const Duration(days: 4))
+        ..isPaid = false
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // DOCUMENT 2: Expiring in 15 days (Warning)
       VaultItem()
         ..uuid = uuid.v4()
         ..title = 'Car Insurance Policy'
@@ -225,7 +236,7 @@ class VaultGuestManager {
         ..isSample = true
         ..ownerId = ownerId,
 
-      // DOCUMENT 2: Passport (Long expiry)
+      // DOCUMENT 3: Passport (Long expiry)
       VaultItem()
         ..uuid = uuid.v4()
         ..title = 'Passport (US Citizen)'
@@ -235,7 +246,7 @@ class VaultGuestManager {
         ..isSample = true
         ..ownerId = ownerId,
 
-      // DOCUMENT 3: Driver License
+      // DOCUMENT 4: Driver License
       VaultItem()
         ..uuid = uuid.v4()
         ..title = "Driver's License"
@@ -245,13 +256,38 @@ class VaultGuestManager {
         ..isSample = true
         ..ownerId = ownerId,
 
-      // DOCUMENT 4: Apartment Lease
+      // DOCUMENT 5: Apartment Lease
       VaultItem()
         ..uuid = uuid.v4()
         ..title = 'Apartment Lease Agreement'
         ..itemType = 'Document'
         ..category = 'Housing'
         ..dueDate = now.add(const Duration(days: 90))
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // BILL 6 (Paid & Settled): Cloud Storage
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Cloud Storage (Google One)'
+        ..itemType = 'Bill'
+        ..category = 'Subscriptions'
+        ..amount = 9.99
+        ..dueDate = now.subtract(const Duration(days: 2))
+        ..recurrence = 'Monthly'
+        ..directDebit = true
+        ..isPaid = true
+        ..isSample = true
+        ..ownerId = ownerId,
+
+      // DOCUMENT 6 (Renewed): Health Insurance
+      VaultItem()
+        ..uuid = uuid.v4()
+        ..title = 'Health Insurance Policy'
+        ..itemType = 'Document'
+        ..category = 'Health'
+        ..dueDate = now.subtract(const Duration(days: 5))
+        ..isPaid = true
         ..isSample = true
         ..ownerId = ownerId,
     ];

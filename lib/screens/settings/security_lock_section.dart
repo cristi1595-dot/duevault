@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import '../../providers/security_provider.dart';
 import '../../services/analytics_service.dart';
-import '../../theme/app_theme.dart';
+import '../../theme/app_colors.dart';
 import 'settings_dialogs.dart';
 import 'settings_list_tile.dart';
 
@@ -12,6 +13,8 @@ class SecurityLockSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final security = ref.watch(securityProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? AppColors.emerald400 : AppColors.emerald500;
 
     return SettingsListTile(
       icon: Icons.fingerprint_rounded,
@@ -22,6 +25,7 @@ class SecurityLockSection extends ConsumerWidget {
         child: Switch(
           value: security.isEnabled,
           onChanged: (value) {
+            HapticFeedback.lightImpact();
             if (value) {
               if (!security.canAuthenticate) {
                 SettingsDialogs.showNoSecurityDialog(context);
@@ -40,8 +44,8 @@ class SecurityLockSection extends ConsumerWidget {
                   );
             }
           },
-          activeThumbColor: AppTheme.getSettingsAccent(context),
-          activeTrackColor: AppTheme.getSettingsAccent(context).withValues(alpha: 0.3),
+          activeThumbColor: activeColor,
+          activeTrackColor: activeColor.withValues(alpha: 0.3),
         ),
       ),
     );

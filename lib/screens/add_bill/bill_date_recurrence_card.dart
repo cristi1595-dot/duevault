@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 
 class BillDateRecurrenceCard extends StatelessWidget {
@@ -23,6 +24,7 @@ class BillDateRecurrenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final in3Days = today.add(const Duration(days: 3));
@@ -34,50 +36,49 @@ class BillDateRecurrenceCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF161F30),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface(isDark),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: const Color(0xFF222F48),
-          width: 1,
+          color: AppColors.border(isDark),
+          width: 1.0,
         ),
+        boxShadow: !isDark ? AppShadows.sm : null,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.cardPaddingLg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. DUE DATE SECTION
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.calendar_today_rounded,
                 size: 14,
-                color: AppTheme.primaryAction,
+                color: isDark ? AppColors.emerald400 : AppColors.emerald600,
               ),
-              SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.xs + 2),
               Text(
                 'DUE DATE',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  color: Color(0xFF94A3B8),
-                ),
+                style: AppTypography.labelCaps(AppColors.textSecondary(isDark)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm + 2),
 
           // Date Selector Button
           InkWell(
-            onTap: onDateTap,
-            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onDateTap();
+            },
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E2838),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF222F48)),
+                color: AppColors.surfaceElevated(isDark),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border(isDark)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -88,34 +89,34 @@ class BillDateRecurrenceCard extends StatelessWidget {
                         Icons.event_available_rounded,
                         size: 18,
                         color: dueDate != null
-                            ? AppTheme.primaryAction
-                            : const Color(0xFF94A3B8),
+                            ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                            : AppColors.textSecondary(isDark),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppSpacing.sm + 2),
                       Text(
                         dueDate != null
                             ? '${dueDate!.day}/${dueDate!.month}/${dueDate!.year}'
-                            : 'Select',
+                            : 'Select Date',
                         style: TextStyle(
                           color: dueDate != null
-                              ? Colors.white
-                              : const Color(0xFF94A3B8),
+                              ? AppColors.textPrimary(isDark)
+                              : AppColors.textMuted(isDark),
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(isDark),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm + 2),
 
           // Quick Date Pills
           Row(
@@ -127,7 +128,10 @@ class BillDateRecurrenceCard extends StatelessWidget {
                     dueDate!.year == in3Days.year &&
                     dueDate!.month == in3Days.month &&
                     dueDate!.day == in3Days.day,
-                onTap: () => onQuickDateSelected?.call(in3Days),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onQuickDateSelected?.call(in3Days);
+                },
               ),
               const SizedBox(width: 6),
               _QuickDatePill(
@@ -137,7 +141,10 @@ class BillDateRecurrenceCard extends StatelessWidget {
                     dueDate!.year == nextWeek.year &&
                     dueDate!.month == nextWeek.month &&
                     dueDate!.day == nextWeek.day,
-                onTap: () => onQuickDateSelected?.call(nextWeek),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onQuickDateSelected?.call(nextWeek);
+                },
               ),
               const SizedBox(width: 6),
               _QuickDatePill(
@@ -147,41 +154,39 @@ class BillDateRecurrenceCard extends StatelessWidget {
                     dueDate!.year == endOfMonth.year &&
                     dueDate!.month == endOfMonth.month &&
                     dueDate!.day == endOfMonth.day,
-                onTap: () => onQuickDateSelected?.call(endOfMonth),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onQuickDateSelected?.call(endOfMonth);
+                },
               ),
             ],
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Divider(
-              color: Color(0xFF222F48),
+              color: AppColors.border(isDark),
               height: 1,
               thickness: 1,
             ),
           ),
 
           // 2. RECURRENCE SECTION
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.repeat_rounded,
                 size: 14,
-                color: AppTheme.primaryAction,
+                color: isDark ? AppColors.emerald400 : AppColors.emerald600,
               ),
-              SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.xs + 2),
               Text(
                 'RECURRENCE',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  color: Color(0xFF94A3B8),
-                ),
+                style: AppTypography.labelCaps(AppColors.textSecondary(isDark)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm + 2),
 
           // Recurrence Chips
           Row(
@@ -191,20 +196,23 @@ class BillDateRecurrenceCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 3),
                   child: InkWell(
-                    onTap: () => onRecurrenceChanged(opt),
-                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      onRecurrenceChanged(opt);
+                    },
+                    borderRadius: BorderRadius.circular(AppRadius.sm + 2),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppTheme.primaryAction.withValues(alpha: 0.16)
-                            : const Color(0xFF1E2838),
-                        borderRadius: BorderRadius.circular(10),
+                            ? AppColors.emerald500.withValues(alpha: isDark ? 0.18 : 0.12)
+                            : AppColors.surfaceElevated(isDark),
+                        borderRadius: BorderRadius.circular(AppRadius.sm + 2),
                         border: Border.all(
                           color: isSelected
-                              ? AppTheme.primaryAction
-                              : const Color(0xFF222F48),
+                              ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                              : AppColors.border(isDark),
                           width: isSelected ? 1.2 : 0.8,
                         ),
                       ),
@@ -215,8 +223,8 @@ class BillDateRecurrenceCard extends StatelessWidget {
                           fontWeight:
                               isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected
-                              ? AppTheme.primaryAction
-                              : const Color(0xFF94A3B8),
+                              ? (isDark ? AppColors.emerald400 : AppColors.emerald700)
+                              : AppColors.textSecondary(isDark),
                         ),
                       ),
                     ),
@@ -226,10 +234,10 @@ class BillDateRecurrenceCard extends StatelessWidget {
             }).toList(),
           ),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Divider(
-              color: Color(0xFF222F48),
+              color: AppColors.border(isDark),
               height: 1,
               thickness: 1,
             ),
@@ -239,49 +247,55 @@ class BillDateRecurrenceCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: directDebit
-                      ? AppTheme.primaryAction.withValues(alpha: 0.15)
-                      : const Color(0xFF1E2838),
+                      ? AppColors.emerald500.withValues(alpha: isDark ? 0.18 : 0.12)
+                      : AppColors.surfaceElevated(isDark),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: directDebit
+                        ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                        : AppColors.border(isDark),
+                    width: 0.8,
+                  ),
                 ),
                 child: Icon(
                   Icons.account_balance_rounded,
                   color: directDebit
-                      ? AppTheme.primaryAction
-                      : const Color(0xFF94A3B8),
+                      ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                      : AppColors.textSecondary(isDark),
                   size: 18,
                 ),
               ),
-              const SizedBox(width: 12),
-              const Expanded(
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Auto-Pay (Funds Reserved)',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary(isDark),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       'Money is set aside in your bank account',
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 11.5,
-                      ),
+                      style: AppTypography.caption(AppColors.textSecondary(isDark)),
                     ),
                   ],
                 ),
               ),
               Switch(
                 value: directDebit,
-                onChanged: onDirectDebitChanged,
-                activeThumbColor: AppTheme.primaryAction,
+                onChanged: (val) {
+                  HapticFeedback.lightImpact();
+                  onDirectDebitChanged(val);
+                },
+                activeThumbColor: isDark ? AppColors.emerald400 : AppColors.emerald600,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
@@ -307,23 +321,25 @@ class _QuickDatePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 7),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.primaryAction.withValues(alpha: 0.16)
-                : const Color(0xFF1E2838),
-            borderRadius: BorderRadius.circular(8),
+                ? AppColors.emerald500.withValues(alpha: isDark ? 0.18 : 0.12)
+                : AppColors.surfaceElevated(isDark),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
               color: isSelected
-                  ? AppTheme.primaryAction
-                  : const Color(0xFF222F48),
-              width: 0.8,
+                  ? (isDark ? AppColors.emerald400 : AppColors.emerald600)
+                  : AppColors.border(isDark),
+              width: isSelected ? 1.2 : 0.8,
             ),
           ),
           child: Text(
@@ -332,8 +348,8 @@ class _QuickDatePill extends StatelessWidget {
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected
-                  ? AppTheme.primaryAction
-                  : const Color(0xFF94A3B8),
+                  ? (isDark ? AppColors.emerald400 : AppColors.emerald700)
+                  : AppColors.textSecondary(isDark),
             ),
           ),
         ),

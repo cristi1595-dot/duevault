@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import '../models/vault_item.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/vault_item.dart';
 import '../providers/vault_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/global_components.dart';
-import 'package:image_picker/image_picker.dart';
 import '../services/encryption_service.dart';
-import 'package:flutter/services.dart';
 import '../utils/validation_helper.dart';
 import '../services/analytics_service.dart';
 import '../constants/app_categories.dart';
 import 'add_shared/bento_input_wrapper.dart';
 import 'add_shared/attachment_section.dart';
 import 'add_shared/attachment_picker_helper.dart';
+import 'add_shared/notes_input_card.dart';
+import 'add_document/document_expiry_picker.dart';
+import 'add_document/document_validity_chips.dart';
 import '../providers/premium_provider.dart';
 import '../providers/auth_provider.dart';
-import 'paywall_screen.dart';
 import '../services/app_review_service.dart';
 
 class AddDocumentScreen extends ConsumerStatefulWidget {
@@ -47,7 +49,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     super.initState();
     _loadAttachmentsDirectory();
 
-    // Default OCR to false for Guest or Free tier users
     final isGuest = ref.read(isGuestProvider);
     final isPremium = ref.read(isPremiumProvider);
     _useOcr = kAllFeaturesFree || (!isGuest && isPremium);
@@ -58,7 +59,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       _titleController.text = widget.item!.title;
       _attachedFiles = List.from(widget.item!.attachedFiles);
 
-      // Decrypt notes asynchronously to keep the UI perfectly responsive
       if (widget.item!.notes != null && widget.item!.notes!.isNotEmpty) {
         _showNotes = true;
         _notesController.text = 'Loading notes...';
@@ -83,15 +83,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final isGuest = ref.read(isGuestProvider);
-    final isPremium = ref.read(isPremiumProvider);
-    if (!kAllFeaturesFree && (isGuest || !isPremium)) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      return;
-    }
     await AttachmentPickerHelper.pickImage(
       context: context,
       source: source,
@@ -99,22 +90,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       isDocument: true,
       currentCount: _attachedFiles.length,
       onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
-      onFileAdded: (path) {
-        setState(() {
-          _attachedFiles.add(path);
-        });
-      },
+      onFileAdded: (path) => setState(() => _attachedFiles.add(path)),
       onOcrResult: (result) {
         setState(() {
-          // Auto-fill Title if empty
           if (_titleController.text.isEmpty && result.probableTitle != null) {
             final rawTitle = result.probableTitle!;
             _titleController.text = rawTitle.length > 40 ? rawTitle.substring(0, 40) : rawTitle;
           } else if (_titleController.text.isEmpty) {
             _titleController.text = 'Scanned Document';
           }
-
-          // Auto-fill Expiry Date if found and not set
           if (result.probableDate != null && _expiryDate == null) {
             if (ValidationHelper.isDateValid(result.probableDate, isRequired: false)) {
               _expiryDate = result.probableDate;
@@ -133,11 +117,7 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       isDocument: true,
       currentCount: _attachedFiles.length,
       onOcrProcessingChanged: (val) => setState(() => _isProcessingOcr = val),
-      onFilesAdded: (paths) {
-        setState(() {
-          _attachedFiles.addAll(paths);
-        });
-      },
+      onFilesAdded: (paths) => setState(() => _attachedFiles.addAll(paths)),
       onOcrResult: (result) {
         setState(() {
           if (_titleController.text.isEmpty && result.probableTitle != null) {
@@ -186,7 +166,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     if (picked != null) {
       setState(() => _expiryDate = picked);
     }
-    // Force keyboard down globally
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
@@ -211,8 +190,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
 
   Future<void> _submit() async {
     if (_isSaving) return;
-
-    // Force keyboard down globally before validating
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (!_formKey.currentState!.validate()) return;
@@ -238,7 +215,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
     }
 
     final item = _isEdit ? widget.item! : VaultItem();
-
     item.itemType = 'Document';
     item.title = rawTitle.isEmpty ? _category : rawTitle;
     item.category = _category;
@@ -253,7 +229,6 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       await ref.read(analyticsServiceProvider).logItemAdded('Document');
       if (mounted) {
         final rootContext = Navigator.of(context).context;
-        // Direct to Home: pop until we reach the root (HomeScreen)
         Navigator.of(context).popUntil((route) => route.isFirst);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (rootContext.mounted) {
@@ -281,11 +256,12 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       widget.item != null && widget.item!.id != Isar.autoIncrement;
 
   bool get _isFormValid =>
-      _titleController.text.trim().isNotEmpty &&
-      _expiryDate != null;
+      _titleController.text.trim().isNotEmpty && _expiryDate != null;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -294,14 +270,15 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
         centerTitle: true,
         title: Text(
           !_isEdit ? 'Add New Document' : 'Edit Document',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.titleMedium(AppColors.textPrimary(isDark)).copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
+            color: AppColors.textPrimary(isDark),
+            size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -309,163 +286,77 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               BentoInputWrapper(
                 label: 'DOCUMENT TITLE',
+                icon: Icons.badge_outlined,
                 child: TextFormField(
+                  key: const Key('doc_title_field'),
                   controller: _titleController,
                   textCapitalization: TextCapitalization.sentences,
-                  onChanged: (val) {
-                    setState(() {});
-                  },
+                  onChanged: (val) => setState(() {}),
                   style: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    fontSize: 19,
+                    color: AppColors.textPrimary(isDark),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                   validator: (value) => ValidationHelper.validateTitle(value),
                   inputFormatters: [LengthLimitingTextInputFormatter(40)],
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'e.g. Passport, Driver License, Insurance',
+                    hintStyle: TextStyle(
+                      color: AppColors.textMuted(isDark),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                    ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.base,
+                      vertical: AppSpacing.sm,
                     ),
+                    isDense: true,
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.md),
 
-              BentoInputWrapper(
-                label: 'EXPIRY / RENEWAL DATE',
-                child: InkWell(
-                  onTap: _pickDate,
-                  child: Container(
-                    height: 38,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _expiryDate != null
-                              ? '${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}'
-                              : 'Select Date',
-                          style: TextStyle(
-                            color: _expiryDate != null
-                                ? Theme.of(context).textTheme.bodyLarge?.color
-                                : Theme.of(context).textTheme.bodyMedium?.color,
-                            fontSize: 19,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.calendar_today,
-                          color: AppTheme.primaryAction,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              DocumentExpiryPicker(
+                expiryDate: _expiryDate,
+                isDark: isDark,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _pickDate();
+                },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
 
-              // Quick Validity Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildValidityChip(
-                      label: '6 Months',
-                      targetDate: DateTime(
-                        DateTime.now().year,
-                        DateTime.now().month + 6,
-                        DateTime.now().day,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    _buildValidityChip(
-                      label: '1 Year',
-                      targetDate: DateTime(
-                        DateTime.now().year + 1,
-                        DateTime.now().month,
-                        DateTime.now().day,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    _buildValidityChip(
-                      label: '5 Years',
-                      targetDate: DateTime(
-                        DateTime.now().year + 5,
-                        DateTime.now().month,
-                        DateTime.now().day,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    _buildValidityChip(
-                      label: '10 Years',
-                      targetDate: DateTime(
-                        DateTime.now().year + 10,
-                        DateTime.now().month,
-                        DateTime.now().day,
-                      ),
-                    ),
-                  ],
-                ),
+              DocumentValidityChips(
+                selectedDate: _expiryDate,
+                isDark: isDark,
+                onValiditySelected: (date) => setState(() => _expiryDate = date),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
 
-              if (!_showNotes)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: TextButton.icon(
-                    onPressed: () => setState(() => _showNotes = true),
-                    icon: const Icon(Icons.note_add_outlined, size: 18),
-                    label: const Text('Add Notes & Remarks'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.primaryAction,
-                    ),
-                  ),
-                )
-              else
-                BentoInputWrapper(
-                  label: 'NOTES',
-                  child: TextFormField(
-                    controller: _notesController,
-                    maxLines: 2,
-                    inputFormatters: [LengthLimitingTextInputFormatter(1000)],
-                    textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                      fontSize: 16,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Add document number, remarks...',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: () {
-                          _notesController.clear();
-                          setState(() => _showNotes = false);
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 10),
+              NotesInputCard(
+                notesController: _notesController,
+                showNotes: _showNotes,
+                isDark: isDark,
+                isBill: false,
+                onAddNotesPressed: () => setState(() => _showNotes = true),
+                onClosePressed: () {
+                  _notesController.clear();
+                  setState(() => _showNotes = false);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
 
               AttachmentSection(
                 attachedFiles: _resolvedAttachedFiles,
@@ -474,83 +365,43 @@ class _AddDocumentScreenState extends ConsumerState<AddDocumentScreen> {
                 onPickImage: () => _pickImage(ImageSource.camera),
                 onPickFiles: _pickFiles,
                 onRemoveAttachment: (index) {
-                  setState(() {
-                    _attachedFiles.removeAt(index);
-                  });
+                  setState(() => _attachedFiles.removeAt(index));
                 },
-                onOcrToggleChanged: (val) {
-                  final isGuest = ref.read(isGuestProvider);
-                  final isPremium = ref.read(isPremiumProvider);
-                  if (val && !kAllFeaturesFree && (isGuest || !isPremium)) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-                    );
-                    return;
-                  }
-                  setState(() {
-                    _useOcr = val;
-                  });
-                },
+                onOcrToggleChanged: (val) => setState(() => _useOcr = val),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
             ],
           ),
         ),
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base,
+            AppSpacing.sm,
+            AppSpacing.base,
+            AppSpacing.base,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surface(isDark),
+            border: Border(
+              top: BorderSide(color: AppColors.border(isDark), width: 1.0),
+            ),
+          ),
           child: PrimaryButton(
             label: _isSaving
                 ? 'Saving...'
                 : (_isEdit ? 'Update Document' : 'Save Document'),
             icon: _isSaving ? null : Icons.check_circle_outline,
-            onPressed: (_isFormValid && !_isSaving) ? _submit : null,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildValidityChip({
-    required String label,
-    required DateTime targetDate,
-  }) {
-    final isSelected = _expiryDate != null &&
-        _expiryDate!.year == targetDate.year &&
-        _expiryDate!.month == targetDate.month &&
-        _expiryDate!.day == targetDate.day;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: () {
-        setState(() => _expiryDate = targetDate);
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryAction.withValues(alpha: 0.2)
-              : (isDark ? const Color(0xFF1B202A) : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? AppTheme.primaryAction
-                : (isDark ? const Color(0xFF2D333D) : const Color(0xFFE2E8F0)),
-            width: isSelected ? 1.2 : 0.8,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? AppTheme.primaryAction
-                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+            isLoading: _isSaving,
+            height: 52,
+            borderRadius: AppRadius.lg,
+            onPressed: (_isFormValid && !_isSaving)
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    _submit();
+                  }
+                : null,
           ),
         ),
       ),

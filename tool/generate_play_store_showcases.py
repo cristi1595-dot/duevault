@@ -177,6 +177,7 @@ if __name__ == "__main__":
     bills_screen = os.path.join(ASSETS_DIR, "real_2_bills.png")
     docs_screen = os.path.join(ASSETS_DIR, "real_3_documents.png")
     settings_screen = os.path.join(ASSETS_DIR, "real_4_settings.png")
+    detail_screen = os.path.join(ASSETS_DIR, "real_5_item_detail.png")
 
     # 1. Feature Graphic (1024x500)
     create_feature_graphic(home_screen, os.path.join(ASSETS_DIR, "2_feature_graphic_1024x500.jpg"))
@@ -209,3 +210,11 @@ if __name__ == "__main__":
         "100% PRIVATE & SECURE",
         "Biometric lock with encrypted Google Drive backup"
     )
+
+    if os.path.exists(detail_screen):
+        create_showcase(
+            detail_screen,
+            os.path.join(ASSETS_DIR, "7_showcase_5_detail.jpg"),
+            "DETAILED BILL TIMELINE",
+            "Urgency tags, payment intervals & one-tap settling"
+        )

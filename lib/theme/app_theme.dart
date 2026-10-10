@@ -2,29 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_colors.dart';
+import 'app_radius.dart';
+import 'app_spacing.dart';
+import 'app_typography.dart';
+
+export 'app_colors.dart';
+export 'app_spacing.dart';
+export 'app_radius.dart';
+export 'app_typography.dart';
+export 'app_shadows.dart';
+export 'app_animations.dart';
+
 class AppTheme {
   // --- MASTER COLORS (Material 3 Emerald Palette) ---
-  static const Color primaryAction = Color(0xFF10B981); // Emerald accent
-  static const Color primaryActionDark = Color(0xFF059669);
-  static const Color urgentRed = Color(0xFFEF4444);
+  static const Color primaryAction = AppColors.emerald500; // Emerald accent (#10B981)
+  static const Color primaryActionDark = AppColors.emerald600; // #059669
+  static const Color urgentRed = AppColors.urgentRose600; // #E11D48
   static const Color urgentRedAlert = Color(0xFFDC2626);
-  static const Color warningYellow = Color(0xFFF59E0B);
-  static const Color safeGreen = Color(0xFF10B981);
-  static const Color accentPurple = Color(0xFF8B5CF6);
+  static const Color warningYellow = AppColors.warningAmber500; // #F59E0B
+  static const Color safeGreen = AppColors.emerald500;
+  static const Color accentPurple = AppColors.violet500; // #8B5CF6
 
   // --- DARK MODE PALETTE (Modern Slate/Zinc Fintech) ---
-  static const Color darkBackground = Color(0xFF0B0F19);
-  static const Color darkSurface = Color(0xFF161F30);
+  static const Color darkBackground = AppColors.slate950; // #0B0F19
+  static const Color darkSurface = AppColors.slate850; // #161F30
   static const Color darkBorder = Color(0xFF222F48);
   static const Color darkTextPrimary = Color(0xFFF1F5F9);
-  static const Color darkTextSecondary = Color(0xFF94A3B8);
+  static const Color darkTextSecondary = AppColors.slate400; // #94A3B8
 
   // --- LIGHT MODE PALETTE (Clean Neutral) ---
-  static const Color lightBackground = Color(0xFFF8FAFC);
+  static const Color lightBackground = AppColors.slate50; // #F8FAFC
   static const Color lightSurface = Colors.white;
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  static const Color lightTextPrimary = Color(0xFF0F172A);
-  static const Color lightTextSecondary = Color(0xFF64748B);
+  static const Color lightBorder = AppColors.slate200; // #E2E8F0
+  static const Color lightTextPrimary = AppColors.slate900; // #0F172A
+  static const Color lightTextSecondary = AppColors.slate600; // #475569 (WCAG AA 4.7:1)
 
   // --- THEME DATA GETTERS ---
 
@@ -117,7 +129,7 @@ class AppTheme {
       ),
       colorScheme: ColorScheme(
         brightness: brightness,
-        primary: primaryAction,
+        primary: brightness == Brightness.dark ? primaryAction : primaryActionDark,
         onPrimary: Colors.white,
         secondary: primaryAction,
         onSecondary: Colors.white,
@@ -129,83 +141,74 @@ class AppTheme {
         surfaceContainerLow: background, // M3 Container logic
       ),
       textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
-        displayLarge: GoogleFonts.inter(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: textPrimary,
-          letterSpacing: -0.64,
-        ),
-        headlineLarge: GoogleFonts.inter(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: textPrimary,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: textPrimary,
-        ),
-        bodyLarge: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
-          color: textPrimary,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.normal,
-          color: textSecondary,
-        ),
-        labelSmall: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: textSecondary,
-          letterSpacing: 0.5,
-        ),
+        displayLarge: AppTypography.displayLarge(textPrimary),
+        headlineLarge: AppTypography.headlineLarge(textPrimary),
+        headlineMedium: AppTypography.headlineMedium(textPrimary),
+        bodyLarge: AppTypography.bodyLarge(textPrimary),
+        bodyMedium: AppTypography.bodyMedium(textSecondary),
+        bodySmall: AppTypography.bodySmall(textSecondary),
+        labelMedium: AppTypography.labelMedium(textSecondary),
+        labelSmall: AppTypography.labelSmall(textSecondary),
       ),
       cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           side: BorderSide(color: border, width: 1),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryAction,
+          backgroundColor: brightness == Brightness.dark ? primaryAction : primaryActionDark,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: AppSpacing.buttonPadding,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 16,
-        ),
+        contentPadding: AppSpacing.inputPadding,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: const BorderSide(
             color: primaryAction,
-            width: 2,
-          ), // M3 focus border is 2dp
+            width: 2, // M3 focus border is 2dp
+          ),
         ),
-        hintStyle: TextStyle(color: textSecondary),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: const BorderSide(
+            color: urgentRed,
+            width: 1.5,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: const BorderSide(
+            color: urgentRed,
+            width: 2,
+          ),
+        ),
+        hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.7)),
       ),
     );
   }
 
-  // Helper getters for static access (though dynamic is preferred via Theme.of)
+  // Helper getters for backward compatibility
   static Color getBackground(BuildContext context) =>
       Theme.of(context).scaffoldBackgroundColor;
   static Color getSurface(BuildContext context) =>
@@ -218,31 +221,24 @@ class AppTheme {
       Theme.of(context).textTheme.bodyMedium!.color!;
 
   static Color getSafeGreen(BuildContext context) {
-    return const Color(0xFF10B981);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return AppColors.statusSafeText(isDark);
   }
 
   static Color getMintGreen(BuildContext context) {
-    return const Color(0xFF34D399);
+    return AppColors.emerald400;
   }
 
   static Color getSettingsAccent(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
-        ? Colors.greenAccent
-        : Colors.teal.shade700;
+        ? AppColors.emerald400
+        : AppColors.emerald700;
   }
 
   static TextStyle labelCapsStyle(BuildContext context) {
-    return GoogleFonts.inter(
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      color: getTextSecondary(context),
-      letterSpacing: 0.6,
-    );
+    return AppTypography.labelCaps(getTextSecondary(context));
   }
 
-  // Maintain backward compatibility for static constants if possible,
-  // but warn that they are no longer static-only.
-  // We'll keep the names but they should ideally come from Theme.of(context)
   static const Color textSecondary = darkTextSecondary;
   static const Color background = darkBackground;
   static const Color surface = darkSurface;
@@ -255,12 +251,28 @@ class AppTheme {
       hintText: hintText,
       hintStyle: const TextStyle(color: darkTextSecondary, fontSize: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide.none,
       ),
       filled: true,
       fillColor: darkSurface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: AppSpacing.inputPadding,
     );
   }
+}
+
+/// Convenience context extensions for fluent Design System access
+extension AppThemeContextExtension on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  Color get primaryColor => Theme.of(this).colorScheme.primary;
+  Color get scaffoldBg => Theme.of(this).scaffoldBackgroundColor;
+  Color get cardColor =>
+      Theme.of(this).cardTheme.color ?? (isDark ? AppColors.slate850 : Colors.white);
+  Color get borderColor => Theme.of(this).colorScheme.outline;
+  Color get textPrimary =>
+      Theme.of(this).textTheme.bodyLarge?.color ??
+      (isDark ? AppColors.slate50 : AppColors.slate900);
+  Color get textSecondary =>
+      Theme.of(this).textTheme.bodyMedium?.color ??
+      (isDark ? AppColors.slate400 : AppColors.slate600);
 }

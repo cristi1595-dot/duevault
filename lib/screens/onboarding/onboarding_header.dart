@@ -1,37 +1,59 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/global_components.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/duevault_logo.dart';
 
 class OnboardingHeader extends StatelessWidget {
-  const OnboardingHeader({super.key});
+  final String? subtitle;
+  final double logoSize;
+
+  const OnboardingHeader({
+    super.key,
+    this.subtitle,
+    this.logoSize = 88,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const DueVaultLogo(size: 96),
-        const SizedBox(height: 16),
+        DueVaultLogo(
+          size: logoSize,
+          showGlow: true,
+        ),
+        const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
               'Due',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    color: Colors.white,
-                  ),
+              style: AppTypography.displayLarge(AppColors.textPrimary(isDark)).copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
+              ),
             ),
             Text(
               'Vault',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                    color: AppTheme.safeGreen,
-                  ),
+              style: AppTypography.displayLarge(AppColors.emerald500).copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
+              ),
             ),
           ],
         ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            subtitle!,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium(AppColors.textSecondary(isDark)),
+          ),
+        ],
       ],
     );
   }

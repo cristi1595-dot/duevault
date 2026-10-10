@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class IntegratedBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -17,42 +18,43 @@ class IntegratedBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inactiveColor =
-        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navBg = isDark
-        ? const Color(0xFF161F30).withValues(alpha: 0.92)
-        : Colors.white.withValues(alpha: 0.94);
-    final borderColor = isDark
-        ? const Color(0xFF222F48)
-        : const Color(0xFFE2E8F0);
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final navBg = AppColors.surface(isDark).withValues(alpha: isDark ? 0.92 : 0.95);
+    final borderColor = AppColors.border(isDark);
+    final primaryColor = isDark ? AppColors.emerald500 : AppColors.emerald600;
+    final inactiveColor = AppColors.textSecondary(isDark);
 
     return SafeArea(
       bottom: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.base,
+          0,
+          AppSpacing.base,
+          AppSpacing.md,
+        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               height: 66,
               decoration: BoxDecoration(
                 color: navBg,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
                 border: Border.all(
                   color: borderColor,
                   width: 1.0,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : AppShadows.lg,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -80,18 +82,18 @@ class IntegratedBottomNavBar extends StatelessWidget {
                   ),
                   // Center (+) Add Button
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                     child: PulsingAddButton(
                       onPressed: onAddPressed,
                       shouldPulse: isVaultEmpty,
                     ),
                   ),
-                  // Tab 2: Documents
+                  // Tab 2: Docs (Symmetrical, prevents clipping)
                   Expanded(
                     child: _buildNavItem(
                       2,
                       Icons.description_rounded,
-                      'Documents',
+                      'Docs',
                       inactiveColor,
                       primaryColor,
                     ),
