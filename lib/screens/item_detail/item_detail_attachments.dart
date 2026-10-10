@@ -15,10 +15,12 @@ import '../../utils/logger.dart';
 
 class ItemDetailAttachments extends ConsumerStatefulWidget {
   final VaultItem item;
+  final bool showHeader;
 
   const ItemDetailAttachments({
     super.key,
     required this.item,
+    this.showHeader = true,
   });
 
   @override
@@ -317,11 +319,12 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
     final cleanName = p.basename(rawName.replaceAll('\\', '/'));
     final absolutePath = '$_attachmentsDirPath/$cleanName';
     final cloudId = index < widget.item.cloudFileIds.length ? widget.item.cloudFileIds[index] : null;
-    final fileExists = File(absolutePath).existsSync();
+    final fileExists = File(absolutePath).existsSync() || File(rawName).existsSync();
+    final effectivePath = File(absolutePath).existsSync() ? absolutePath : rawName;
     final isDownloading = _downloadingPaths[cleanName] == true;
 
     return GestureDetector(
-      onTap: () => _handleAttachmentTap(context, absolutePath, cloudId, cleanName),
+      onTap: () => _handleAttachmentTap(context, effectivePath, cloudId, cleanName),
       child: Stack(
         children: [
           Container(
@@ -334,10 +337,10 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
               ),
             ),
             child: fileExists
-                ? _buildAttachmentPreview(absolutePath)
+                ? _buildAttachmentPreview(effectivePath)
                 : Opacity(
                     opacity: 0.5,
-                    child: _buildAttachmentPreview(absolutePath),
+                    child: _buildAttachmentPreview(effectivePath),
                   ),
           ),
           if (!fileExists)
@@ -361,6 +364,37 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
                 ),
               ),
             ),
+          // Caption overlay with file name
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.7),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.description_outlined, size: 11, color: Colors.white70),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      cleanName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -375,11 +409,13 @@ class _ItemDetailAttachmentsState extends ConsumerState<ItemDetailAttachments> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'ATTACHMENTS (${widget.item.attachedFiles.length})',
-          style: AppTheme.labelCapsStyle(context),
-        ),
-        const SizedBox(height: 12),
+        if (widget.showHeader) ...[
+          Text(
+            'ATTACHMENTS (${widget.item.attachedFiles.length})',
+            style: AppTheme.labelCapsStyle(context),
+          ),
+          const SizedBox(height: 12),
+        ],
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

@@ -215,6 +215,6 @@ if __name__ == "__main__":
         create_showcase(
             detail_screen,
             os.path.join(ASSETS_DIR, "7_showcase_5_detail.jpg"),
-            "DETAILED BILL TIMELINE",
-            "Urgency tags, payment intervals & one-tap settling"
+            "DETAILED BILL BREAKDOWN",
+            "Attached invoices, urgency alerts & one-tap settling"
         )

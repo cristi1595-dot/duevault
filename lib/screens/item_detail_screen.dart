@@ -162,7 +162,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    ItemDetailAttachments(item: currentItem),
+                    ItemDetailAttachments(item: currentItem, showHeader: false),
                   ],
                 ),
               ),

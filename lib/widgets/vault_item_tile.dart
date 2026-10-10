@@ -61,9 +61,9 @@ class VaultItemTile extends ConsumerWidget {
     }
     if (days == 0) return 'Today';
     if (days == 1) return 'Tomorrow';
-    // Până la 3 luni -> '14 days left', '23 days left', etc.
+    // Până la 3 luni -> '14 days', '23 days', etc.
     if (days <= 90) {
-      return '$days days left';
+      return days == 1 ? '1 day' : '$days days';
     }
     // Peste 3 luni, până la 1 an -> '3 months', '11 months', etc.
     if (days <= 365) {

@@ -156,6 +156,8 @@ class VaultGuestManager {
         ..amount = 125.40
         ..dueDate = now.add(const Duration(days: 2))
         ..recurrence = 'Monthly'
+        ..notes = 'Account #8492-3011-948 • Monthly electric utility charges.'
+        ..attachedFiles = ['invoice_electric_oct.jpg']
         ..isPaid = false
         ..isSample = true
         ..ownerId = ownerId,
